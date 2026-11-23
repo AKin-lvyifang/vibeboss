@@ -1,4 +1,12 @@
-import { ArrowLeftIcon, ArrowRightIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  BotIcon,
+  ChartNoAxesColumnIcon,
+  PuzzleIcon,
+  ScrollTextIcon,
+  SettingsIcon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { T, useGT } from "gt-react";
 import { memo } from "react";
@@ -263,6 +271,11 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/usage" });
   };
 
+  const goTo = (to: "/agents" | "/rules" | "/capabilities") => {
+    closeMobileSidebar();
+    void navigate({ to });
+  };
+
   const handleBackClick = () => {
     closeMobileSidebar();
     void navigateToMainApp();
@@ -304,6 +317,21 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             icon={<ChartNoAxesColumnIcon />}
             label={gt("Usage")}
             onClick={handleUsageClick}
+          />
+          <SidebarUtilityItem
+            icon={<BotIcon />}
+            label={gt("Agents")}
+            onClick={() => goTo("/agents")}
+          />
+          <SidebarUtilityItem
+            icon={<ScrollTextIcon />}
+            label={gt("Rules")}
+            onClick={() => goTo("/rules")}
+          />
+          <SidebarUtilityItem
+            icon={<PuzzleIcon />}
+            label={gt("Skills, MCP & plugins")}
+            onClick={() => goTo("/capabilities")}
           />
         </>
       )}

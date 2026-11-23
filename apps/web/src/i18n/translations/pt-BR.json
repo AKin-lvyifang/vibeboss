@@ -71,6 +71,7 @@
   "cd03eb1b84271c02": "Agente",
   "bfe1a60f3f9c60fb": "Turno {turn} · {what}",
   "dfdaa6255a416140": "Resumo de {turns, plural, one {{turns} turno recente} other {{turns} turnos recentes}}, {textTurns, plural, =0 {sem texto das mensagens} one {com o texto das mensagens do último turno} other {com o texto das mensagens dos últimos {textTurns} turnos}}{truncated, select, yes {, encurtado para caber} other {}}",
+  "260c6b45f52d2f27": "Adiciona o texto das suas mensagens e das respostas do agente {textTurns, plural, one {no último turno} other {nos últimos {textTurns} turnos}}.",
   "afac52a5cc2dc801": "Não foi possível enviar sua resposta. Tente novamente.",
   "79d776428f4d0650": "Não foi possível carregar o arquivo. Reconecte e tente novamente.",
   "3ea34cbb1ca5ba9b": "Pré-visualização cancelada.",
@@ -2733,9 +2734,9 @@
   "db7b3a938c45e56c": "Atualização {version} pronta para baixar",
   "9a951140b69ba740": "Baixando atualização ({percent}%)",
   "7fdece033260e9fb": "Baixando atualização",
+  "52e1d4a487c0cf4b": "Falha ao instalar {version}. Clique para tentar novamente.",
   "09ef51903e99e876": "Atualização baixada. Clique para reiniciar e instalar.",
   "d62631cab06d2b80": "Atualização {version} baixada. Clique para reiniciar e instalar.",
-  "52e1d4a487c0cf4b": "Falha ao instalar {version}. Clique para tentar novamente.",
   "78a04e0e625c0990": "Falha na atualização",
   "c24de5eb69373a55": "Esta build {build} ignora as versões {track}. Revise o canal de atualização em Configurações para concluir a troca.",
   "b02ae45a6109c93b": "Atualizado",
@@ -3638,7 +3639,6 @@
   "4e0710d19dfc2e7e": "Enviar este relatório para a equipe do T3?",
   "87d0ae0723ba75d1": "Isto é tudo o que sai da sua máquina. Nada é enviado até você clicar em Enviar.",
   "bf19826f81484328": "Incluir a conversa",
-  "260c6b45f52d2f27": "Adiciona o texto das suas mensagens e das respostas do agente {textTurns, plural, one {no último turno} other {nos últimos {textTurns} turnos}}.",
   "ddb7e6f8ce99e657": "Somente quem pode executar agentes nesta máquina pode enviar ou recusar o relatório.",
   "03c1eb603c112f47": "Não enviar",
   "653405e4ed498d9f": "Enviar",
@@ -8754,9 +8754,13 @@
   "ed83b25c71c98a20": "Escolha um ou mais {scope}s do {tracker} para cada projeto. As issues deles aparecem ao lado das do repositório, e os agentes criam novas issues no primeiro, a menos que outro seja pedido.",
   "19c2d5e81ff8f89a": "{scope} do {tracker} para {project}",
   "68e061510b765772": "Não vinculado",
+  "99d51127f573296b": "Outra conta",
+  "8ec2c57414669b79": "Conecte um segundo espaço de trabalho ou usuário do {tracker}.",
+  "99963c0142e17f00": "Para a nova conta do {tracker}.",
   "a2d95d39d3398bda": "Credencial recusada",
   "9eae463720500113": "Armazenado no servidor.",
   "b6e27ab2537ef874": "Criar um",
+  "6d8e4ebc889bace9": "Adicionar conta",
   "13ef526271b0f5d4": "Limpar todas as condições",
   "d1938a629f039515": "Remover condição",
   "84a605b241ce65b7": "Remover grupo e as condições dele",
@@ -12029,6 +12033,8 @@
   "8aa6404c8018ea67": "Início do T3 Code",
   "8e9626aa27cb188a": "Issues",
   "9d2fc1003e82feb1": "Uso",
+  "88429bc9732d7025": "Rules",
+  "39c2a72a4010a1bc": "Skills, MCP & plugins",
   "20283eb1dd6119f9": "{count, plural, one {{count} anexo} other {{count} anexos}}",
   "ffedb03b620f97a9": "Rascunho não enviado",
   "90a349d827d1dcf5": "Descartar rascunho",
@@ -12406,6 +12412,51 @@
   "2cddd6095abc734a": "7 dias",
   "53493056306708cf": "30 dias",
   "c719359d18d37ad3": "90 dias",
+  "58d49e9b9e748fe5": "What it is for",
+  "b5168c9be9b1ecae": "Pick it in the chat",
+  "3fb5aa97b3de47a5": "Effort",
+  "2c5674665579a329": "Remove",
+  "da7af489ec0d1c7f": "Collaboration guide",
+  "da81805383cfdb2e": "Lead",
+  "c3a7ef15fc97f773": "Effort is set in the chat",
+  "76dc0a33820e4b20": "Add agent",
+  "75f81714146157f4": "Collaboration guide",
+  "c1b7649ac731ed07": "Plugins",
+  "2783bb56dd7f4443": "All",
+  "828bf59ced65a9a6": "Shared",
+  "04127a104f7995ea": "Only one agent",
+  "2d5c91e8397cce93": "Versions differ",
+  "b831a982dfced3b1": "Nothing here",
+  "f40f2672a24f916d": "Versions differ",
+  "4c1d398ba00992a9": "Shared",
+  "79e19ed848309d5e": "Tone, style and general principles every agent follows",
+  "b3b3d02f898e5138": "Only for {agent}",
+  "18ff13d3ecaa7f99": [
+    "Synced. Backed up ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " original files."
+  ],
+  "c0f177654469736c": "Synced.",
+  "26fe2d966eefe050": "Sync to all agents",
+  "e85664efbd990e40": "Development build: syncing writes to a preview folder and leaves your real global rules untouched.",
+  "57688c7358a26b50": "Global rules per agent",
+  "e8f919acfea0cdba": "Used by all agents",
+  "012f2f5b52c0cbed": "Shared",
+  "2641e96ead74fb75": "Synced",
+  "34a73e9635f88c08": "Not synced",
+  "2e4d210f88e47319": "Collaboration guide · edit it on the Agents page",
+  "dfe2e5f0fe504481": [
+    "Only for ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
   "0bd950151ddc6407": "Sair sem salvar? Suas alterações neste arquivo serão perdidas.",
   "c0ba3f6756b09f30": "Alterações não salvas",
   "6914e22d357f0ad6": "Salvo e em execução",
@@ -12603,6 +12654,16 @@
   "156ff7b625287a1e": "Ocultar puladas",
   "69b985b97ab45e6b": "Mostrar puladas ({count})",
   "2400254d362de84d": "Carregando execuções de workflow…",
+  "cae5c3205c01d062": [
+    {
+      "t": "span",
+      "i": 1,
+      "c": "Um arquivo de workflow tem um problema."
+    },
+    " ",
+    "A última versão que carregou continua em execução."
+  ],
+  "ed8ce6ebc73dc12d": "Abrir o arquivo",
   "145e1f7503ba3b2c": [
     "Este ambiente não tem nenhuma execução com esse link.",
     " ",
@@ -12628,16 +12689,6 @@
       "c": "Leia o guia"
     }
   ],
-  "cae5c3205c01d062": [
-    {
-      "t": "span",
-      "i": 1,
-      "c": "Um arquivo de workflow tem um problema."
-    },
-    " ",
-    "A última versão que carregou continua em execução."
-  ],
-  "ed8ce6ebc73dc12d": "Abrir o arquivo",
   "5d8d278ff828102d": "Todos os workflows",
   "39459da07479f482": "Agente",
   "7741243632056b81": "{step} · transcrição",
@@ -12782,9 +12833,5 @@
   "27d76249d09eb69f": "Guia de revisão pronto",
   "faa3bb26abb39c93": "O guia de revisão falhou",
   "b7df38b7d8792d78": "Abrir guia",
-  "9e91e9a77b664e4e": "Não foi possível iniciar um guia de revisão",
-  "99d51127f573296b": "Outra conta",
-  "8ec2c57414669b79": "Conecte um segundo espaço de trabalho ou usuário do {tracker}.",
-  "99963c0142e17f00": "Para a nova conta do {tracker}.",
-  "6d8e4ebc889bace9": "Adicionar conta"
+  "9e91e9a77b664e4e": "Não foi possível iniciar um guia de revisão"
 }

@@ -17,6 +17,15 @@ import {
   McpAppUpdateModelContextInput,
 } from "./mcpApps.ts";
 import {
+  VibeBossCapabilities,
+  VibeBossError,
+  VibeBossNativeTranscriptInput,
+  VibeBossNativeTranscriptResult,
+  VibeBossSaveConfigInput,
+  VibeBossState,
+  VibeBossSyncResult,
+} from "./vibeboss.ts";
+import {
   PeerLink,
   PeerLinkClientPairingInput,
   PeerLinkLinkPairingInput,
@@ -514,6 +523,12 @@ export const WS_METHODS = {
   mcpAppsToolInfo: "mcpApps.toolInfo",
   mcpAppsReadResource: "mcpApps.readResource",
   mcpAppsUpdateModelContext: "mcpApps.updateModelContext",
+
+  vibebossGetState: "vibeboss.getState",
+  vibebossSaveConfig: "vibeboss.saveConfig",
+  vibebossSyncRules: "vibeboss.syncRules",
+  vibebossListCapabilities: "vibeboss.listCapabilities",
+  vibebossResolveNativeTranscript: "vibeboss.resolveNativeTranscript",
 
   providerUploadFeedback: "provider.uploadFeedback",
   providerMcpSignInStart: "provider.mcpSignIn.start",
@@ -1790,6 +1805,36 @@ const WsMcpAppsReadResourceRpc = Rpc.make(WS_METHODS.mcpAppsReadResource, {
   error: Schema.Union([McpAppRequestError, EnvironmentAuthorizationError]),
 });
 
+const WsVibeBossGetStateRpc = Rpc.make(WS_METHODS.vibebossGetState, {
+  payload: Schema.Struct({}),
+  success: VibeBossState,
+  error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+});
+
+const WsVibeBossSaveConfigRpc = Rpc.make(WS_METHODS.vibebossSaveConfig, {
+  payload: VibeBossSaveConfigInput,
+  success: VibeBossState,
+  error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+});
+
+const WsVibeBossSyncRulesRpc = Rpc.make(WS_METHODS.vibebossSyncRules, {
+  payload: Schema.Struct({}),
+  success: VibeBossSyncResult,
+  error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+});
+
+const WsVibeBossListCapabilitiesRpc = Rpc.make(WS_METHODS.vibebossListCapabilities, {
+  payload: Schema.Struct({}),
+  success: VibeBossCapabilities,
+  error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+});
+
+const WsVibeBossResolveNativeTranscriptRpc = Rpc.make(WS_METHODS.vibebossResolveNativeTranscript, {
+  payload: VibeBossNativeTranscriptInput,
+  success: VibeBossNativeTranscriptResult,
+  error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+});
+
 const WsProviderUploadFeedbackRpc = Rpc.make(WS_METHODS.providerUploadFeedback, {
   payload: ProviderUploadFeedbackInput,
   success: ProviderUploadFeedbackResult,
@@ -2637,6 +2682,11 @@ export const WsRpcGroup = RpcGroup.make(
   WsMcpAppsToolInfoRpc,
   WsMcpAppsReadResourceRpc,
   WsMcpAppsUpdateModelContextRpc,
+  WsVibeBossGetStateRpc,
+  WsVibeBossSaveConfigRpc,
+  WsVibeBossSyncRulesRpc,
+  WsVibeBossListCapabilitiesRpc,
+  WsVibeBossResolveNativeTranscriptRpc,
   WsProviderUploadFeedbackRpc,
   WsProviderMcpSignInStartRpc,
   WsProviderMcpSignInCompleteRpc,

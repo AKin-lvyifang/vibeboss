@@ -119,6 +119,7 @@ import { RpcGroup, RpcSerialization, RpcServer } from "effect/rpc";
 import * as CheckpointDiffQuery from "./checkpointing/CheckpointDiffQuery.ts";
 import * as NativeChildWorkQuery from "./orchestration-v2/NativeChildWorkQuery.ts";
 import * as ServerConfig from "./config.ts";
+import * as VibeBoss from "./vibeboss/VibeBoss.ts";
 import * as EnvironmentTheme from "./environmentTheme.ts";
 import * as Keybindings from "./keybindings.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
@@ -2635,6 +2636,17 @@ export const layerWsRpc = (
         [WS_METHODS.mcpAppsCallTool]: (input) => mcpAppRequests.callTool(input),
         [WS_METHODS.mcpAppsToolInfo]: (input) => mcpAppRequests.toolInfo(input),
         [WS_METHODS.mcpAppsUpdateModelContext]: (input) => mcpAppRequests.updateModelContext(input),
+        [WS_METHODS.vibebossGetState]: () =>
+          VibeBoss.getState().pipe(Effect.provideService(ServerConfig.ServerConfig, config)),
+        [WS_METHODS.vibebossSaveConfig]: (input) =>
+          VibeBoss.saveConfig(input.config).pipe(
+            Effect.provideService(ServerConfig.ServerConfig, config),
+          ),
+        [WS_METHODS.vibebossSyncRules]: () =>
+          VibeBoss.syncRules().pipe(Effect.provideService(ServerConfig.ServerConfig, config)),
+        [WS_METHODS.vibebossListCapabilities]: () => VibeBoss.listCapabilities(),
+        [WS_METHODS.vibebossResolveNativeTranscript]: (input) =>
+          VibeBoss.resolveNativeTranscript(input),
         [WS_METHODS.mcpAppsReadResource]: (input) => mcpAppRequests.readResource(input),
         [WS_METHODS.providerMcpSignInStart]: (input) => mcpSignIn.start(input),
         [WS_METHODS.providerMcpSignInComplete]: (input) => mcpSignIn.complete(input),

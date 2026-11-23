@@ -591,6 +591,10 @@
       "types": "./src/state/mcpApps.ts",
       "default": "./src/state/mcpApps.ts"
     },
+    "./state/vibeboss": {
+      "types": "./src/state/vibeboss.ts",
+      "default": "./src/state/vibeboss.ts"
+    },
     "./source-control-clients": {
       "types": "./src/sourceControlClients.ts",
       "default": "./src/sourceControlClients.ts"
