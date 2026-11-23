@@ -233,6 +233,9 @@ function SidebarUtilityItem({
   );
 }
 
+// VibeBoss: icons move once on hover and settle; nothing keeps animating.
+const HOVER_ICON = "transition-transform duration-300 ease-out motion-reduce:transition-none";
+
 const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
   const navigate = useNavigate();
   const navigateToMainApp = useNavigateToMainApp();
@@ -295,7 +298,7 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
       ) : (
         <>
           <SidebarUtilityItem
-            icon={<SettingsIcon />}
+            icon={<SettingsIcon className={`${HOVER_ICON} [button:hover>&]:rotate-90`} />}
             label={gt("Settings")}
             onClick={handleSettingsClick}
           />
@@ -314,22 +317,24 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             />
           ) : null}
           <SidebarUtilityItem
-            icon={<ChartNoAxesColumnIcon />}
+            icon={
+              <ChartNoAxesColumnIcon className={`${HOVER_ICON} [button:hover>&]:scale-y-110`} />
+            }
             label={gt("Usage")}
             onClick={handleUsageClick}
           />
           <SidebarUtilityItem
-            icon={<BotIcon />}
+            icon={<BotIcon className={`${HOVER_ICON} [button:hover>&]:-rotate-12`} />}
             label={gt("Agents")}
             onClick={() => goTo("/agents")}
           />
           <SidebarUtilityItem
-            icon={<ScrollTextIcon />}
+            icon={<ScrollTextIcon className={`${HOVER_ICON} [button:hover>&]:-translate-y-0.5`} />}
             label={gt("Rules")}
             onClick={() => goTo("/rules")}
           />
           <SidebarUtilityItem
-            icon={<PuzzleIcon />}
+            icon={<PuzzleIcon className={`${HOVER_ICON} [button:hover>&]:rotate-12`} />}
             label={gt("Skills, MCP & plugins")}
             onClick={() => goTo("/capabilities")}
           />
