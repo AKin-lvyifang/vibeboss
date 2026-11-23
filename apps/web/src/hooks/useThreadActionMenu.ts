@@ -47,6 +47,9 @@ import {
 } from "@t3tools/client-runtime/state/project-grouping";
 import { buildPhysicalToLogicalProjectKeyMap } from "../sidebarProjectGrouping";
 import { threadRuntimeCanArchive } from "@t3tools/client-runtime/state/models";
+import { useRightPanelStore } from "../rightPanelStore";
+import { useAtomCommand } from "../state/use-atom-command";
+import { vibeBossEnvironment } from "../state/vibeboss";
 import { useCopyToClipboard } from "./useCopyToClipboard";
 import { useNewThreadHandler } from "./useHandleNewThread";
 import { useClientSettings } from "./useSettings";
@@ -68,8 +71,12 @@ export function useThreadActionMenu(input: {
   readonly onStartRename: () => void;
   readonly onFind?: ((threadRef: ScopedThreadRef) => void) | undefined;
   readonly canShareWithGuest: boolean;
+  readonly nativeTranscript?: { readonly driver: string; readonly nativeId: string } | null;
 }) {
-  const { threadRef, projectCwd, onStartRename, onFind, canShareWithGuest } = input;
+  const { threadRef, projectCwd, onStartRename, onFind, canShareWithGuest, nativeTranscript } =
+    input;
+  const resolveNativeTranscript = useAtomCommand(vibeBossEnvironment.resolveNativeTranscript);
+  const openRightPanelFile = useRightPanelStore((state) => state.openFile);
   const router = useRouter();
   const projects = useProjects();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
@@ -155,6 +162,7 @@ export function useThreadActionMenu(input: {
         snoozePresets,
         canShareWithGuest,
         canTurnIntoProject: canTurnThreadIntoProject(threadRef),
+        canOpenNativeTranscript: nativeTranscript != null,
       });
       const clicked = await settlePromise(() => api.contextMenu.show(items, position));
       if (clicked._tag === "Failure" || clicked.value === null) return;
@@ -196,6 +204,24 @@ export function useThreadActionMenu(input: {
         }
       };
       switch (action) {
+        case "open-native-transcript": {
+          if (nativeTranscript == null) return;
+          const found = await resolveNativeTranscript({
+            environmentId: threadRef.environmentId,
+            input: nativeTranscript,
+          });
+          if (found._tag !== "Success" || found.value.path === null) {
+            failureToast(
+              m(msg("Record not found")),
+              new Error(
+                m(msg("This agent has not saved a record for this thread on the machine.")),
+              ),
+            );
+            return;
+          }
+          openRightPanelFile(threadRef, found.value.path);
+          return;
+        }
         case "find":
           onFind?.(threadRef);
           return;

@@ -29,6 +29,7 @@ export type ThreadActionMenuId =
   | "copy-branch"
   | "copy-thread"
   | "copy-thread-id"
+  | "open-native-transcript"
   | "archive"
   | "delete";
 
@@ -125,6 +126,8 @@ export interface ThreadActionMenuState {
   readonly canShareWithGuest?: boolean;
   /** A No project thread with its own folder, on a server that can promote it. */
   readonly canTurnIntoProject?: boolean;
+  /** VibeBoss: the agent keeps its own complete record of this thread on the machine. */
+  readonly canOpenNativeTranscript?: boolean;
 }
 
 /** Local navigation, read markers, and copying remain available to read-only clients. */
@@ -140,6 +143,7 @@ export function threadActionRequiresOperate(action: ThreadActionMenuId): boolean
     "copy-branch",
     "copy-thread",
     "copy-thread-id",
+    "open-native-transcript",
   ].includes(action);
 }
 
@@ -297,6 +301,15 @@ export function buildThreadActionMenuItems(
         { id: "copy-thread-id", label: resolve(msg("Thread ID")), icon: "hash" },
       ],
     },
+    ...(state.canOpenNativeTranscript
+      ? [
+          {
+            id: "open-native-transcript" as const,
+            label: resolve(msg("Open the agent's own record")),
+            icon: "file-text",
+          },
+        ]
+      : []),
     { id: "project-settings", label: resolve(msg("Project settings")), icon: "settings" },
     {
       id: "archive",

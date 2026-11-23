@@ -63,6 +63,13 @@ vi.mock("../state/entities", () => ({
 }));
 vi.mock("../state/environments", () => ({ usePrimaryEnvironmentId: () => "primary" }));
 vi.mock("../state/threads", () => ({ threadEnvironment: { updateMetadata: "metadata" } }));
+vi.mock("../state/vibeboss", () => ({
+  vibeBossEnvironment: { resolveNativeTranscript: "resolve-native-transcript" },
+}));
+vi.mock("../rightPanelStore", () => ({
+  useRightPanelStore: (select: (state: { openFile: () => void }) => unknown) =>
+    select({ openFile: vi.fn() }),
+}));
 vi.mock("../state/use-atom-command", () => ({
   useAtomCommand: () => async () => {
     recordEffect("metadata");

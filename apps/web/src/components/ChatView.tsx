@@ -571,6 +571,11 @@ export default function ChatView(props: ChatViewProps) {
   const activeProviderThread = serverProjection?.providerThreads.find(
     (thread) => thread.id === serverProjection.thread.activeProviderThreadId,
   );
+  const activeNativeId = activeProviderThread?.nativeThreadRef?.nativeId ?? null;
+  const activeNativeTranscript =
+    activeProviderThread && activeNativeId
+      ? { driver: activeProviderThread.driver, nativeId: activeNativeId }
+      : null;
   const activeThreadLiveTokenUsage = latestProviderTurnTokenUsage(
     serverProjection?.providerTurns ?? [],
     serverProjection,
@@ -3569,6 +3574,7 @@ export default function ChatView(props: ChatViewProps) {
                 ? { onOpenProjectSettings: handleOpenDraftProjectSettingsStable }
                 : {})}
               {...(threadFindEnabled ? { onFindInThread: openThreadFindStable } : {})}
+              nativeTranscript={activeNativeTranscript}
             />
           </header>
         )}

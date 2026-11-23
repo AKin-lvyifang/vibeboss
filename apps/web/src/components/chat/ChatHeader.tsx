@@ -58,6 +58,7 @@ interface ChatHeaderProps {
   onNewThreadInProject: () => void;
   onOpenProjectSettings?: (() => void) | undefined;
   onFindInThread?: ((threadRef: ScopedThreadRef) => void) | undefined;
+  nativeTranscript?: { readonly driver: string; readonly nativeId: string } | null;
 }
 
 function resolveRenameCommit(input: {
@@ -83,6 +84,7 @@ export const ChatHeader = memo(function ChatHeader({
   onNewThreadInProject,
   onOpenProjectSettings,
   onFindInThread,
+  nativeTranscript = null,
 }: ChatHeaderProps) {
   const gt = useGT();
   const activeProjectName = activeProject?.isScratch ? gt("No project") : activeProject?.title;
@@ -205,6 +207,7 @@ export const ChatHeader = memo(function ChatHeader({
     onStartRename: startRename,
     onFind: onFindInThread,
     canShareWithGuest,
+    nativeTranscript,
   });
   const openMenuFromTitle = (event: ReactMouseEvent<HTMLButtonElement>) => {
     if (isTrailingDoubleClick(event.detail)) return;
