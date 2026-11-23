@@ -171,6 +171,7 @@ interface FilePreviewPanelProps {
   workspaceMutationId: string | null;
 }
 
+const ExcalidrawViewer = lazy(() => import("./ExcalidrawViewer"));
 const MermaidFilePreview = lazy(() =>
   import("./MermaidFilePreview").then((module) => ({ default: module.MermaidFilePreview })),
 );
@@ -1846,7 +1847,17 @@ export default function FilePreviewPanel({
               <Spinner size="lg" />
             </div>
           ) : relativePath && file.data ? (
-            renderMermaid ? (
+            /\.excalidraw$/i.test(relativePath) && environmentId !== null && cwd ? (
+              <Suspense fallback={<FileSurfaceLoading />}>
+                <ExcalidrawViewer
+                  key={relativePath}
+                  text={file.data.contents}
+                  environmentId={environmentId}
+                  cwd={cwd}
+                  relativePath={relativePath}
+                />
+              </Suspense>
+            ) : renderMermaid ? (
               <Suspense fallback={<FileSurfaceLoading />}>
                 <MermaidFilePreview text={file.data.contents} />
               </Suspense>
