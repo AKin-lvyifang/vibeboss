@@ -5987,6 +5987,24 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
             }
 
             if (payload.item.type !== "agentMessage") {
+              // VibeBoss: show item kinds without a dedicated row instead of dropping them.
+              const artifacts = yield* buildDynamicToolArtifacts(context, {
+                type: "dynamicToolCall",
+                id: payload.item.id,
+                tool: payload.item.type,
+                arguments: payload.item,
+                status: "completed",
+              });
+              yield* emitProviderEvent({
+                type: "node.updated",
+                driver: CODEX_PROVIDER,
+                node: artifacts.node,
+              });
+              yield* emitProviderEvent({
+                type: "turn_item.updated",
+                driver: CODEX_PROVIDER,
+                turnItem: artifacts.turnItem,
+              });
               return;
             }
 

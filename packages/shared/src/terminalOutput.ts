@@ -38,7 +38,7 @@ export const EMPTY_TERMINAL_OUTPUT: TerminalOutputState = {
 };
 
 /** Default command tail, in UTF-16 code units. */
-export const TERMINAL_OUTPUT_TAIL_CHARS = 64 * 1024;
+export const TERMINAL_OUTPUT_TAIL_CHARS = 512 * 1024;
 
 const LIVE_LINES = 64;
 
