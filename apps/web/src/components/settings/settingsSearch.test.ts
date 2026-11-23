@@ -71,7 +71,7 @@ describe("searchSettings", () => {
     }
   });
 
-  it("shows the Secrets page in nav and search only when an environment enables secret providers", () => {
+  it("keeps the developer-only Secrets page out of VibeBoss nav and search", () => {
     const availability = {
       hasCloudPublicConfig: false,
       hasEnvironment: true,
@@ -89,8 +89,8 @@ describe("searchSettings", () => {
           hasSecretProvidersEnvironment: enabled,
         }),
       ).map((item) => item.to);
-      expect(navPaths.includes("/settings/secrets")).toBe(enabled);
-      expect(searchPaths.includes("/settings/secrets")).toBe(enabled);
+      expect(navPaths.includes("/settings/secrets")).toBe(false);
+      expect(searchPaths.includes("/settings/secrets")).toBe(false);
     }
   });
 

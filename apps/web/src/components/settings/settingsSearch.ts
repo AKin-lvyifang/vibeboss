@@ -16,6 +16,7 @@ import { writeLocalStorageValue } from "../../hooks/useLocalStorage";
 import type { MessageResolver } from "../../i18n/messages";
 import { commandLabel } from "./KeybindingsSettings.logic";
 import type { ResolvedSettingsScope } from "./settingsScope";
+import { VIBEBOSS_HIDDEN_SETTINGS } from "../../vibeboss";
 
 export type SettingsPath =
   | "/settings/projects"
@@ -177,7 +178,12 @@ const ALL_SETTINGS_NAV_GROUPS: ReadonlyArray<SettingsNavGroup> = [
   },
 ];
 
-const SETTINGS_NAV_GROUPS_WITHOUT_SECRETS = ALL_SETTINGS_NAV_GROUPS.map((group) => ({
+const VISIBLE_SETTINGS_NAV_GROUPS = ALL_SETTINGS_NAV_GROUPS.map((group) => ({
+  ...group,
+  paths: group.paths.filter((path) => !VIBEBOSS_HIDDEN_SETTINGS.has(path)),
+})).filter((group) => group.paths.length > 0);
+
+const SETTINGS_NAV_GROUPS_WITHOUT_SECRETS = VISIBLE_SETTINGS_NAV_GROUPS.map((group) => ({
   ...group,
   paths: group.paths.filter((path) => path !== "/settings/secrets"),
 }));
@@ -185,7 +191,7 @@ const SETTINGS_NAV_GROUPS_WITHOUT_SECRETS = ALL_SETTINGS_NAV_GROUPS.map((group) 
 /** Sidebar groups; Secrets shows only when some environment's server enables secret providers. */
 export function settingsNavGroups(hasSecretProvidersEnvironment: boolean) {
   return hasSecretProvidersEnvironment
-    ? ALL_SETTINGS_NAV_GROUPS
+    ? VISIBLE_SETTINGS_NAV_GROUPS
     : SETTINGS_NAV_GROUPS_WITHOUT_SECRETS;
 }
 
@@ -1664,6 +1670,7 @@ export function filterAvailableSettingsSearchItems(
   const items: ReadonlyArray<SettingsSearchItem> = SETTINGS_SEARCH_ITEMS;
   return items.filter(
     (item) =>
+      !VIBEBOSS_HIDDEN_SETTINGS.has(item.to) &&
       (!item.cloudOnly || availability.hasCloudPublicConfig) &&
       (!item.environmentOnly || availability.hasEnvironment) &&
       (!item.providerSettingsOnly || availability.hasProviderSettingsEnvironment) &&

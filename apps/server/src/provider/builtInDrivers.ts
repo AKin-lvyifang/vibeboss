@@ -30,7 +30,16 @@ export type BuiltInDriversEnv =
   | PiDriverEnv
   | MuseDriverEnv;
 
-export const BUILT_IN_DRIVERS: ReadonlyArray<AnyProviderDriver<BuiltInDriversEnv>> = [
+// VibeBoss runs Codex, Claude and Antigravity; ACP registry stays for the dev replay agent and
+// custom agents. The other drivers stay listed so upstream merges remain cheap.
+const VIBEBOSS_DRIVER_KINDS: ReadonlySet<string> = new Set([
+  "codex",
+  "claudeAgent",
+  "antigravity",
+  "acpRegistry",
+]);
+
+const ALL_BUILT_IN_DRIVERS: ReadonlyArray<AnyProviderDriver<BuiltInDriversEnv>> = [
   CodexDriver,
   ClaudeDriver,
   CursorDriver,
@@ -44,6 +53,10 @@ export const BUILT_IN_DRIVERS: ReadonlyArray<AnyProviderDriver<BuiltInDriversEnv
   AcpRegistryDriver,
 ];
 
+export const BUILT_IN_DRIVERS = ALL_BUILT_IN_DRIVERS.filter((driver) =>
+  VIBEBOSS_DRIVER_KINDS.has(driver.driverKind),
+);
+
 export type BuiltInUsageReadersEnv =
   | ProviderUsageReaderEnv<typeof ClaudeDriver>
   | ProviderUsageReaderEnv<typeof CodexDriver>
@@ -55,7 +68,7 @@ export type BuiltInUsageReadersEnv =
   | ProviderUsageReaderEnv<typeof MuseDriver>;
 
 /** Order matters: aggregation keeps the first duplicate record. */
-export const BUILT_IN_USAGE_DRIVERS: ReadonlyArray<
+const ALL_BUILT_IN_USAGE_DRIVERS: ReadonlyArray<
   AnyProviderDriver<BuiltInDriversEnv, BuiltInUsageReadersEnv>
 > = [
   ClaudeDriver,
@@ -67,3 +80,7 @@ export const BUILT_IN_USAGE_DRIVERS: ReadonlyArray<
   AntigravityDriver,
   CursorDriver,
 ];
+
+export const BUILT_IN_USAGE_DRIVERS = ALL_BUILT_IN_USAGE_DRIVERS.filter((driver) =>
+  VIBEBOSS_DRIVER_KINDS.has(driver.driverKind),
+);

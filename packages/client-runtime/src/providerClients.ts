@@ -27,7 +27,16 @@ export const openRouterIcon: ProviderIcon = {
   ],
 };
 
-export const providerClients = makeProviderClientRegistry([
+// VibeBoss shows Codex, Claude and Antigravity (plus custom ACP agents). The other clients
+// stay registered here so upstream merges remain cheap.
+const VIBEBOSS_DRIVER_KINDS: ReadonlySet<string> = new Set([
+  "codex",
+  "claudeAgent",
+  "antigravity",
+  "acpRegistry",
+]);
+
+const ALL_PROVIDER_CLIENTS = [
   {
     driverKind: ProviderDriverKind.make("codex"),
     label: "Codex",
@@ -57,7 +66,11 @@ export const providerClients = makeProviderClientRegistry([
   museClient,
   piClient,
   acpRegistryClient,
-]);
+];
+
+export const providerClients = makeProviderClientRegistry(
+  ALL_PROVIDER_CLIENTS.filter((client) => VIBEBOSS_DRIVER_KINDS.has(client.driverKind)),
+);
 
 export function getProviderClient(driver: string | null | undefined) {
   return isProviderDriverKind(driver) ? providerClients.get(driver) : undefined;
