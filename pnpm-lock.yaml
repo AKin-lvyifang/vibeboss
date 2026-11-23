@@ -1051,6 +1051,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@animate-ui/react':
+        specifier: ^2.4.6
+        version: 2.4.6(@base-ui/react@1.9.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(motion@14.14.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@base-ui/react':
         specifier: ^1.9.0
         version: 1.9.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1237,6 +1240,9 @@ importers:
       lucide-react:
         specifier: ^0.564.0
         version: 0.564.0(react@19.3.0)
+      motion:
+        specifier: ^14.14.0
+        version: 14.14.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       pdfjs-dist:
         specifier: 6.4.299
         version: 6.4.299
@@ -2839,6 +2845,41 @@ packages:
       alchemy:
         optional: true
       vitest:
+        optional: true
+
+  '@animate-ui/react@2.4.6':
+    resolution: {integrity: sha512-l+1cdJz+4XHScBXAsIwhU0O4S82OQob5Bo1i6WejaQD2MqWnwSvShBHczKNypuz+yc+/vfNAJk/MlASZax188g==}
+    peerDependencies:
+      '@base-ui/react': ^1.8.0
+      '@floating-ui/react': ^0.27.20
+      '@shadcn/react': ^0.3.1
+      embla-carousel: ^8.6.0
+      embla-carousel-react: ^8.6.0
+      input-otp: ^1.5.0
+      motion: ^14.0.0
+      radix-ui: ^1.6.0
+      react: ^19.0.0
+      react-aria-components: ^1.21.0
+      react-dom: ^19.0.0
+      shiki: ^4.5.0
+    peerDependenciesMeta:
+      '@base-ui/react':
+        optional: true
+      '@floating-ui/react':
+        optional: true
+      '@shadcn/react':
+        optional: true
+      embla-carousel:
+        optional: true
+      embla-carousel-react:
+        optional: true
+      input-otp:
+        optional: true
+      radix-ui:
+        optional: true
+      react-aria-components:
+        optional: true
+      shiki:
         optional: true
 
   '@antfu/install-pkg@2.1.0':
@@ -10427,6 +10468,20 @@ packages:
     resolution: {integrity: sha512-PcOxmqwYCW7O2ovKRU8OoQQj2yqTfEB/yeTYk4gPid6dN5ODRfU1hXd9tTVZzax/0NkO7AxpHykvZnT1aYp/BQ==}
     engines: {node: ^14.13.1 || >=16.0.0}
 
+  framer-motion@14.14.0:
+    resolution: {integrity: sha512-fidRX0VzkZdA9OovFiBSzJtt9/jLcJpna78Z+KCqQQZIWoIpN3tOhEXAhhAw/FObUUh+o3Y18yx1F4BP0mVJ8Q==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+      remix: ^3.1.0
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      remix:
+        optional: true
+
   fresh@0.5.2:
     resolution: {integrity: sha512-zJ2mQYM18rEFOudeV4GShTGIQ7RbzA7ozbU9I/XBpm7kqgMywgmylMwXHxZJmkVoYkna9d2pVXVXPdYTP9ej8Q==}
     engines: {node: '>= 0.6'}
@@ -11642,6 +11697,26 @@ packages:
   modern-tar@0.8.6:
     resolution: {integrity: sha512-LYSks0tNVqbtez/9OB0YFP6qLRSqkdAxJWOQpVaR67lNTbj2zNLyYpowkRMia5lXLCZKzxwoxkxH2MbbBR2aEg==}
     engines: {node: '>=18.0.0'}
+
+  motion-dom@14.14.0:
+    resolution: {integrity: sha512-IAxcKhYkuQA2W0Tlx1AvVgImfqEoF3/t3IovbPQJlYkefmGsmrXjn967lMII5VmFmLpQEab4+ZkHo/ijJ4Esig==}
+
+  motion-utils@14.7.0:
+    resolution: {integrity: sha512-woO0/Nb7ys75f94fjvQi/6leiHGvZUYkeHUPEZ3vxsV+9OpEVhkxp01x8MlRwX0zt31EqgXsKDAoBoJLC148Tw==}
+
+  motion@14.14.0:
+    resolution: {integrity: sha512-a306U6sV5VKq1abtzKiinB+UQjiY88jrsvQzWORP3WPv/DFANyoYVlPbdnmJPMEbusyPXB4GyQJVANaq/pSIYQ==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+      remix: ^3.1.0
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      remix:
+        optional: true
 
   mrmime@2.0.1:
     resolution: {integrity: sha512-Y3wQdFg2Va6etvQ5I82yUhGdsKrcYox6p7FfL1LbK2J4V01F9TGlepTIhnK24t7koZibmg82KGglhA1XK5IsLQ==}
@@ -14214,6 +14289,14 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+
+  '@animate-ui/react@2.4.6(@base-ui/react@1.9.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(motion@14.14.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+    dependencies:
+      motion: 14.14.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
+    optionalDependencies:
+      '@base-ui/react': 1.9.0(@date-fns/tz@1.5.0)(@types/react@19.3.0)(date-fns@4.4.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
 
   '@antfu/install-pkg@2.1.0':
     dependencies:
@@ -21605,6 +21688,15 @@ snapshots:
 
   fractional-indexing@3.2.0: {}
 
+  framer-motion@14.14.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+    dependencies:
+      motion-dom: 14.14.0
+      motion-utils: 14.7.0
+      tslib: 2.8.1
+    optionalDependencies:
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
+
   fresh@0.5.2: {}
 
   fresh@2.0.0: {}
@@ -23351,6 +23443,20 @@ snapshots:
       minimist: 1.2.8
 
   modern-tar@0.8.6: {}
+
+  motion-dom@14.14.0:
+    dependencies:
+      motion-utils: 14.7.0
+
+  motion-utils@14.7.0: {}
+
+  motion@14.14.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+    dependencies:
+      framer-motion: 14.14.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      tslib: 2.8.1
+    optionalDependencies:
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
 
   mrmime@2.0.1: {}
 

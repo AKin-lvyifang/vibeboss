@@ -1,4 +1,4 @@
-import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { Dialog as DialogPrimitive } from "@animate-ui/react/primitives/base-ui/dialog";
 import { useRender } from "@base-ui/react/use-render";
 import { useGT } from "gt-react";
 import { XIcon } from "lucide-react";

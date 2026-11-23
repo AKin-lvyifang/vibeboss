@@ -1,4 +1,4 @@
-import { Collapsible as CollapsiblePrimitive } from "@base-ui/react/collapsible";
+import { Collapsible as CollapsiblePrimitive } from "@animate-ui/react/primitives/base-ui/collapsible";
 
 import { cn } from "~/lib/utils";
 
@@ -26,7 +26,7 @@ function CollapsiblePanel({
       className={cn(
         "overflow-hidden",
         animate &&
-          "h-(--collapsible-panel-height) transition-[height] duration-200 motion-reduce:transition-none data-ending-style:h-0 data-starting-style:h-0 data-open:data-ending-style:[height:var(--collapsible-panel-height)]",
+          "transition-[height] duration-200 motion-reduce:transition-none data-open:data-ending-style:[height:var(--collapsible-panel-height)]",
         className,
       )}
       data-slot="collapsible-panel"

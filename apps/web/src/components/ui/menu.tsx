@@ -1,4 +1,4 @@
-import { Menu as MenuPrimitive } from "@base-ui/react/menu";
+import { Menu as MenuPrimitive } from "@animate-ui/react/primitives/base-ui/menu";
 import { CheckIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
 import type * as React from "react";
 

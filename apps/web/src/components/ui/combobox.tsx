@@ -1,4 +1,4 @@
-import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
+import { Combobox as ComboboxPrimitive } from "@animate-ui/react/primitives/base-ui/combobox";
 import { ChevronsUpDownIcon, SearchIcon, XIcon } from "lucide-react";
 import * as React from "react";
 

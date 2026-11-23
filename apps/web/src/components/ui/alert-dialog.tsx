@@ -1,4 +1,4 @@
-import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
+import { AlertDialog as AlertDialogPrimitive } from "@animate-ui/react/primitives/base-ui/alert-dialog";
 import { useRender } from "@base-ui/react/use-render";
 
 import { cn } from "~/lib/utils";

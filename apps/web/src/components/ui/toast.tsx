@@ -1,6 +1,6 @@
 import { Spinner } from "~/components/ui/spinner";
 
-import { Toast } from "@base-ui/react/toast";
+import { Toast } from "@animate-ui/react/primitives/base-ui/toast";
 import { msg, useGT } from "gt-react";
 import {
   useEffect,
@@ -623,7 +623,7 @@ function Toasts({ position }: { position: ToastPosition }) {
           return (
             <Toast.Root
               className={cn(
-                "dropdown-glass absolute z-[calc(9999-var(--toast-index))] w-full overflow-visible select-none rounded-lg text-popover-foreground shadow-xl shadow-black/25 [transition:transform_.5s_cubic-bezier(.22,1,.36,1),opacity_.5s,height_.15s]",
+                "dropdown-glass absolute z-[calc(9999-var(--toast-index))] w-full overflow-visible select-none rounded-lg text-popover-foreground shadow-xl shadow-black/25",
                 "data-[position*=right]:right-0 data-[position*=right]:left-auto",
                 "data-[position*=left]:right-auto data-[position*=left]:left-0",
                 "data-[position*=center]:right-0 data-[position*=center]:left-0",
@@ -699,7 +699,7 @@ function Toasts({ position }: { position: ToastPosition }) {
                 className={cn(
                   // overflow-x:clip preserves visible vertical overflow; hidden would force overflow-y:auto
                   // and clip detail panels.
-                  "pointer-events-auto min-h-0 overflow-y-visible pl-3.5 text-sm transition-opacity duration-250 [overflow-x:clip] data-expanded:opacity-100",
+                  "pointer-events-auto min-h-0 overflow-y-visible pl-3.5 text-sm [overflow-x:clip] data-expanded:opacity-100",
                   stackedActionLayout
                     ? "flex flex-col gap-2 py-2.5 pr-3.5"
                     : cn("py-3", "flex items-center justify-between gap-1.5", inlineContentEndPad),

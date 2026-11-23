@@ -1,4 +1,4 @@
-import { Dialog as CommandDialogPrimitive } from "@base-ui/react/dialog";
+import { Dialog as CommandDialogPrimitive } from "@animate-ui/react/primitives/base-ui/dialog";
 import { SearchIcon } from "lucide-react";
 import { useRef } from "react";
 import type * as React from "react";
