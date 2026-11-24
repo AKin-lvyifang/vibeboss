@@ -1,39 +1,50 @@
 import * as Schema from "effect/Schema";
 
-/** The three agents VibeBoss writes global rule files for. */
+/** Agents whose skills, MCP servers and plugins the capabilities page compares. */
 export const VibeBossAgentKind = Schema.Literals(["claude", "codex", "agy"]);
 export type VibeBossAgentKind = typeof VibeBossAgentKind.Type;
 
-/** One row of the agent table: who to send work to, with which model, and what for. */
-export const VibeBossAgentEntry = Schema.Struct({
+/** A named team member the lead can send work to; `@name` in the lead rules points at it. */
+export const VibeBossMember = Schema.Struct({
   id: Schema.String,
-  kind: VibeBossAgentKind,
+  name: Schema.String,
+  providerInstanceId: Schema.String,
   model: Schema.String,
   effort: Schema.String,
-  use: Schema.String,
+  /** For the user only; never written into rule files. */
+  note: Schema.String,
 });
-export type VibeBossAgentEntry = typeof VibeBossAgentEntry.Type;
+export type VibeBossMember = typeof VibeBossMember.Type;
 
-/**
- * Rule parts. Every agent's global rule file is assembled as
- * shared + coop (with the agent table appended) + that agent's own part.
- */
+/** The one agent the user talks to; its model and effort are picked in the chat. */
+export const VibeBossLead = Schema.Struct({
+  providerInstanceId: Schema.String,
+  note: Schema.String,
+});
+export type VibeBossLead = typeof VibeBossLead.Type;
+
 export const VibeBossConfig = Schema.Struct({
-  shared: Schema.String,
-  coop: Schema.String,
-  perAgent: Schema.Struct({
-    claude: Schema.String,
-    codex: Schema.String,
-    agy: Schema.String,
-  }),
-  lead: VibeBossAgentEntry,
-  helpers: Schema.Array(VibeBossAgentEntry),
+  version: Schema.Literal(2),
+  /** Written only into the lead's rule file. `@name` expands to that member's delegate call. */
+  leadRules: Schema.String,
+  /** Each agent's own global rules, keyed by rule target id (claude, codex, agy, hermes). */
+  perAgent: Schema.Record(Schema.String, Schema.String),
+  lead: VibeBossLead,
+  members: Schema.Array(VibeBossMember),
 });
 export type VibeBossConfig = typeof VibeBossConfig.Type;
 
+/** One global rule file, shown for every enabled agent whose rule file VibeBoss knows. */
 export const VibeBossRuleFile = Schema.Struct({
-  kind: VibeBossAgentKind,
+  targetId: Schema.String,
+  label: Schema.String,
+  driver: Schema.String,
+  providerInstanceIds: Schema.Array(Schema.String),
+  /** Where the agent itself reads its global rules. */
+  agentPath: Schema.String,
+  /** Where VibeBoss writes; differs from `agentPath` only in a development build. */
   path: Schema.String,
+  isLead: Schema.Boolean,
   exists: Schema.Boolean,
   current: Schema.String,
   generated: Schema.String,
@@ -44,6 +55,8 @@ export type VibeBossRuleFile = typeof VibeBossRuleFile.Type;
 export const VibeBossState = Schema.Struct({
   config: VibeBossConfig,
   files: Schema.Array(VibeBossRuleFile),
+  /** Rule file of the lead's agent, or null when that agent is disabled or has no known file. */
+  leadTargetId: Schema.NullOr(Schema.String),
   /** Dev servers write rule files to a preview folder instead of the real agent homes. */
   previewOnly: Schema.Boolean,
   configPath: Schema.String,

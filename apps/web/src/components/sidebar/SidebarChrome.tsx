@@ -258,7 +258,7 @@ export const SidebarVibeBossNav = memo(function SidebarVibeBossNav() {
   const pathname = useLocation({ select: (location) => location.pathname });
   const items: ReadonlyArray<{ to: VibeBossNavTarget; label: string; icon: ReactNode }> = [
     { to: "/settings/scheduled-tasks", label: gt("Scheduled tasks"), icon: <CalendarClockIcon /> },
-    { to: "/agents", label: gt("Agents"), icon: <BotIcon /> },
+    { to: "/agents", label: gt("Roles"), icon: <BotIcon /> },
     { to: "/rules", label: gt("Rules"), icon: <ScrollIcon /> },
     { to: "/capabilities", label: gt("Skills, MCP & plugins"), icon: <BlocksIcon /> },
   ];

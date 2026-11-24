@@ -2646,10 +2646,20 @@ export const layerWsRpc = (
         [WS_METHODS.mcpAppsCallTool]: (input) => mcpAppRequests.callTool(input),
         [WS_METHODS.mcpAppsToolInfo]: (input) => mcpAppRequests.toolInfo(input),
         [WS_METHODS.mcpAppsUpdateModelContext]: (input) => mcpAppRequests.updateModelContext(input),
-        [WS_METHODS.vibebossGetState]: () => withVibeBossServices(VibeBoss.getState()),
+        [WS_METHODS.vibebossGetState]: () =>
+          withVibeBossServices(
+            providerRegistry.getProviders.pipe(Effect.flatMap(VibeBoss.getState)),
+          ),
         [WS_METHODS.vibebossSaveConfig]: (input) =>
-          withVibeBossServices(VibeBoss.saveConfig(input.config)),
-        [WS_METHODS.vibebossSyncRules]: () => withVibeBossServices(VibeBoss.syncRules()),
+          withVibeBossServices(
+            providerRegistry.getProviders.pipe(
+              Effect.flatMap((providers) => VibeBoss.saveConfig(input.config, providers)),
+            ),
+          ),
+        [WS_METHODS.vibebossSyncRules]: () =>
+          withVibeBossServices(
+            providerRegistry.getProviders.pipe(Effect.flatMap(VibeBoss.syncRules)),
+          ),
         [WS_METHODS.vibebossListCapabilities]: () =>
           withVibeBossServices(VibeBoss.listCapabilities()),
         [WS_METHODS.vibebossResolveNativeTranscript]: (input) =>

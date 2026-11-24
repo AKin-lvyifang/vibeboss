@@ -1,13 +1,14 @@
 import * as NodeOS from "node:os";
 
 import {
-  type VibeBossAgentEntry,
+  type ServerProvider,
   type VibeBossAgentKind,
   type VibeBossCapabilities,
   type VibeBossCapability,
   type VibeBossConfig,
   VibeBossConfig as VibeBossConfigSchema,
   VibeBossError,
+  type VibeBossMember,
   type VibeBossNativeTranscriptInput,
   type VibeBossRuleFile,
   type VibeBossState,
@@ -24,53 +25,43 @@ import * as Schema from "effect/Schema";
 import * as ServerConfig from "../config.ts";
 
 const KINDS: ReadonlyArray<VibeBossAgentKind> = ["claude", "codex", "agy"];
-const AGENT_LABEL: Record<VibeBossAgentKind, string> = {
-  claude: "Claude",
-  codex: "Codex",
-  agy: "Agy",
-};
 const GENERATED_MARKER = "<!-- 由 VibeBoss 生成，别手改；改规则去 VibeBoss 的「规则」页 -->";
 
-const DEFAULT_COOP = [
-  "- 你在主会话里直接和用户对话时，你就是主控。",
+const DEFAULT_LEAD_RULES = [
   "- 小事自己做，不派：几十行的改动、修评审问题、要和页面来回对接口的，都自己做。",
-  "- 大方案、大改动先交给负责 review 的智能体看：只给它用户原话和必要背景，不给自己的草稿；它的意见核实后再采纳，最多两轮。没有设置就自己定。",
-  "- 写代码按下面的分工派给对应的智能体，接口和验收标准你来定；没有对应的就自己写。",
-  "- 派活用 delegate_task：写清目标、范围、验收标准，选对智能体和模型；要读别的会话用 t3_thread_read。",
+  "- 大方案、大改动先交给 @reviewer 看：只给它用户原话和必要背景，不给自己的草稿；它的意见核实后再采纳，最多两轮。",
+  "- 写前端交给 @frontend，写成块的后端、算法、数据处理交给 @backend；接口和验收标准你来定。",
+  "- 派活写清目标、范围、验收标准；要读别的会话用 t3_thread_read。",
   "- 交回后你读改动、自己跑测试；不对就在同一个子会话里让它返工。",
-  "- 做完交给负责测试验收的；没有设置就自己验收。",
   "- 要画草图、脑图、流程图时，写成项目里 .vibeboss/canvas/ 下的 .excalidraw 文件，告诉用户在右栏打开；用户拖拽修改后会存回同一个文件，下次先读它。",
-  "- 收到别人派来的任务时，只做这件事，不再往下派。",
 ].join("\n");
 
-const DEFAULT_LEAD: VibeBossAgentEntry = {
-  id: "lead",
-  kind: "claude",
-  model: "",
-  effort: "",
-  use: "和用户对话、出方案、做设计和验收",
-};
-const DEFAULT_HELPERS: ReadonlyArray<VibeBossAgentEntry> = [
+const WORKER_RULES = "## 被派活时\n\n收到主控派来的任务时，只做这件事，不再往下派。";
+
+const DEFAULT_MEMBERS: ReadonlyArray<VibeBossMember> = [
   {
-    id: "agy-review",
-    kind: "agy",
+    id: "reviewer",
+    name: "reviewer",
+    providerInstanceId: "antigravity",
     model: "Gemini 4 Neon",
     effort: "high",
-    use: "review 大方案；改界面文案和交互",
+    note: "review 大方案；改界面文案和交互",
   },
   {
-    id: "codex-frontend",
-    kind: "codex",
+    id: "frontend",
+    name: "frontend",
+    providerInstanceId: "codex",
     model: "GPT-6.2 Sol",
     effort: "xhigh",
-    use: "写前端落地；测试和验收",
+    note: "写前端落地；测试和验收",
   },
   {
-    id: "codex-backend",
-    kind: "codex",
+    id: "backend",
+    name: "backend",
+    providerInstanceId: "codex",
     model: "GPT-6.2 Astra",
     effort: "xhigh",
-    use: "写成块的后端、算法、数据处理",
+    note: "写成块的后端、算法、数据处理",
   },
 ];
 
@@ -94,34 +85,83 @@ const agentHomes = Effect.gen(function* () {
     claude: env.claude ?? path.join(home, ".claude"),
     codex: env.codex ?? path.join(home, ".codex"),
     gemini: path.join(home, ".gemini"),
+    hermes: path.join(home, ".hermes"),
   };
 });
 
-/** Where each agent reads its global rules. */
-const realRuleFilePaths = Effect.gen(function* () {
+type RuleTargetId = "claude" | "codex" | "agy" | "hermes";
+
+const RULE_TARGET_LABEL: Record<RuleTargetId, string> = {
+  claude: "Claude",
+  codex: "Codex",
+  agy: "Agy",
+  hermes: "Hermes",
+};
+
+/** Which global rule file an enabled provider reads; null when VibeBoss does not know one. */
+function ruleTargetFor(provider: ServerProvider): RuleTargetId | null {
+  switch (provider.driver) {
+    case "claudeAgent":
+      return "claude";
+    case "codex":
+      return "codex";
+    case "antigravity":
+      return "agy";
+    case "acpRegistry": {
+      const identity = [provider.instanceId, provider.displayName, provider.iconUrl].join(" ");
+      return /hermes/i.test(identity) ? "hermes" : null;
+    }
+    default:
+      return null;
+  }
+}
+
+const ruleFilePaths = Effect.gen(function* () {
   const path = yield* Path.Path;
   const homes = yield* agentHomes;
-  const files: Record<VibeBossAgentKind, string> = {
+  const files: Record<RuleTargetId, string> = {
     claude: path.join(homes.claude, "CLAUDE.md"),
     codex: path.join(homes.codex, "AGENTS.md"),
     agy: path.join(homes.gemini, "GEMINI.md"),
+    hermes: path.join(homes.hermes, "SOUL.md"),
   };
   return files;
 });
+
+interface RuleTarget {
+  readonly id: RuleTargetId;
+  readonly driver: string;
+  readonly providerInstanceIds: ReadonlyArray<string>;
+}
+
+/** Enabled providers grouped by the rule file they read, in provider order. */
+export function enabledRuleTargets(
+  providers: ReadonlyArray<ServerProvider>,
+): ReadonlyArray<RuleTarget> {
+  const targets = new Map<RuleTargetId, { driver: string; providerInstanceIds: Array<string> }>();
+  for (const provider of providers) {
+    const id = provider.enabled ? ruleTargetFor(provider) : null;
+    if (id === null) continue;
+    const target = targets.get(id) ?? { driver: provider.driver, providerInstanceIds: [] };
+    target.providerInstanceIds.push(provider.instanceId);
+    targets.set(id, target);
+  }
+  return [...targets.entries()].map(([id, target]) => ({ id, ...target }));
+}
 
 interface Paths {
   readonly dir: string;
   readonly configPath: string;
   readonly backupsDir: string;
   readonly previewOnly: boolean;
-  readonly real: Record<VibeBossAgentKind, string>;
-  readonly target: (kind: VibeBossAgentKind) => string;
+  readonly real: Record<RuleTargetId, string>;
+  readonly target: (id: RuleTargetId) => string;
 }
 
 const resolvePaths = Effect.gen(function* () {
   const config = yield* ServerConfig.ServerConfig;
   const path = yield* Path.Path;
-  const real = yield* realRuleFilePaths;
+  const real = yield* ruleFilePaths;
   const dir = path.join(config.stateDir, "vibeboss");
   // Dev servers must never overwrite the developer's real agent rule files.
   const previewOnly = config.devUrl !== undefined;
@@ -131,8 +171,8 @@ const resolvePaths = Effect.gen(function* () {
     backupsDir: path.join(dir, "backups"),
     previewOnly,
     real,
-    target: (kind) =>
-      previewOnly ? path.join(dir, "preview", kind, path.basename(real[kind])) : real[kind],
+    target: (id) =>
+      previewOnly ? path.join(dir, "preview", id, path.basename(real[id])) : real[id],
   };
   return paths;
 });
@@ -163,19 +203,68 @@ const writeConfig = (file: string, config: VibeBossConfig) =>
 
 const decodeConfig = Schema.decodeUnknownOption(Schema.fromJsonString(VibeBossConfigSchema));
 
+// First-version config, before members had names and the shared part became lead rules.
+const LegacyEntry = Schema.Struct({
+  id: Schema.String,
+  kind: Schema.String,
+  model: Schema.String,
+  effort: Schema.String,
+  use: Schema.String,
+});
+const LegacyConfig = Schema.Struct({
+  shared: Schema.String,
+  coop: Schema.String,
+  perAgent: Schema.Record(Schema.String, Schema.String),
+  lead: LegacyEntry,
+  helpers: Schema.Array(LegacyEntry),
+});
+const decodeLegacyConfig = Schema.decodeUnknownOption(Schema.fromJsonString(LegacyConfig));
+const LEGACY_INSTANCE: Record<string, string> = {
+  claude: "claudeAgent",
+  codex: "codex",
+  agy: "antigravity",
+};
+const LEGACY_NAME: Record<string, string> = {
+  "agy-review": "reviewer",
+  "codex-frontend": "frontend",
+  "codex-backend": "backend",
+};
+
+export function migrateLegacyConfig(legacy: typeof LegacyConfig.Type): VibeBossConfig {
+  const instance = (kind: string) => LEGACY_INSTANCE[kind] ?? kind;
+  // The first version's default guide had no member names; the new default does.
+  const keepsDefaultGuide = legacy.coop.includes("收到别人派来的任务时");
+  return {
+    version: 2,
+    leadRules: [legacy.shared.trim(), keepsDefaultGuide ? DEFAULT_LEAD_RULES : legacy.coop.trim()]
+      .filter((part) => part !== "")
+      .join("\n\n"),
+    perAgent: legacy.perAgent,
+    lead: { providerInstanceId: instance(legacy.lead.kind), note: legacy.lead.use },
+    members: legacy.helpers.map((entry) => ({
+      id: entry.id,
+      name: LEGACY_NAME[entry.id] ?? entry.id,
+      providerInstanceId: instance(entry.kind),
+      model: entry.model,
+      effort: entry.effort,
+      note: entry.use,
+    })),
+  };
+}
+
 /** First run: keep each agent's existing global rules as its own part, so syncing loses nothing. */
 const importInitialConfig = Effect.fn("VibeBoss.importInitialConfig")(function* (paths: Paths) {
-  const perAgent = { claude: "", codex: "", agy: "" };
-  for (const kind of KINDS) {
-    const current = yield* readTextIfExists(paths.real[kind]);
-    perAgent[kind] = current === null ? "" : stripGenerated(current);
+  const perAgent: Record<string, string> = {};
+  for (const id of Object.keys(paths.real) as Array<RuleTargetId>) {
+    const current = yield* readTextIfExists(paths.real[id]);
+    if (current !== null) perAgent[id] = stripGenerated(current);
   }
   const config: VibeBossConfig = {
-    shared: "",
-    coop: DEFAULT_COOP,
+    version: 2,
+    leadRules: DEFAULT_LEAD_RULES,
     perAgent,
-    lead: DEFAULT_LEAD,
-    helpers: DEFAULT_HELPERS,
+    lead: { providerInstanceId: "claudeAgent", note: "和用户对话、出方案、做设计和验收" },
+    members: DEFAULT_MEMBERS,
   };
   return config;
 });
@@ -184,22 +273,69 @@ function stripGenerated(text: string): string {
   return text.startsWith(GENERATED_MARKER) ? "" : text.trim();
 }
 
-function describeAgent(entry: VibeBossAgentEntry): string {
-  return [AGENT_LABEL[entry.kind], entry.model, entry.effort]
-    .filter((part) => part.trim())
-    .join(" ");
+function providerLabel(providers: ReadonlyArray<ServerProvider>, instanceId: string): string {
+  const provider = providers.find((item) => item.instanceId === instanceId);
+  if (provider === undefined) return instanceId;
+  const target = ruleTargetFor(provider);
+  return provider.displayName ?? (target === null ? instanceId : RULE_TARGET_LABEL[target]);
 }
 
-export function renderRuleFile(config: VibeBossConfig, kind: VibeBossAgentKind): string {
-  const team = [
-    `- 主控：${describeAgent(config.lead)}（${config.lead.use}）`,
-    ...config.helpers.map((entry) => `- ${describeAgent(entry)}：${entry.use}`),
-  ].join("\n");
-  const sections = [
-    config.shared.trim(),
-    config.coop.trim() ? `## 协作说明\n\n${config.coop.trim()}\n\n### 智能体分工\n\n${team}` : "",
-    config.perAgent[kind].trim(),
-  ].filter((section) => section !== "");
+function delegateCall(member: VibeBossMember): string {
+  const target = JSON.stringify(
+    member.model.trim() === ""
+      ? { providerInstanceId: member.providerInstanceId }
+      : { providerInstanceId: member.providerInstanceId, model: member.model.trim() },
+  );
+  const effort =
+    member.effort.trim() === ""
+      ? ""
+      : `；档位 ${member.effort.trim()}，按 orchestrator_capabilities 里这个智能体的档位参数传`;
+  return `delegate_task，target = ${target}${effort}`;
+}
+
+const MENTION = /@([\p{L}\p{N}_-]+)/gu;
+
+/** `@name` stays readable and gains the member's current agent, so swapping agents needs no edit. */
+function expandMentions(
+  text: string,
+  members: ReadonlyArray<VibeBossMember>,
+  providers: ReadonlyArray<ServerProvider>,
+): string {
+  return text.replace(MENTION, (token, name: string) => {
+    const member = members.find((item) => item.name === name);
+    return member === undefined
+      ? token
+      : `@${name}（派给 ${providerLabel(providers, member.providerInstanceId)}）`;
+  });
+}
+
+export function renderRuleFile(
+  config: VibeBossConfig,
+  targetId: string,
+  isLead: boolean,
+  providers: ReadonlyArray<ServerProvider>,
+): string {
+  const team = config.members
+    .filter((member) => member.name.trim() !== "")
+    .map(
+      (member) =>
+        `- @${member.name}：${providerLabel(providers, member.providerInstanceId)}。派活用 ${delegateCall(member)}。`,
+    )
+    .join("\n");
+  const leadSection =
+    isLead && config.leadRules.trim() !== ""
+      ? [
+          "## 主控规则",
+          "只在你作为主控、直接和用户对话时适用。",
+          expandMentions(config.leadRules.trim(), config.members, providers),
+          team === "" ? "" : `### 成员\n\n${team}`,
+        ]
+          .filter((part) => part !== "")
+          .join("\n\n")
+      : "";
+  const sections = [(config.perAgent[targetId] ?? "").trim(), leadSection, WORKER_RULES].filter(
+    (section) => section !== "",
+  );
   return `${GENERATED_MARKER}\n\n${sections.join("\n\n")}\n`;
 }
 
@@ -207,25 +343,46 @@ const loadConfig = Effect.fn("VibeBoss.loadConfig")(function* (paths: Paths) {
   const raw = yield* readTextIfExists(paths.configPath);
   if (raw !== null) {
     const decoded = decodeConfig(raw);
-    if (decoded._tag === "Some") return decoded.value;
+    if (Option.isSome(decoded)) return decoded.value;
+    const legacy = decodeLegacyConfig(raw);
+    if (Option.isSome(legacy)) {
+      const migrated = migrateLegacyConfig(legacy.value);
+      yield* writeConfig(paths.configPath, migrated);
+      return migrated;
+    }
   }
   const imported = yield* importInitialConfig(paths);
   yield* writeConfig(paths.configPath, imported);
   return imported;
 });
 
+function leadTargetId(
+  config: VibeBossConfig,
+  providers: ReadonlyArray<ServerProvider>,
+): RuleTargetId | null {
+  const lead = providers.find((item) => item.instanceId === config.lead.providerInstanceId);
+  return lead === undefined || !lead.enabled ? null : ruleTargetFor(lead);
+}
+
 const buildState = Effect.fn("VibeBoss.buildState")(function* (
   paths: Paths,
   config: VibeBossConfig,
+  providers: ReadonlyArray<ServerProvider>,
 ) {
+  const leadId = leadTargetId(config, providers);
   const files: Array<VibeBossRuleFile> = [];
-  for (const kind of KINDS) {
-    const path = paths.target(kind);
+  for (const target of enabledRuleTargets(providers)) {
+    const path = paths.target(target.id);
     const current = yield* readTextIfExists(path);
-    const generated = renderRuleFile(config, kind);
+    const generated = renderRuleFile(config, target.id, target.id === leadId, providers);
     files.push({
-      kind,
+      targetId: target.id,
+      label: RULE_TARGET_LABEL[target.id],
+      driver: target.driver,
+      providerInstanceIds: target.providerInstanceIds,
+      agentPath: paths.real[target.id],
       path,
+      isLead: target.id === leadId,
       exists: current !== null,
       current: current ?? "",
       generated,
@@ -235,44 +392,53 @@ const buildState = Effect.fn("VibeBoss.buildState")(function* (
   const state: VibeBossState = {
     config,
     files,
+    leadTargetId: leadId,
     previewOnly: paths.previewOnly,
     configPath: paths.configPath,
   };
   return state;
 });
 
-export const getState = Effect.fn("VibeBoss.getState")(function* () {
+export const getState = Effect.fn("VibeBoss.getState")(function* (
+  providers: ReadonlyArray<ServerProvider>,
+) {
   const paths = yield* resolvePaths;
   const config = yield* loadConfig(paths);
-  return yield* buildState(paths, config);
+  return yield* buildState(paths, config, providers);
 });
 
-export const saveConfig = Effect.fn("VibeBoss.saveConfig")(function* (config: VibeBossConfig) {
+export const saveConfig = Effect.fn("VibeBoss.saveConfig")(function* (
+  config: VibeBossConfig,
+  providers: ReadonlyArray<ServerProvider>,
+) {
   const paths = yield* resolvePaths;
   yield* writeConfig(paths.configPath, config);
-  return yield* buildState(paths, config);
+  return yield* buildState(paths, config, providers);
 });
 
-/** Writes the three rule files, backing up any file whose content would change. */
-export const syncRules = Effect.fn("VibeBoss.syncRules")(function* () {
+/** Writes the enabled agents' rule files, backing up any file whose content would change. */
+export const syncRules = Effect.fn("VibeBoss.syncRules")(function* (
+  providers: ReadonlyArray<ServerProvider>,
+) {
   const paths = yield* resolvePaths;
-  const config = yield* loadConfig(paths);
   const path = yield* Path.Path;
+  const config = yield* loadConfig(paths);
+  const leadId = leadTargetId(config, providers);
   const stamp = DateTime.formatIso(yield* DateTime.now).replaceAll(":", "-");
   const backups: Array<string> = [];
-  for (const kind of KINDS) {
-    const target = paths.target(kind);
-    const current = yield* readTextIfExists(target);
-    const generated = renderRuleFile(config, kind);
+  for (const target of enabledRuleTargets(providers)) {
+    const file = paths.target(target.id);
+    const current = yield* readTextIfExists(file);
+    const generated = renderRuleFile(config, target.id, target.id === leadId, providers);
     if (current === generated) continue;
     if (current !== null) {
-      const backup = path.join(paths.backupsDir, stamp, `${kind}-${path.basename(target)}`);
+      const backup = path.join(paths.backupsDir, stamp, `${target.id}-${path.basename(file)}`);
       yield* writeText(backup, current);
       backups.push(backup);
     }
-    yield* writeText(target, generated);
+    yield* writeText(file, generated);
   }
-  const state = yield* buildState(paths, config);
+  const state = yield* buildState(paths, config, providers);
   const result: VibeBossSyncResult = { state, backups };
   return result;
 });

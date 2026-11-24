@@ -1,35 +1,83 @@
-import type { VibeBossConfig } from "@t3tools/contracts";
+import type { ServerProvider, VibeBossConfig } from "@t3tools/contracts";
 import { assert, it } from "@effect/vitest";
 
-import { renderRuleFile } from "./VibeBoss.ts";
+import { enabledRuleTargets, migrateLegacyConfig, renderRuleFile } from "./VibeBoss.ts";
+
+const provider = (instanceId: string, driver: string, extra: Partial<ServerProvider> = {}) =>
+  ({ instanceId, driver, enabled: true, ...extra }) as unknown as ServerProvider;
+
+const providers = [
+  provider("claudeAgent", "claudeAgent"),
+  provider("codex", "codex"),
+  provider("antigravity", "antigravity", { enabled: false }),
+  provider("hermes-agent", "acpRegistry", { displayName: "Hermes" } as Partial<ServerProvider>),
+  provider("other-acp", "acpRegistry"),
+];
 
 const config: VibeBossConfig = {
-  shared: "- 用中文回答",
-  coop: "- 小事自己做",
-  perAgent: {
-    claude: "# 原来的 CLAUDE.md\n\n- 改全再说做完",
-    codex: "- 汇报先写结论",
-    agy: "",
-  },
-  lead: { id: "lead", kind: "claude", model: "", effort: "", use: "和用户对话" },
-  helpers: [{ id: "a", kind: "codex", model: "GPT-6.2 Astra", effort: "xhigh", use: "写后端" }],
+  version: 2,
+  leadRules: "- 写后端交给 @worker",
+  perAgent: { claude: "# 原来的 CLAUDE.md\n\n- 改全再说做完", codex: "- 汇报先写结论" },
+  lead: { providerInstanceId: "claudeAgent", note: "和用户对话" },
+  members: [
+    {
+      id: "w",
+      name: "worker",
+      providerInstanceId: "codex",
+      model: "GPT-6.2 Astra",
+      effort: "xhigh",
+      note: "只给人看的备注",
+    },
+  ],
 };
 
-it("keeps each agent's own rules verbatim after the shared parts", () => {
-  const claude = renderRuleFile(config, "claude");
-  assert.include(claude, "# 原来的 CLAUDE.md\n\n- 改全再说做完");
-  assert.include(claude, "- 用中文回答");
-  assert.isBelow(claude.indexOf("- 用中文回答"), claude.indexOf("# 原来的 CLAUDE.md"));
-  assert.notInclude(claude, "- 汇报先写结论");
+it("lists a rule file for each enabled agent whose file is known, Hermes included", () => {
+  assert.deepStrictEqual(
+    enabledRuleTargets(providers).map((target) => target.id),
+    ["claude", "codex", "hermes"],
+  );
 });
 
-it("lists the agent table under the collaboration guide", () => {
-  const codex = renderRuleFile(config, "codex");
-  assert.include(codex, "## 协作说明\n\n- 小事自己做");
-  assert.include(codex, "- 主控：Claude（和用户对话）");
-  assert.include(codex, "- Codex GPT-6.2 Astra xhigh：写后端");
+it("writes lead rules only into the lead's file and keeps each agent's own rules verbatim", () => {
+  const claude = renderRuleFile(config, "claude", true, providers);
+  const codex = renderRuleFile(config, "codex", false, providers);
+  assert.include(claude, "# 原来的 CLAUDE.md\n\n- 改全再说做完");
+  assert.include(claude, "## 主控规则");
+  assert.notInclude(codex, "## 主控规则");
+  assert.include(codex, "收到主控派来的任务时");
+  assert.notInclude(claude, "只给人看的备注");
+});
+
+it("expands @member to its current agent and delegate call, so swapping agents needs no edit", () => {
+  const claude = renderRuleFile(config, "claude", true, providers);
+  assert.include(claude, "@worker（派给 Codex）");
+  assert.include(claude, '"providerInstanceId":"codex"');
+  const swapped = renderRuleFile(
+    { ...config, members: [{ ...config.members[0]!, providerInstanceId: "claudeAgent" }] },
+    "claude",
+    true,
+    providers,
+  );
+  assert.include(swapped, "@worker（派给 Claude）");
+  assert.include(swapped, '"providerInstanceId":"claudeAgent"');
+});
+
+it("migrates the first config version without losing an agent's own rules", () => {
+  const migrated = migrateLegacyConfig({
+    shared: "",
+    coop: "- 收到别人派来的任务时，只做这件事，不再往下派。",
+    perAgent: { claude: "原样保留" },
+    lead: { id: "lead", kind: "claude", model: "", effort: "", use: "对话" },
+    helpers: [{ id: "codex-backend", kind: "codex", model: "m", effort: "xhigh", use: "后端" }],
+  });
+  assert.strictEqual(migrated.perAgent.claude, "原样保留");
+  assert.strictEqual(migrated.lead.providerInstanceId, "claudeAgent");
+  assert.strictEqual(migrated.members[0]?.name, "backend");
+  assert.include(migrated.leadRules, "@backend");
 });
 
 it("marks the file as generated so a later import does not treat it as hand-written", () => {
-  assert.isTrue(renderRuleFile(config, "agy").startsWith("<!-- 由 VibeBoss 生成"));
+  assert.isTrue(
+    renderRuleFile(config, "codex", false, providers).startsWith("<!-- 由 VibeBoss 生成"),
+  );
 });
