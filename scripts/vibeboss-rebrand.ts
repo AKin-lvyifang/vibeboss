@@ -27,7 +27,8 @@ const walk = (dir: string) => {
     return;
   }
   for (const name of entries) {
-    if (name === "node_modules" || name === "dist") continue;
+    // triage/ must stay byte-identical to upstream's .github/triage/PLAYBOOK.md.
+    if (name === "node_modules" || name === "dist" || name === "triage") continue;
     const path = join(dir, name);
     if (statSync(path).isDirectory()) walk(path);
     else if (extensions.test(name)) {
