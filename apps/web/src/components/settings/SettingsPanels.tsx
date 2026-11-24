@@ -127,6 +127,7 @@ import { StorageCleanupSections } from "./StorageSettings";
 import { UpdateTrackSwitchDialog } from "./UpdateTrackSwitchDialog";
 import { environmentIdsKey } from "~/state/environmentAtomList";
 import { environmentSessionStatesAtom } from "~/state/session";
+import { VIBEBOSS_T3_TELEMETRY } from "~/vibeboss";
 import { useCheckProviderUpdates } from "../ProviderUpdatesAction";
 import { canUpdateServer } from "../ServerUpdateAction";
 import { downloadLocalUpdate } from "../sidebar/SidebarUpdatePill";
@@ -2578,23 +2579,27 @@ export function AboutSettingsPanel() {
       </SettingsSection>
 
       <SettingsSection id="legal" title={gt("Legal")}>
-        <SettingsRow
-          {...setting("privacy-policy")}
-          description={
-            telemetryOff === undefined
-              ? gt("How we handle your data, including the anonymous usage data T3 Code collects.")
-              : gt("How we handle your data. {telemetryOff}", { telemetryOff })
-          }
-          control={
-            <Button
-              render={<a href={PRIVACY_POLICY_URL} target="_blank" rel="noreferrer noopener" />}
-              size="sm"
-              variant="outline"
-            >
-              <T>View policy</T>
-            </Button>
-          }
-        />
+        {VIBEBOSS_T3_TELEMETRY ? (
+          <SettingsRow
+            {...setting("privacy-policy")}
+            description={
+              telemetryOff === undefined
+                ? gt(
+                    "How we handle your data, including the anonymous usage data T3 Code collects.",
+                  )
+                : gt("How we handle your data. {telemetryOff}", { telemetryOff })
+            }
+            control={
+              <Button
+                render={<a href={PRIVACY_POLICY_URL} target="_blank" rel="noreferrer noopener" />}
+                size="sm"
+                variant="outline"
+              >
+                <T>View policy</T>
+              </Button>
+            }
+          />
+        ) : null}
         <SettingsRow
           {...setting("open-source-licenses")}
           description={gt("Notices for dependencies, assets, and optional tools used by T3 Code.")}

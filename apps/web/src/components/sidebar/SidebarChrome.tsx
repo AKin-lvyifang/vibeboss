@@ -95,7 +95,8 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
           aria-label={gt("Toggle main sidebar")}
         />
       </div>
-      <div className="relative z-10 flex h-8 min-w-0 flex-1 flex-wrap content-start items-center gap-x-2 overflow-hidden py-0.5">
+      {/* No z-index here: the title must share a stacking context with the mascot to blend with it. */}
+      <div className="relative flex h-8 min-w-0 flex-1 flex-wrap content-start items-center gap-x-2 overflow-hidden py-0.5">
         <div className="flex shrink-0 items-center gap-1">
           <SidebarBrand onBackdrop={false} />
           {isElectron ? (
@@ -193,7 +194,7 @@ function SidebarBrand({ onBackdrop }: { onBackdrop: boolean }) {
     <Link
       aria-label={gt("VibeBoss home")}
       className={cn(
-        "relative z-10 ml-[var(--workspace-titlebar-content-left)] hidden h-7 w-fit min-w-0 shrink-0 items-center overflow-hidden rounded-md outline-hidden ring-ring focus-visible:ring-2 focus-visible:ring-inset md:flex",
+        "relative ml-[var(--workspace-titlebar-content-left)] hidden h-7 w-fit min-w-0 shrink-0 items-center overflow-hidden rounded-md outline-hidden ring-ring focus-visible:ring-2 focus-visible:ring-inset md:flex",
         onBackdrop ? "text-white" : "text-foreground",
       )}
       to="/"
@@ -203,14 +204,11 @@ function SidebarBrand({ onBackdrop }: { onBackdrop: boolean }) {
   );
 }
 
-function SidebarBrandMark({ onBackdrop }: { onBackdrop: boolean }) {
+function SidebarBrandMark({ onBackdrop: _onBackdrop }: { onBackdrop: boolean }) {
   return (
-    <span
-      className={cn(
-        "truncate font-semibold text-sm tracking-tight",
-        onBackdrop ? "text-white" : "text-foreground",
-      )}
-    >
+    // White under "difference" blending inverts whatever is behind it, pixel by pixel:
+    // dark over the light band, light over the mascot's sunglasses or a dark theme.
+    <span className="truncate font-semibold text-sm tracking-tight text-white mix-blend-difference">
       {"VibeBoss"}
     </span>
   );

@@ -116,6 +116,7 @@ import { toastManager } from "../ui/toast";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
 import { cn } from "../../lib/utils";
 import { formatRelativeTime } from "../../timestampFormat";
+import { VIBEBOSS_T3_TELEMETRY } from "../../vibeboss";
 
 const AGENT_ONBOARDING_THREAD_ID = ThreadId.make("onboarding-agent-setup");
 const SCAN_LIMIT_MESSAGE = msg(
@@ -335,7 +336,7 @@ export function WelcomePage({
                 </Button>
               </div>
             </div>
-            <TelemetryNotice environmentId={environmentId} />
+            {VIBEBOSS_T3_TELEMETRY ? <TelemetryNotice environmentId={environmentId} /> : null}
           </div>
         </div>
       </div>
