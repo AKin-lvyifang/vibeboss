@@ -14,6 +14,7 @@ import {
   type VibeBossState,
   type VibeBossSyncResult,
 } from "@t3tools/contracts";
+import { resolveSelectableModel } from "@t3tools/shared/model";
 import * as Config from "effect/Config";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -280,17 +281,51 @@ function providerLabel(providers: ReadonlyArray<ServerProvider>, instanceId: str
   return provider.displayName ?? (target === null ? instanceId : RULE_TARGET_LABEL[target]);
 }
 
-function delegateCall(member: VibeBossMember): string {
-  const target = JSON.stringify(
-    member.model.trim() === ""
-      ? { providerInstanceId: member.providerInstanceId }
-      : { providerInstanceId: member.providerInstanceId, model: member.model.trim() },
-  );
+const EFFORT_OPTION_IDS: ReadonlySet<string> = new Set([
+  "reasoningEffort",
+  "effort",
+  "reasoning",
+  "variant",
+]);
+
+/** The member's model as the slug `delegate_task` takes, and its effort as that model's own option. */
+function delegateTarget(member: VibeBossMember, providers: ReadonlyArray<ServerProvider>) {
+  const provider = providers.find((item) => item.instanceId === member.providerInstanceId);
+  const models = provider?.models ?? [];
+  const typed = member.model.trim();
+  const slug =
+    provider === undefined ? null : resolveSelectableModel(provider.driver, typed, models);
+  const effortDescriptor = models
+    .find((model) => model.slug === slug)
+    ?.capabilities?.optionDescriptors?.find(
+      (descriptor) =>
+        descriptor.type === "select" &&
+        (descriptor.role === "reasoning" || EFFORT_OPTION_IDS.has(descriptor.id)),
+    );
+  const effort = member.effort.trim().toLowerCase();
+  const effortChoice =
+    effortDescriptor?.type === "select" && effort !== ""
+      ? effortDescriptor.options.find(
+          (option) => option.id.toLowerCase() === effort || option.label.toLowerCase() === effort,
+        )
+      : undefined;
+  return {
+    providerInstanceId: member.providerInstanceId,
+    ...(slug !== null ? { model: slug } : typed !== "" ? { model: typed } : {}),
+    ...(effortDescriptor !== undefined && effortChoice !== undefined
+      ? { options: [{ id: effortDescriptor.id, value: effortChoice.id }] }
+      : {}),
+  };
+}
+
+function delegateCall(member: VibeBossMember, providers: ReadonlyArray<ServerProvider>): string {
+  const target = delegateTarget(member, providers);
+  // When the model has no matching effort option, leave the level for the lead to look up.
   const effort =
-    member.effort.trim() === ""
-      ? ""
-      : `；档位 ${member.effort.trim()}，按 orchestrator_capabilities 里这个智能体的档位参数传`;
-  return `delegate_task，target = ${target}${effort}`;
+    target.options === undefined && member.effort.trim() !== ""
+      ? `；档位 ${member.effort.trim()}，按 orchestrator_capabilities 里这个智能体的档位参数传`
+      : "";
+  return `delegate_task，target = ${JSON.stringify(target)}${effort}`;
 }
 
 const MENTION = /@([\p{L}\p{N}_-]+)/gu;
@@ -319,7 +354,7 @@ export function renderRuleFile(
     .filter((member) => member.name.trim() !== "")
     .map(
       (member) =>
-        `- @${member.name}：${providerLabel(providers, member.providerInstanceId)}。派活用 ${delegateCall(member)}。`,
+        `- @${member.name}：${providerLabel(providers, member.providerInstanceId)}。派活用 ${delegateCall(member, providers)}。`,
     )
     .join("\n");
   const leadSection =

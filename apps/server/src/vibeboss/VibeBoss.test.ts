@@ -81,3 +81,39 @@ it("marks the file as generated so a later import does not treat it as hand-writ
     renderRuleFile(config, "codex", false, providers).startsWith("<!-- 由 VibeBoss 生成"),
   );
 });
+
+it("passes the member's model slug and effort option straight into delegate_task", () => {
+  const withModels = providers.map((item) =>
+    item.instanceId === "codex"
+      ? ({
+          ...item,
+          models: [
+            {
+              slug: "gpt-6.2-astra",
+              name: "GPT-6.2 Astra",
+              isCustom: false,
+              capabilities: {
+                optionDescriptors: [
+                  {
+                    id: "reasoningEffort",
+                    label: "Reasoning",
+                    type: "select",
+                    options: [
+                      { id: "high", label: "High" },
+                      { id: "xhigh", label: "Extra high" },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        } as unknown as ServerProvider)
+      : item,
+  );
+  const claude = renderRuleFile(config, "claude", true, withModels);
+  assert.include(
+    claude,
+    '{"providerInstanceId":"codex","model":"gpt-6.2-astra","options":[{"id":"reasoningEffort","value":"xhigh"}]}',
+  );
+  assert.notInclude(claude, "按 orchestrator_capabilities");
+});

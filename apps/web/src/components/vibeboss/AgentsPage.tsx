@@ -7,6 +7,7 @@ import { useAtomCommand } from "../../state/use-atom-command";
 import { vibeBossEnvironment } from "../../state/vibeboss";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { EffortSelect, ModelSelect, NoteField, effortLevels, memberModel } from "./MemberFields";
 import {
   ProviderSelect,
   VibeBossPage,
@@ -82,6 +83,9 @@ export function AgentsPage() {
     });
   };
 
+  const providerOf = (member: VibeBossMember) =>
+    providers.find((provider) => provider.instanceId === member.providerInstanceId);
+
   const names = config?.members.map((member) => member.name) ?? [];
   const invalidName = (name: string) =>
     !NAME_PATTERN.test(name) || names.filter((item) => item === name).length > 1;
@@ -144,13 +148,9 @@ export function AgentsPage() {
                     </span>
                   </Cell>
                   <Cell>
-                    <Input
-                      size="sm"
-                      aria-label={gt("Note")}
+                    <NoteField
                       value={config.lead.note}
-                      onChange={(event) =>
-                        update({ lead: { ...config.lead, note: event.target.value } })
-                      }
+                      onChange={(note) => update({ lead: { ...config.lead, note } })}
                     />
                   </Cell>
                   <Cell />
@@ -183,38 +183,42 @@ export function AgentsPage() {
                         value={member.providerInstanceId}
                         providers={providers}
                         onChange={(providerInstanceId) =>
-                          updateMember(member, { ...member, providerInstanceId })
+                          // Models and levels belong to one agent; start fresh on a swap.
+                          updateMember(member, {
+                            ...member,
+                            providerInstanceId,
+                            model: "",
+                            effort: "",
+                          })
                         }
                       />
                     </Cell>
                     <Cell>
-                      <Input
-                        size="sm"
-                        aria-label={gt("Model")}
+                      <ModelSelect
+                        provider={providerOf(member)}
                         value={member.model}
-                        onChange={(event) =>
-                          updateMember(member, { ...member, model: event.target.value })
-                        }
+                        onChange={(model) => {
+                          const levels = effortLevels(memberModel(providerOf(member), model));
+                          const keep = levels.some((level) => level.id === member.effort);
+                          updateMember(member, {
+                            ...member,
+                            model,
+                            effort: keep ? member.effort : "",
+                          });
+                        }}
                       />
                     </Cell>
                     <Cell>
-                      <Input
-                        size="sm"
-                        aria-label={gt("Effort", { $context: "reasoning effort level of a model" })}
+                      <EffortSelect
+                        model={memberModel(providerOf(member), member.model)}
                         value={member.effort}
-                        onChange={(event) =>
-                          updateMember(member, { ...member, effort: event.target.value })
-                        }
+                        onChange={(effort) => updateMember(member, { ...member, effort })}
                       />
                     </Cell>
                     <Cell>
-                      <Input
-                        size="sm"
-                        aria-label={gt("Note")}
+                      <NoteField
                         value={member.note}
-                        onChange={(event) =>
-                          updateMember(member, { ...member, note: event.target.value })
-                        }
+                        onChange={(note) => updateMember(member, { ...member, note })}
                       />
                     </Cell>
                     <Cell>
