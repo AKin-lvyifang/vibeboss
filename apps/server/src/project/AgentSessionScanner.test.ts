@@ -1992,7 +1992,7 @@ it.layer(NodeServices.layer)("AgentSessionScanner", (it) => {
     );
 
     it.effect.each([{ layout: "plain" }, { layout: "symlinked into Downloads" }] as const)(
-      "does not file T3 sandbox chats under the Codex project they were moved into ($layout base dir)",
+      "does not file VibeBoss sandbox chats under the Codex project they were moved into ($layout base dir)",
       ({ layout }) =>
         Effect.gen(function* () {
           const fileSystem = yield* FileSystem.FileSystem;
@@ -2026,7 +2026,7 @@ it.layer(NodeServices.layer)("AgentSessionScanner", (it) => {
             {
               id: "019a5f00-0000-7000-8000-00000000010b",
               cwd: sandboxDir,
-              message: "Started in a T3 worktree",
+              message: "Started in a VibeBoss worktree",
             },
           ];
           const rolloutPaths: Array<string> = [];

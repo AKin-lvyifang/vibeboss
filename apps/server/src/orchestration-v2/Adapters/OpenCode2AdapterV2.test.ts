@@ -1545,7 +1545,7 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
       const watch = yield* watchBackgroundTurn(runtime);
       yield* runtime.startTurn(withLineage(thread));
       yield* watch.attached;
-      // The child's nested T3 MCP results live under the root thread and outlive its turn.
+      // The child's nested VibeBoss MCP results live under the root thread and outlive its turn.
       const childResult = { message: "Child note" };
       yield* mcpSessions.recordToolResult(threadId, "send_to_user", childResult, {
         sentMessage: childResult.message,

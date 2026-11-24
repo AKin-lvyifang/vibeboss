@@ -1,3 +1,4 @@
+// @effect-diagnostics nodeBuiltinImport:off globalConsole:off - a one-shot rename script; sync Node APIs keep it small.
 // VibeBoss: rewrites upstream "T3 Code" / "T3 <thing>" wording; idempotent, re-run after upstream merges.
 // Web components are skipped because gt keys hash their English source; translations carry that copy.
 import * as NodeFS from "node:fs";

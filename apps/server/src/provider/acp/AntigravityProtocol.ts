@@ -396,9 +396,9 @@ function stripAntigravityToolSummary(value: unknown): unknown {
 }
 
 /**
- * agy adds its own `toolSummary` to MCP call arguments. T3 records its MCP results under the
+ * agy adds its own `toolSummary` to MCP call arguments. VibeBoss records its MCP results under the
  * arguments it received, so the summary is dropped before the shared adapter matches them.
- * Untitled updates cannot be identified and are stripped too; titled non-T3 calls keep it.
+ * Untitled updates cannot be identified and are stripped too; titled non-VibeBoss calls keep it.
  */
 function withoutT3McpToolSummary(
   update: Extract<

@@ -402,7 +402,7 @@ describe("Pi MCP tool schemas", () => {
     }
   });
 
-  it("records each T3 schema once on Pi, which keeps hidden alias declarations in the transcript", async () => {
+  it("records each VibeBoss schema once on Pi, which keeps hidden alias declarations in the transcript", async () => {
     const inputSchema = {
       type: "object",
       properties: { depth: { type: "number", description: "Snapshot depth" } },

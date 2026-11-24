@@ -733,7 +733,7 @@ describe("Antigravity served reads", () => {
     });
   });
 
-  it("drops agy's toolSummary from T3 MCP call arguments only", () => {
+  it("drops agy's toolSummary from VibeBoss MCP call arguments only", () => {
     const t3Call = normalizeAntigravityToolCall(
       parseToolUpdate(
         normalizeAntigravitySessionUpdate({

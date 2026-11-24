@@ -996,7 +996,7 @@ describe("AntigravityAdapterV2 html_render pages", () => {
   );
 
   it.effect(
-    "recovers T3 MCP tool results across omitted outputs, replays, errors, and turn boundaries",
+    "recovers VibeBoss MCP tool results across omitted outputs, replays, errors, and turn boundaries",
     () =>
       Effect.gen(function* () {
         const childProcessSpawner = yield* ChildProcessSpawner.ChildProcessSpawner;
