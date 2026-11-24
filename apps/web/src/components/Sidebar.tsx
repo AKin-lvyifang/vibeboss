@@ -270,6 +270,7 @@ import {
   SplitProjectList,
 } from "./sidebar/VibeBossSplitView";
 import {
+  type CustomSection,
   useCollapsedSections,
   useProjectSections,
   useSplitByProject,
@@ -1236,10 +1237,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     return sectionId !== undefined && splitSectionIds.has(sectionId) ? sectionId : null;
   };
   const updateSplitSections = (
-    update: (sections: ReadonlyArray<{ id: string; name: string }>) => ReadonlyArray<{
-      id: string;
-      name: string;
-    }>,
+    update: (sections: ReadonlyArray<CustomSection>) => ReadonlyArray<CustomSection>,
   ) => {
     if (!splitProject) return;
     const key = splitProject.projectKey;
@@ -3433,55 +3431,81 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                       onDraftContextMenu={handleDraftContextMenu}
                     />,
                   ];
-                  // VibeBoss split view: user sections sit after Active, above the shelves.
+                  // VibeBoss split view: pinned sections sit after pinned threads; the rest after
+                  // Active, above the shelves.
+                  let pinnedSectionsPlaced = false;
                   let customSectionsPlaced = false;
+                  const placePinnedSections = () => {
+                    if (pinnedSectionsPlaced) return;
+                    pinnedSectionsPlaced = true;
+                    for (const section of splitSections) {
+                      if (section.pinned) placeSection(section);
+                    }
+                  };
                   const placeCustomSections = () => {
+                    placePinnedSections();
                     if (customSectionsPlaced) return;
                     customSectionsPlaced = true;
                     for (const section of splitSections) {
-                      const sectionThreads = activeThreads.filter(
-                        (thread) => sectionOfThread(threadShellKey(thread)) === section.id,
-                      );
-                      const collapsed = collapsedSections[section.id] === true;
-                      items.push(
-                        <CustomSectionHeader
-                          key={`custom-section:${section.id}`}
-                          section={section}
-                          count={sectionThreads.length}
-                          collapsed={collapsed}
-                          onToggle={() =>
-                            setCollapsedSections((current) => ({
-                              ...current,
-                              [section.id]: !collapsed,
-                            }))
-                          }
-                          onRename={(name) =>
-                            updateSplitSections((sections) =>
-                              sections.map((item) =>
-                                item.id === section.id ? { ...item, name } : item,
-                              ),
-                            )
-                          }
-                          onRemove={() => {
-                            updateSplitSections((sections) =>
-                              sections.filter((item) => item.id !== section.id),
-                            );
-                            setThreadSections((current) =>
-                              Object.fromEntries(
-                                Object.entries(current).filter(([, id]) => id !== section.id),
-                              ),
-                            );
-                          }}
-                        />,
-                      );
-                      if (!collapsed) {
-                        for (const thread of sectionThreads) {
-                          items.push(renderThreadRow(thread, "active"));
+                      if (!section.pinned) placeSection(section);
+                    }
+                  };
+                  const placeSection = (section: CustomSection) => {
+                    const sectionThreads = activeThreads.filter(
+                      (thread) => sectionOfThread(threadShellKey(thread)) === section.id,
+                    );
+                    const collapsed = collapsedSections[section.id] === true;
+                    items.push(
+                      <CustomSectionHeader
+                        key={`custom-section:${section.id}`}
+                        section={section}
+                        count={sectionThreads.length}
+                        collapsed={collapsed}
+                        onToggle={() =>
+                          setCollapsedSections((current) => ({
+                            ...current,
+                            [section.id]: !collapsed,
+                          }))
                         }
+                        onRename={(name) =>
+                          updateSplitSections((sections) =>
+                            sections.map((item) =>
+                              item.id === section.id ? { ...item, name } : item,
+                            ),
+                          )
+                        }
+                        onTogglePin={() =>
+                          updateSplitSections((sections) =>
+                            sections.map((item) =>
+                              item.id === section.id ? { ...item, pinned: !item.pinned } : item,
+                            ),
+                          )
+                        }
+                        onRemove={() => {
+                          updateSplitSections((sections) =>
+                            sections.filter((item) => item.id !== section.id),
+                          );
+                          setThreadSections((current) =>
+                            Object.fromEntries(
+                              Object.entries(current).filter(([, id]) => id !== section.id),
+                            ),
+                          );
+                        }}
+                      />,
+                    );
+                    if (!collapsed) {
+                      for (const thread of sectionThreads) {
+                        items.push(renderThreadRow(thread, "active"));
                       }
                     }
                   };
                   for (const item of sidebarListItems) {
+                    if (
+                      !(item.kind === "thread" && item.section === "pinned") &&
+                      !(item.kind !== "thread" && item.marker === "pinned-header")
+                    ) {
+                      placePinnedSections();
+                    }
                     if (item.kind === "thread") {
                       // Folders draw active rows in their own place below.
                       if (projectFolders !== null && item.section === "active") continue;

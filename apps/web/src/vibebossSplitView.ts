@@ -9,7 +9,11 @@ const ASSIGNMENTS_KEY = "vibeboss:thread-sections";
 const COLLAPSED_KEY = "vibeboss:collapsed-sections";
 const COLUMN_WIDTH_KEY = "vibeboss:split-column-width";
 
-const CustomSection = Schema.Struct({ id: Schema.String, name: Schema.String });
+const CustomSection = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  pinned: Schema.optional(Schema.Boolean),
+});
 export type CustomSection = typeof CustomSection.Type;
 
 /** Sections the user made inside a project; shown only in the split view. */

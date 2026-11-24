@@ -1,5 +1,12 @@
 import { T, useGT, Var } from "gt-react";
-import { Columns2Icon, ListPlusIcon, SquarePenIcon, XIcon } from "lucide-react";
+import {
+  Columns2Icon,
+  ListPlusIcon,
+  PinIcon,
+  PinOffIcon,
+  SquarePenIcon,
+  XIcon,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { cn } from "../../lib/utils";
@@ -124,6 +131,7 @@ export function CustomSectionHeader(props: {
   onToggle: () => void;
   onRename: (name: string) => void;
   onRemove: () => void;
+  onTogglePin: () => void;
 }) {
   const gt = useGT();
   const [editing, setEditing] = useState(props.section.name === "");
@@ -161,9 +169,33 @@ export function CustomSectionHeader(props: {
             onDoubleClick={() => setEditing(true)}
             accessory={<span className="font-normal tabular-nums">{props.count}</span>}
           >
-            {props.section.name}
+            <span className="inline-flex min-w-0 items-center gap-1">
+              {props.section.pinned ? <PinIcon aria-hidden className="size-3 shrink-0" /> : null}
+              <span className="truncate">{props.section.name}</span>
+            </span>
           </CollapsibleSectionHeader>
           <span className="absolute inset-y-0 right-10 flex items-center opacity-0 focus-within:opacity-100 group-hover/custom-section:opacity-100 pointer-coarse:opacity-100">
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    size="icon-xs"
+                    variant="ghost-muted"
+                    aria-label={
+                      props.section.pinned
+                        ? gt("Unpin section {name}", { name: props.section.name })
+                        : gt("Pin section {name}", { name: props.section.name })
+                    }
+                    onClick={props.onTogglePin}
+                  />
+                }
+              >
+                {props.section.pinned ? <PinOffIcon aria-hidden /> : <PinIcon aria-hidden />}
+              </TooltipTrigger>
+              <TooltipPopup>
+                {props.section.pinned ? gt("Unpin section") : gt("Pin section to the top")}
+              </TooltipPopup>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger
                 render={
