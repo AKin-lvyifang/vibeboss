@@ -15,6 +15,12 @@ module.exports = async ({ appOutDir, electronPlatformName, arch, packager }) => 
     console.log("[server-compile-cache] Skipping untrusted bundle");
     return;
   }
+  // VibeBoss: Windows builds natively on GitHub's runner; upstream cross-builds it, which skips
+  // this cache, and the cache's files push the payload past its file limit.
+  if (process.env.VIBEBOSS_SKIP_SERVER_COMPILE_CACHE === "true") {
+    console.log("[server-compile-cache] Skipping (VIBEBOSS_SKIP_SERVER_COMPILE_CACHE)");
+    return;
+  }
   const targetArch = ["ia32", "x64", "armv7l", "arm64", "universal"][arch];
   const runsWithRosetta =
     electronPlatformName === "darwin" &&
