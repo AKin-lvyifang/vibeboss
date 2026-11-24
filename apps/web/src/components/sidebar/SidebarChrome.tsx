@@ -1,13 +1,4 @@
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  BotIcon,
-  CalendarClockIcon,
-  ChartNoAxesColumnIcon,
-  PuzzleIcon,
-  ScrollTextIcon,
-  SettingsIcon,
-} from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { T, useGT } from "gt-react";
 import { memo } from "react";
@@ -29,6 +20,7 @@ import {
   useEnvironmentStageLabel,
 } from "../SidebarStageBackdrop";
 import fanggeHalfUrl from "../../assets/vibeboss-fangge-half.webp";
+import { useMascotLift, useMascotSide } from "../../vibebossAppearance";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import {
@@ -42,13 +34,20 @@ import {
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { readPullRequestListPreferences } from "../pullRequest/pullRequestListPreferences";
 import { readIssueListPreferences } from "../issue/issueListPreferences";
-import { IssueGlyph } from "../issue/issuePresentation";
 import { isSidebarUtilityPage, useNavigateToMainApp } from "./mainAppLocation";
 import { SidebarThreadUndoNotice } from "./SidebarThreadUndoNotice";
 import { SidebarProviderUpdatePill } from "./SidebarProviderUpdatePill";
 import { SidebarUpdateArchitectureWarning, SidebarUpdatePill } from "./SidebarUpdatePill";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
 import { observeResize } from "~/lib/observeResize";
+import { AnimateIcon } from "@animate-ui/react/icons";
+import { BlocksIcon } from "../animate-ui/icons/blocks";
+import { BotIcon } from "../animate-ui/icons/bot";
+import { CalendarClockIcon } from "../animate-ui/icons/calendar-clock";
+import { ChartNoAxesColumnIcon } from "../animate-ui/icons/chart-no-axes-column";
+import { CircleAlertIcon } from "../animate-ui/icons/circle-alert";
+import { RouteIcon } from "../animate-ui/icons/route";
+import { ScrollIcon } from "../animate-ui/icons/scroll";
+import { SettingsIcon } from "../animate-ui/icons/settings";
 
 export const SidebarChromeHeader = memo(function SidebarChromeHeader({
   isElectron,
@@ -58,6 +57,8 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
   const stageLabel = useEnvironmentStageLabel();
   const environmentIdentificationMode = useEnvironmentIdentificationMode();
   const gt = useGT();
+  const [mascotSide] = useMascotSide();
+  const [mascotLift] = useMascotLift();
   const pillLabel =
     environmentIdentificationMode === "pill"
       ? resolveEnvironmentIdentificationPillLabel(stageLabel)
@@ -79,7 +80,12 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
           src={fanggeHalfUrl}
           alt=""
           draggable={false}
-          className="absolute -top-8 right-2 h-20 w-auto opacity-90"
+          className={cn(
+            "absolute h-20 w-auto",
+            // Over the title the mascot stays faint so the name remains readable.
+            mascotSide === "right" ? "right-2 opacity-90" : "left-0 opacity-40",
+          )}
+          style={{ top: -mascotLift }}
         />
       </div>
       <div className="relative top-[calc(var(--workspace-controls-top)-env(safe-area-inset-top))] z-10 ml-[calc(var(--workspace-controls-left)+1px-env(safe-area-inset-left))] flex shrink-0 items-center md:hidden">
@@ -220,24 +226,22 @@ function SidebarUtilityItem({
   onClick: () => void;
 }) {
   return (
-    <SidebarMenuItem className="shrink-0">
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <SidebarMenuButton aria-label={label} onClick={onClick} size="icon">
-              {icon}
-            </SidebarMenuButton>
-          }
-        />
-        <TooltipPopup side="top">{label}</TooltipPopup>
-      </Tooltip>
-    </SidebarMenuItem>
+    <AnimateIcon animateOnHover asChild>
+      <SidebarMenuItem className="shrink-0">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <SidebarMenuButton aria-label={label} onClick={onClick} size="icon">
+                {icon}
+              </SidebarMenuButton>
+            }
+          />
+          <TooltipPopup side="top">{label}</TooltipPopup>
+        </Tooltip>
+      </SidebarMenuItem>
+    </AnimateIcon>
   );
 }
-
-// VibeBoss: every sidebar icon makes the same small move on hover and settles.
-const HOVER_ICON =
-  "transition-transform duration-300 ease-out motion-reduce:transition-none [button:hover>&]:-rotate-8 [button:hover>&]:scale-110";
 
 type VibeBossNavTarget =
   | "/settings/scheduled-tasks"
@@ -252,28 +256,29 @@ export const SidebarVibeBossNav = memo(function SidebarVibeBossNav() {
   const gt = useGT();
   const { isMobile, setOpenMobile } = useSidebar();
   const pathname = useLocation({ select: (location) => location.pathname });
-  const items: ReadonlyArray<{ to: VibeBossNavTarget; label: string; Icon: typeof BotIcon }> = [
-    { to: "/settings/scheduled-tasks", label: gt("Scheduled tasks"), Icon: CalendarClockIcon },
-    { to: "/usage", label: gt("Usage"), Icon: ChartNoAxesColumnIcon },
-    { to: "/agents", label: gt("Agents"), Icon: BotIcon },
-    { to: "/rules", label: gt("Rules"), Icon: ScrollTextIcon },
-    { to: "/capabilities", label: gt("Skills, MCP & plugins"), Icon: PuzzleIcon },
+  const items: ReadonlyArray<{ to: VibeBossNavTarget; label: string; icon: ReactNode }> = [
+    { to: "/settings/scheduled-tasks", label: gt("Scheduled tasks"), icon: <CalendarClockIcon /> },
+    { to: "/agents", label: gt("Agents"), icon: <BotIcon /> },
+    { to: "/rules", label: gt("Rules"), icon: <ScrollIcon /> },
+    { to: "/capabilities", label: gt("Skills, MCP & plugins"), icon: <BlocksIcon /> },
   ];
   return (
     <SidebarMenu className="mt-1">
-      {items.map(({ to, label, Icon }) => (
-        <SidebarMenuItem key={to}>
-          <SidebarMenuButton
-            isActive={pathname === to}
-            onClick={() => {
-              if (isMobile) setOpenMobile(false);
-              void navigate({ to });
-            }}
-          >
-            <Icon className={HOVER_ICON} />
-            <span>{label}</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+      {items.map(({ to, label, icon }) => (
+        <AnimateIcon key={to} animateOnHover asChild>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              isActive={pathname === to}
+              onClick={() => {
+                if (isMobile) setOpenMobile(false);
+                void navigate({ to });
+              }}
+            >
+              {icon}
+              <span>{label}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </AnimateIcon>
       ))}
     </SidebarMenu>
   );
@@ -329,24 +334,32 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
       ) : (
         <>
           <SidebarUtilityItem
-            icon={<SettingsIcon className={HOVER_ICON} />}
+            icon={<SettingsIcon />}
             label={gt("Settings")}
             onClick={handleSettingsClick}
           />
           {pullRequestsSupported ? (
             <SidebarUtilityItem
-              icon={<PullRequestGlyph.pullRequest className={HOVER_ICON} />}
+              icon={<RouteIcon />}
               label={gt("Pull requests")}
               onClick={handlePullRequestsClick}
             />
           ) : null}
           {issuesSupported ? (
             <SidebarUtilityItem
-              icon={<IssueGlyph.issue className={HOVER_ICON} />}
+              icon={<CircleAlertIcon />}
               label={gt("Issues", { $context: "sidebar link to the list of issues" })}
               onClick={handleIssuesClick}
             />
           ) : null}
+          <SidebarUtilityItem
+            icon={<ChartNoAxesColumnIcon />}
+            label={gt("Usage")}
+            onClick={() => {
+              closeMobileSidebar();
+              void navigate({ to: "/usage" });
+            }}
+          />
         </>
       )}
       <SidebarThreadUndoNotice />

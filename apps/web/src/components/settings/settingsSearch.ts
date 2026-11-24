@@ -366,6 +366,18 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: [msg("colors borders interface")],
   },
   {
+    id: "vibeboss-splash",
+    title: msg("Splash screen"),
+    to: "/settings/appearance",
+    searchTerms: [msg("startup loading image gif mascot")],
+  },
+  {
+    id: "vibeboss-mascot-position",
+    title: msg("Mascot position"),
+    to: "/settings/appearance",
+    searchTerms: [msg("sidebar avatar top left corner")],
+  },
+  {
     // Prefixed because the slider control already owns the `glass-opacity` id.
     id: "setting-glass-opacity",
     title: msg("Glass opacity"),
