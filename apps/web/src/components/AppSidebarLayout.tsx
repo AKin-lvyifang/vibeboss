@@ -65,6 +65,7 @@ import {
 } from "./ui/sidebar";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 import { appAtomRegistry } from "../rpc/atomRegistry";
+import { setSplitColumnElement, useSplitByProject } from "../vibebossSplitView";
 import { registerCommands, registerMenuAction } from "../shortcuts/dispatcher";
 import { resolveThreadRouteRef } from "../threadRoutes";
 
@@ -125,6 +126,20 @@ function readInitialThreadSidebarWidth(): number {
     console.error("Could not read persisted thread sidebar width.", error);
     return resolveInitialThreadSidebarWidth(null);
   }
+}
+
+/** VibeBoss split view: the sidebar renders the chosen project's threads into this column. */
+function VibeBossSplitColumn() {
+  const [splitByProject] = useSplitByProject();
+  const { open, isMobile } = useSidebar();
+  if (!splitByProject || !open || isMobile) return null;
+  return (
+    <div
+      ref={setSplitColumnElement}
+      data-vibeboss-split-column=""
+      className="flex h-dvh w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
+    />
+  );
 }
 
 function readUsagePageOpen(router: AnyRouter) {
@@ -497,6 +512,7 @@ export function AppSidebarLayout({
               <ThreadSidebar routeReveal={sidebarRouteReveal} />
               <SidebarRail onDoubleClick={resetSidebarWidth} />
             </Sidebar>
+            <VibeBossSplitColumn />
           </>
         ) : null}
         {children}

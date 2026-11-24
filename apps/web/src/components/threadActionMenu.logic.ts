@@ -30,6 +30,8 @@ export type ThreadActionMenuId =
   | "copy-thread"
   | "copy-thread-id"
   | "open-native-transcript"
+  | "section"
+  | `section:${string}`
   | "archive"
   | "delete";
 
@@ -132,19 +134,22 @@ export interface ThreadActionMenuState {
 
 /** Local navigation, read markers, and copying remain available to read-only clients. */
 export function threadActionRequiresOperate(action: ThreadActionMenuId): boolean {
-  return ![
-    "find",
-    "new-thread-on-branch",
-    "project-settings",
-    "mark-unread",
-    "share-guest",
-    "copy",
-    "copy-path",
-    "copy-branch",
-    "copy-thread",
-    "copy-thread-id",
-    "open-native-transcript",
-  ].includes(action);
+  return (
+    ![
+      "find",
+      "new-thread-on-branch",
+      "project-settings",
+      "mark-unread",
+      "share-guest",
+      "copy",
+      "copy-path",
+      "copy-branch",
+      "copy-thread",
+      "copy-thread-id",
+      "open-native-transcript",
+      "section",
+    ].includes(action) && !action.startsWith("section:")
+  );
 }
 
 export function buildThreadActionMenuItems(
