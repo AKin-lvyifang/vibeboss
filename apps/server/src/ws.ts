@@ -1574,6 +1574,16 @@ export const layerWsRpc = (
       const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
       const npmRelease = yield* NpmRelease.NpmRelease;
       const config = yield* ServerConfig.ServerConfig;
+      const vibeBossFileSystem = yield* FileSystem.FileSystem;
+      const vibeBossPath = yield* Path.Path;
+      const withVibeBossServices = <A, E>(
+        effect: Effect.Effect<A, E, FileSystem.FileSystem | Path.Path | ServerConfig.ServerConfig>,
+      ) =>
+        effect.pipe(
+          Effect.provideService(ServerConfig.ServerConfig, config),
+          Effect.provideService(FileSystem.FileSystem, vibeBossFileSystem),
+          Effect.provideService(Path.Path, vibeBossPath),
+        );
       const lifecycleEvents = yield* ServerLifecycleEvents.ServerLifecycleEvents;
       const storageCleanup = yield* StorageCleanup.StorageCleanup;
       const databaseStorage = yield* DatabaseStorage.DatabaseStorage;
@@ -2636,17 +2646,14 @@ export const layerWsRpc = (
         [WS_METHODS.mcpAppsCallTool]: (input) => mcpAppRequests.callTool(input),
         [WS_METHODS.mcpAppsToolInfo]: (input) => mcpAppRequests.toolInfo(input),
         [WS_METHODS.mcpAppsUpdateModelContext]: (input) => mcpAppRequests.updateModelContext(input),
-        [WS_METHODS.vibebossGetState]: () =>
-          VibeBoss.getState().pipe(Effect.provideService(ServerConfig.ServerConfig, config)),
+        [WS_METHODS.vibebossGetState]: () => withVibeBossServices(VibeBoss.getState()),
         [WS_METHODS.vibebossSaveConfig]: (input) =>
-          VibeBoss.saveConfig(input.config).pipe(
-            Effect.provideService(ServerConfig.ServerConfig, config),
-          ),
-        [WS_METHODS.vibebossSyncRules]: () =>
-          VibeBoss.syncRules().pipe(Effect.provideService(ServerConfig.ServerConfig, config)),
-        [WS_METHODS.vibebossListCapabilities]: () => VibeBoss.listCapabilities(),
+          withVibeBossServices(VibeBoss.saveConfig(input.config)),
+        [WS_METHODS.vibebossSyncRules]: () => withVibeBossServices(VibeBoss.syncRules()),
+        [WS_METHODS.vibebossListCapabilities]: () =>
+          withVibeBossServices(VibeBoss.listCapabilities()),
         [WS_METHODS.vibebossResolveNativeTranscript]: (input) =>
-          VibeBoss.resolveNativeTranscript(input),
+          withVibeBossServices(VibeBoss.resolveNativeTranscript(input)),
         [WS_METHODS.mcpAppsReadResource]: (input) => mcpAppRequests.readResource(input),
         [WS_METHODS.providerMcpSignInStart]: (input) => mcpSignIn.start(input),
         [WS_METHODS.providerMcpSignInComplete]: (input) => mcpSignIn.complete(input),

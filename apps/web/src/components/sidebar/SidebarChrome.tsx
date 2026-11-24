@@ -2,6 +2,7 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   BotIcon,
+  CalendarClockIcon,
   ChartNoAxesColumnIcon,
   PuzzleIcon,
   ScrollTextIcon,
@@ -23,7 +24,6 @@ import {
 import { primaryServerKeybindingsAtom } from "../../state/server";
 import { cn } from "../../lib/utils";
 import { useIssuesSupported, usePullRequestsSupported } from "../../state/environments";
-import { T3Wordmark } from "../T3Wordmark";
 import {
   resolveEnvironmentIdentificationPillLabel,
   resolveSidebarStageBackdropVariant,
@@ -179,7 +179,7 @@ function SidebarBrand({ onBackdrop }: { onBackdrop: boolean }) {
   const gt = useGT();
   return (
     <Link
-      aria-label={gt("T3 Code home")}
+      aria-label={gt("VibeBoss home")}
       className={cn(
         "relative z-10 ml-[var(--workspace-titlebar-content-left)] hidden h-7 w-fit min-w-0 shrink-0 items-center overflow-hidden rounded-md outline-hidden ring-ring focus-visible:ring-2 focus-visible:ring-inset md:flex",
         onBackdrop ? "text-white" : "text-foreground",
@@ -193,17 +193,13 @@ function SidebarBrand({ onBackdrop }: { onBackdrop: boolean }) {
 
 function SidebarBrandMark({ onBackdrop }: { onBackdrop: boolean }) {
   return (
-    <span className="inline-flex min-w-0 items-baseline gap-1 text-sm font-medium tracking-tight">
-      <T3Wordmark aria-label="T3" className="h-[1cap] w-auto shrink-0" />
-      <span
-        className={cn(
-          "truncate [text-box:trim-both_cap_alphabetic] supports-[text-box:trim-both_cap_alphabetic]:py-1",
-          onBackdrop ? "text-white/70" : "text-muted-foreground",
-        )}
-      >
-        {/* oxlint-disable-next-line t3code/no-untranslated-copy -- product wordmark */}
-        {"Code"}
-      </span>
+    <span
+      className={cn(
+        "truncate font-semibold text-sm tracking-tight",
+        onBackdrop ? "text-white" : "text-foreground",
+      )}
+    >
+      {"VibeBoss"}
     </span>
   );
 }
@@ -233,8 +229,49 @@ function SidebarUtilityItem({
   );
 }
 
-// VibeBoss: icons move once on hover and settle; nothing keeps animating.
-const HOVER_ICON = "transition-transform duration-300 ease-out motion-reduce:transition-none";
+// VibeBoss: every sidebar icon makes the same small move on hover and settles.
+const HOVER_ICON =
+  "transition-transform duration-300 ease-out motion-reduce:transition-none [button:hover>&]:-rotate-8 [button:hover>&]:scale-110";
+
+type VibeBossNavTarget =
+  | "/settings/scheduled-tasks"
+  | "/usage"
+  | "/agents"
+  | "/rules"
+  | "/capabilities";
+
+/** VibeBoss destinations as labelled rows under the search box, like a desktop app's nav. */
+export const SidebarVibeBossNav = memo(function SidebarVibeBossNav() {
+  const navigate = useNavigate();
+  const gt = useGT();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const items: ReadonlyArray<{ to: VibeBossNavTarget; label: string; Icon: typeof BotIcon }> = [
+    { to: "/settings/scheduled-tasks", label: gt("Scheduled tasks"), Icon: CalendarClockIcon },
+    { to: "/usage", label: gt("Usage"), Icon: ChartNoAxesColumnIcon },
+    { to: "/agents", label: gt("Agents"), Icon: BotIcon },
+    { to: "/rules", label: gt("Rules"), Icon: ScrollTextIcon },
+    { to: "/capabilities", label: gt("Skills, MCP & plugins"), Icon: PuzzleIcon },
+  ];
+  return (
+    <SidebarMenu className="mt-1">
+      {items.map(({ to, label, Icon }) => (
+        <SidebarMenuItem key={to}>
+          <SidebarMenuButton
+            isActive={pathname === to}
+            onClick={() => {
+              if (isMobile) setOpenMobile(false);
+              void navigate({ to });
+            }}
+          >
+            <Icon className={HOVER_ICON} />
+            <span>{label}</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  );
+});
 
 const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
   const navigate = useNavigate();
@@ -267,18 +304,6 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/settings" });
   };
 
-  const handleUsageClick = () => {
-    if (isMobile) {
-      setOpenMobile(false);
-    }
-    void navigate({ to: "/usage" });
-  };
-
-  const goTo = (to: "/agents" | "/rules" | "/capabilities") => {
-    closeMobileSidebar();
-    void navigate({ to });
-  };
-
   const handleBackClick = () => {
     closeMobileSidebar();
     void navigateToMainApp();
@@ -298,46 +323,24 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
       ) : (
         <>
           <SidebarUtilityItem
-            icon={<SettingsIcon className={`${HOVER_ICON} [button:hover>&]:rotate-90`} />}
+            icon={<SettingsIcon className={HOVER_ICON} />}
             label={gt("Settings")}
             onClick={handleSettingsClick}
           />
           {pullRequestsSupported ? (
             <SidebarUtilityItem
-              icon={<PullRequestGlyph.pullRequest />}
+              icon={<PullRequestGlyph.pullRequest className={HOVER_ICON} />}
               label={gt("Pull requests")}
               onClick={handlePullRequestsClick}
             />
           ) : null}
           {issuesSupported ? (
             <SidebarUtilityItem
-              icon={<IssueGlyph.issue />}
+              icon={<IssueGlyph.issue className={HOVER_ICON} />}
               label={gt("Issues", { $context: "sidebar link to the list of issues" })}
               onClick={handleIssuesClick}
             />
           ) : null}
-          <SidebarUtilityItem
-            icon={
-              <ChartNoAxesColumnIcon className={`${HOVER_ICON} [button:hover>&]:scale-y-110`} />
-            }
-            label={gt("Usage")}
-            onClick={handleUsageClick}
-          />
-          <SidebarUtilityItem
-            icon={<BotIcon className={`${HOVER_ICON} [button:hover>&]:-rotate-12`} />}
-            label={gt("Agents")}
-            onClick={() => goTo("/agents")}
-          />
-          <SidebarUtilityItem
-            icon={<ScrollTextIcon className={`${HOVER_ICON} [button:hover>&]:-translate-y-0.5`} />}
-            label={gt("Rules")}
-            onClick={() => goTo("/rules")}
-          />
-          <SidebarUtilityItem
-            icon={<PuzzleIcon className={`${HOVER_ICON} [button:hover>&]:rotate-12`} />}
-            label={gt("Skills, MCP & plugins")}
-            onClick={() => goTo("/capabilities")}
-          />
         </>
       )}
       <SidebarThreadUndoNotice />

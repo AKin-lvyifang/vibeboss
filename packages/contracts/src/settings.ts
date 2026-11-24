@@ -537,7 +537,8 @@ export const ClientSettingsSchema = Schema.Struct({
   ),
   proactivePanelsEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   showSkillsInSlashMenu: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
-  boringSidebarEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  // VibeBoss: threads grouped by project by default.
+  boringSidebarEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   boringSidebarMultilineRows: Schema.Boolean.pipe(
     Schema.withDecodingDefault(Effect.succeed(false)),
   ),
@@ -592,7 +593,8 @@ export const ClientSettingsSchema = Schema.Struct({
   ),
   speechCorrectionWord: SpeechCorrectionCue.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
   // A locale code or "system". Open string so new locales and downgrades need no migration.
-  language: Schema.String.pipe(Schema.withDecodingDefault(Effect.succeed("en"))),
+  // VibeBoss: Chinese by default; English stays one switch away in Settings.
+  language: Schema.String.pipe(Schema.withDecodingDefault(Effect.succeed("zh"))),
   snapShotEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   snapShotIncludeAccessibility: Schema.Boolean.pipe(
     Schema.withDecodingDefault(Effect.succeed(true)),

@@ -1,6 +1,4 @@
-import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
-import * as NodePath from "node:path";
 
 import {
   type VibeBossAgentEntry,
@@ -15,7 +13,12 @@ import {
   type VibeBossState,
   type VibeBossSyncResult,
 } from "@t3tools/contracts";
+import * as Config from "effect/Config";
+import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
+import * as Option from "effect/Option";
+import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 
 import * as ServerConfig from "../config.ts";
@@ -75,79 +78,96 @@ const fail = (detail: string) => (cause: unknown) => new VibeBossError({ detail,
 
 const homeDir = () => NodeOS.homedir();
 
-/** Where each agent reads its global rules, following the same env overrides the CLIs use. */
-function realRuleFilePath(kind: VibeBossAgentKind): string {
-  switch (kind) {
-    case "claude":
-      return NodePath.join(
-        process.env.CLAUDE_CONFIG_DIR ?? NodePath.join(homeDir(), ".claude"),
-        "CLAUDE.md",
-      );
-    case "codex":
-      return NodePath.join(
-        process.env.CODEX_HOME ?? NodePath.join(homeDir(), ".codex"),
-        "AGENTS.md",
-      );
-    case "agy":
-      return NodePath.join(homeDir(), ".gemini", "GEMINI.md");
-  }
-}
+const optionalEnv = (name: string) =>
+  Config.String(name).pipe(Config.option, Config.map(Option.getOrUndefined));
+
+/** Agent home folders, following the same env overrides the CLIs use. */
+const agentHomes = Effect.gen(function* () {
+  const path = yield* Path.Path;
+  const home = homeDir();
+  const env = yield* Config.all({
+    claude: optionalEnv("CLAUDE_CONFIG_DIR"),
+    codex: optionalEnv("CODEX_HOME"),
+  }).pipe(Effect.mapError(fail("读取智能体目录设置失败")));
+  return {
+    home,
+    claude: env.claude ?? path.join(home, ".claude"),
+    codex: env.codex ?? path.join(home, ".codex"),
+    gemini: path.join(home, ".gemini"),
+  };
+});
+
+/** Where each agent reads its global rules. */
+const realRuleFilePaths = Effect.gen(function* () {
+  const path = yield* Path.Path;
+  const homes = yield* agentHomes;
+  const files: Record<VibeBossAgentKind, string> = {
+    claude: path.join(homes.claude, "CLAUDE.md"),
+    codex: path.join(homes.codex, "AGENTS.md"),
+    agy: path.join(homes.gemini, "GEMINI.md"),
+  };
+  return files;
+});
 
 interface Paths {
   readonly dir: string;
   readonly configPath: string;
   readonly backupsDir: string;
   readonly previewOnly: boolean;
+  readonly real: Record<VibeBossAgentKind, string>;
   readonly target: (kind: VibeBossAgentKind) => string;
 }
 
 const resolvePaths = Effect.gen(function* () {
   const config = yield* ServerConfig.ServerConfig;
-  const dir = NodePath.join(config.stateDir, "vibeboss");
+  const path = yield* Path.Path;
+  const real = yield* realRuleFilePaths;
+  const dir = path.join(config.stateDir, "vibeboss");
   // Dev servers must never overwrite the developer's real agent rule files.
   const previewOnly = config.devUrl !== undefined;
   const paths: Paths = {
     dir,
-    configPath: NodePath.join(dir, "config.json"),
-    backupsDir: NodePath.join(dir, "backups"),
+    configPath: path.join(dir, "config.json"),
+    backupsDir: path.join(dir, "backups"),
     previewOnly,
+    real,
     target: (kind) =>
-      previewOnly
-        ? NodePath.join(dir, "preview", kind, NodePath.basename(realRuleFilePath(kind)))
-        : realRuleFilePath(kind),
+      previewOnly ? path.join(dir, "preview", kind, path.basename(real[kind])) : real[kind],
   };
   return paths;
 });
 
-const readTextIfExists = (path: string) =>
-  Effect.tryPromise({
-    try: async () => {
-      try {
-        return await NodeFSP.readFile(path, "utf8");
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-        throw error;
-      }
-    },
-    catch: fail(`读取 ${path} 失败`),
-  });
+const readTextIfExists = Effect.fn("VibeBoss.readTextIfExists")(function* (file: string) {
+  const fs = yield* FileSystem.FileSystem;
+  if (!(yield* fs.exists(file).pipe(Effect.mapError(fail(`读取 ${file} 失败`))))) return null;
+  return yield* fs.readFileString(file).pipe(Effect.mapError(fail(`读取 ${file} 失败`)));
+});
 
-const writeText = (path: string, text: string) =>
-  Effect.tryPromise({
-    try: async () => {
-      await NodeFSP.mkdir(NodePath.dirname(path), { recursive: true });
-      await NodeFSP.writeFile(path, text, "utf8");
-    },
-    catch: fail(`写入 ${path} 失败`),
-  });
+const writeText = Effect.fn("VibeBoss.writeText")(function* (file: string, text: string) {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  yield* fs
+    .makeDirectory(path.dirname(file), { recursive: true })
+    .pipe(
+      Effect.andThen(fs.writeFileString(file, text)),
+      Effect.mapError(fail(`写入 ${file} 失败`)),
+    );
+});
+
+const encodeConfig = Schema.encodeEffect(Schema.fromJsonString(VibeBossConfigSchema));
+const writeConfig = (file: string, config: VibeBossConfig) =>
+  encodeConfig(config).pipe(
+    Effect.mapError(fail("保存配置失败")),
+    Effect.flatMap((json) => writeText(file, `${json}\n`)),
+  );
 
 const decodeConfig = Schema.decodeUnknownOption(Schema.fromJsonString(VibeBossConfigSchema));
 
 /** First run: keep each agent's existing global rules as its own part, so syncing loses nothing. */
-const importInitialConfig = Effect.gen(function* () {
+const importInitialConfig = Effect.fn("VibeBoss.importInitialConfig")(function* (paths: Paths) {
   const perAgent = { claude: "", codex: "", agy: "" };
   for (const kind of KINDS) {
-    const current = yield* readTextIfExists(realRuleFilePath(kind));
+    const current = yield* readTextIfExists(paths.real[kind]);
     perAgent[kind] = current === null ? "" : stripGenerated(current);
   }
   const config: VibeBossConfig = {
@@ -189,8 +209,8 @@ const loadConfig = Effect.fn("VibeBoss.loadConfig")(function* (paths: Paths) {
     const decoded = decodeConfig(raw);
     if (decoded._tag === "Some") return decoded.value;
   }
-  const imported = yield* importInitialConfig;
-  yield* writeText(paths.configPath, `${JSON.stringify(imported, null, 2)}\n`);
+  const imported = yield* importInitialConfig(paths);
+  yield* writeConfig(paths.configPath, imported);
   return imported;
 });
 
@@ -229,7 +249,7 @@ export const getState = Effect.fn("VibeBoss.getState")(function* () {
 
 export const saveConfig = Effect.fn("VibeBoss.saveConfig")(function* (config: VibeBossConfig) {
   const paths = yield* resolvePaths;
-  yield* writeText(paths.configPath, `${JSON.stringify(config, null, 2)}\n`);
+  yield* writeConfig(paths.configPath, config);
   return yield* buildState(paths, config);
 });
 
@@ -237,7 +257,8 @@ export const saveConfig = Effect.fn("VibeBoss.saveConfig")(function* (config: Vi
 export const syncRules = Effect.fn("VibeBoss.syncRules")(function* () {
   const paths = yield* resolvePaths;
   const config = yield* loadConfig(paths);
-  const stamp = new Date().toISOString().replaceAll(":", "-");
+  const path = yield* Path.Path;
+  const stamp = DateTime.formatIso(yield* DateTime.now).replaceAll(":", "-");
   const backups: Array<string> = [];
   for (const kind of KINDS) {
     const target = paths.target(kind);
@@ -245,7 +266,7 @@ export const syncRules = Effect.fn("VibeBoss.syncRules")(function* () {
     const generated = renderRuleFile(config, kind);
     if (current === generated) continue;
     if (current !== null) {
-      const backup = NodePath.join(paths.backupsDir, stamp, `${kind}-${NodePath.basename(target)}`);
+      const backup = path.join(paths.backupsDir, stamp, `${kind}-${path.basename(target)}`);
       yield* writeText(backup, current);
       backups.push(backup);
     }
@@ -256,45 +277,44 @@ export const syncRules = Effect.fn("VibeBoss.syncRules")(function* () {
   return result;
 });
 
-const listDirNames = (dir: string) =>
-  Effect.promise(async () => {
-    try {
-      const entries = await NodeFSP.readdir(dir, { withFileTypes: true });
-      return entries
-        .filter(
-          (entry) => (entry.isDirectory() || entry.isSymbolicLink()) && !entry.name.startsWith("."),
-        )
-        .map((entry) => entry.name);
-    } catch {
-      return [] as Array<string>;
-    }
-  });
+const listDirNames = Effect.fn("VibeBoss.listDirNames")(function* (dir: string) {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const names = yield* fs.readDirectory(dir).pipe(Effect.orElseSucceed(() => []));
+  const dirs: Array<string> = [];
+  for (const name of names) {
+    if (name.startsWith(".")) continue;
+    const info = yield* fs.stat(path.join(dir, name)).pipe(Effect.option);
+    if (Option.isSome(info) && info.value.type === "Directory") dirs.push(name);
+  }
+  return dirs;
+});
 
 // Skill files are small; comparing their text directly tells whether same-named copies differ.
-const fileDigest = (path: string) =>
-  Effect.promise(async () => {
-    try {
-      return (await NodeFSP.readFile(path, "utf8")).trim();
-    } catch {
-      return null;
-    }
-  });
+const fileDigest = Effect.fn("VibeBoss.fileDigest")(function* (file: string) {
+  const fs = yield* FileSystem.FileSystem;
+  return yield* fs.readFileString(file).pipe(
+    Effect.map((text): string | null => text.trim()),
+    Effect.orElseSucceed(() => null),
+  );
+});
 
-const readJsonKeys = (path: string, pick: (json: Record<string, unknown>) => unknown) =>
-  Effect.promise(async () => {
-    try {
-      const json = JSON.parse(await NodeFSP.readFile(path, "utf8")) as Record<string, unknown>;
-      const value = pick(json);
+const decodeJson = Schema.decodeUnknownOption(Schema.fromJsonString(Schema.Unknown));
+
+const readJsonKeys = (file: string, pick: (json: Record<string, unknown>) => unknown) =>
+  fileDigest(file).pipe(
+    Effect.map((text) => {
+      const json = text === null ? Option.none() : decodeJson(text);
+      if (Option.isNone(json) || json.value === null || typeof json.value !== "object") return [];
+      const value = pick(json.value as Record<string, unknown>);
       return value !== null && typeof value === "object" ? Object.keys(value) : [];
-    } catch {
-      return [] as Array<string>;
-    }
-  });
+    }),
+  );
 
-const readTomlTables = (path: string, prefix: string) =>
-  Effect.promise(async () => {
-    try {
-      const text = await NodeFSP.readFile(path, "utf8");
+const readTomlTables = (file: string, prefix: string) =>
+  fileDigest(file).pipe(
+    Effect.map((text) => {
+      if (text === null) return [];
       const names = new Set<string>();
       const pattern = new RegExp(
         `^\\[${prefix.replace(".", "\\.")}\\.("([^"]+)"|([^\\].]+))`,
@@ -303,10 +323,8 @@ const readTomlTables = (path: string, prefix: string) =>
       for (const match of text.matchAll(pattern)) names.add(match[2] ?? match[3] ?? "");
       names.delete("");
       return [...names];
-    } catch {
-      return [] as Array<string>;
-    }
-  });
+    }),
+  );
 
 function mergeCapabilities(
   byKind: Record<VibeBossAgentKind, ReadonlyArray<string>>,
@@ -331,16 +349,12 @@ function mergeCapabilities(
 
 /** Reads what each agent has installed. Read-only; paths follow each CLI's defaults. */
 export const listCapabilities = Effect.fn("VibeBoss.listCapabilities")(function* () {
-  const home = homeDir();
-  const claudeHome = process.env.CLAUDE_CONFIG_DIR ?? NodePath.join(home, ".claude");
-  const codexHome = process.env.CODEX_HOME ?? NodePath.join(home, ".codex");
+  const path = yield* Path.Path;
+  const { home, claude: claudeHome, codex: codexHome } = yield* agentHomes;
   const skillDirs: Record<VibeBossAgentKind, ReadonlyArray<string>> = {
-    claude: [NodePath.join(claudeHome, "skills")],
-    codex: [NodePath.join(home, ".agents", "skills"), NodePath.join(codexHome, "skills")],
-    agy: [
-      NodePath.join(home, ".gemini", "skills"),
-      NodePath.join(home, ".gemini", "config", "skills"),
-    ],
+    claude: [path.join(claudeHome, "skills")],
+    codex: [path.join(home, ".agents", "skills"), path.join(codexHome, "skills")],
+    agy: [path.join(home, ".gemini", "skills"), path.join(home, ".gemini", "config", "skills")],
   };
   const skillsByKind = { claude: [], codex: [], agy: [] } as Record<
     VibeBossAgentKind,
@@ -352,7 +366,7 @@ export const listCapabilities = Effect.fn("VibeBoss.listCapabilities")(function*
       for (const name of yield* listDirNames(dir)) {
         if (skillsByKind[kind].includes(name)) continue;
         skillsByKind[kind].push(name);
-        const digest = yield* fileDigest(NodePath.join(dir, name, "SKILL.md"));
+        const digest = yield* fileDigest(path.join(dir, name, "SKILL.md"));
         if (digest !== null) {
           const set = digests.get(name) ?? new Set();
           set.add(digest);
@@ -362,22 +376,22 @@ export const listCapabilities = Effect.fn("VibeBoss.listCapabilities")(function*
     }
   }
   const mcpByKind: Record<VibeBossAgentKind, ReadonlyArray<string>> = {
-    claude: yield* readJsonKeys(NodePath.join(home, ".claude.json"), (json) => json.mcpServers),
-    codex: yield* readTomlTables(NodePath.join(codexHome, "config.toml"), "mcp_servers"),
+    claude: yield* readJsonKeys(path.join(home, ".claude.json"), (json) => json.mcpServers),
+    codex: yield* readTomlTables(path.join(codexHome, "config.toml"), "mcp_servers"),
     agy: yield* readJsonKeys(
-      NodePath.join(home, ".gemini", "config", "mcp_config.json"),
+      path.join(home, ".gemini", "config", "mcp_config.json"),
       (json) => json.mcpServers,
     ),
   };
   const pluginsByKind: Record<VibeBossAgentKind, ReadonlyArray<string>> = {
     claude: (yield* readJsonKeys(
-      NodePath.join(claudeHome, "plugins", "installed_plugins.json"),
+      path.join(claudeHome, "plugins", "installed_plugins.json"),
       (json) => ("plugins" in json ? json.plugins : json),
     )).map((name) => name.split("@")[0] ?? name),
-    codex: (yield* readTomlTables(NodePath.join(codexHome, "config.toml"), "plugins")).map(
+    codex: (yield* readTomlTables(path.join(codexHome, "config.toml"), "plugins")).map(
       (name) => name.split("@")[0] ?? name,
     ),
-    agy: yield* listDirNames(NodePath.join(home, ".gemini", "config", "plugins")),
+    agy: yield* listDirNames(path.join(home, ".gemini", "config", "plugins")),
   };
   const result: VibeBossCapabilities = {
     skills: mergeCapabilities(skillsByKind, digests),
@@ -387,62 +401,65 @@ export const listCapabilities = Effect.fn("VibeBoss.listCapabilities")(function*
   return result;
 });
 
-async function findFile(
+const findFile: (
   dir: string,
   matches: (name: string) => boolean,
   depth: number,
-): Promise<string | null> {
-  let entries;
-  try {
-    entries = await NodeFSP.readdir(dir, { withFileTypes: true });
-  } catch {
-    return null;
-  }
-  for (const entry of entries) {
-    if (entry.isFile() && matches(entry.name)) return NodePath.join(dir, entry.name);
+) => Effect.Effect<string | null, never, FileSystem.FileSystem | Path.Path> = Effect.fn(
+  "VibeBoss.findFile",
+)(function* (dir: string, matches: (name: string) => boolean, depth: number) {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const names = yield* fs.readDirectory(dir).pipe(Effect.orElseSucceed(() => []));
+  const subdirs: Array<string> = [];
+  for (const name of names) {
+    const info = yield* fs.stat(path.join(dir, name)).pipe(Effect.option);
+    if (Option.isNone(info)) continue;
+    if (info.value.type === "File" && matches(name)) return path.join(dir, name);
+    if (info.value.type === "Directory") subdirs.push(name);
   }
   if (depth <= 0) return null;
-  for (const entry of entries.toSorted((left, right) => right.name.localeCompare(left.name))) {
-    if (!entry.isDirectory()) continue;
-    const found = await findFile(NodePath.join(dir, entry.name), matches, depth - 1);
+  for (const name of subdirs.toSorted((left, right) => right.localeCompare(left))) {
+    const found = yield* findFile(path.join(dir, name), matches, depth - 1);
     if (found !== null) return found;
   }
   return null;
-}
+});
 
 /** Finds the agent's own transcript file for a provider thread, so nothing is lost in display. */
 export const resolveNativeTranscript = Effect.fn("VibeBoss.resolveNativeTranscript")(function* (
   input: VibeBossNativeTranscriptInput,
 ) {
-  const home = homeDir();
+  const path = yield* Path.Path;
+  const homes = yield* agentHomes;
   const id = input.nativeId.trim();
   if (id === "" || id.includes("/") || id.includes("..")) return { path: null };
-  const path = yield* Effect.promise(async () => {
-    switch (input.driver) {
-      case "claudeAgent":
-        return findFile(
-          NodePath.join(
-            process.env.CLAUDE_CONFIG_DIR ?? NodePath.join(home, ".claude"),
-            "projects",
-          ),
+  switch (input.driver) {
+    case "claudeAgent":
+      return {
+        path: yield* findFile(
+          path.join(homes.claude, "projects"),
           (name) => name === `${id}.jsonl`,
           1,
-        );
-      case "codex":
-        return findFile(
-          NodePath.join(process.env.CODEX_HOME ?? NodePath.join(home, ".codex"), "sessions"),
+        ),
+      };
+    case "codex":
+      return {
+        path: yield* findFile(
+          path.join(homes.codex, "sessions"),
           (name) => name.startsWith("rollout-") && name.endsWith(`${id}.jsonl`),
           3,
-        );
-      case "antigravity":
-        return findFile(
-          NodePath.join(home, ".gemini", "antigravity", "conversations"),
+        ),
+      };
+    case "antigravity":
+      return {
+        path: yield* findFile(
+          path.join(homes.gemini, "antigravity", "conversations"),
           (name) => name.startsWith(id),
           0,
-        );
-      default:
-        return null;
-    }
-  });
-  return { path };
+        ),
+      };
+    default:
+      return { path: null };
+  }
 });
