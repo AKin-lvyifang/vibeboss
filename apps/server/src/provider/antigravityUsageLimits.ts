@@ -339,6 +339,7 @@ export const makeAntigravityUsageProbe = Effect.fn("makeAntigravityUsageProbe")(
     | { fingerprint: string; account: string; accessToken: string; expiresAt: number }
     | undefined;
   let generation = 0;
+  let keyringSecret: { value: string; expiresAt: number } | undefined;
 
   const request = (request: HttpClientRequest.HttpClientRequest) =>
     client.execute(request).pipe(
@@ -361,9 +362,12 @@ export const makeAntigravityUsageProbe = Effect.fn("makeAntigravityUsageProbe")(
       cached = undefined;
       // VibeBoss: agy 1.5.15+ keeps a Google account's sign-in in the shared keyring entry even
       // when T3 asks for file storage, so fall back to the keyring for personal accounts too.
+      // Each keyring read can raise a macOS access prompt, so reuse the secret until it expires.
       const stored = (yield* fs.exists(cliTokenPath))
         ? yield* fs.readFileString(cliTokenPath)
-        : yield* readKeyringSecret;
+        : keyringSecret !== undefined && keyringSecret.expiresAt > now + 60_000
+          ? keyringSecret.value
+          : yield* readKeyringSecret;
       if (stored === undefined) {
         return makeUnavailableUsageLimits({
           checkedAt,
@@ -372,6 +376,7 @@ export const makeAntigravityUsageProbe = Effect.fn("makeAntigravityUsageProbe")(
         });
       }
       const { token } = yield* decodeCliToken(stored);
+      keyringSecret = { value: stored, expiresAt: Date.parse(token.expiry ?? "") || 0 };
       if (!(Date.parse(token.expiry ?? "") > now + 60_000)) {
         return makeUnavailableUsageLimits({
           checkedAt,

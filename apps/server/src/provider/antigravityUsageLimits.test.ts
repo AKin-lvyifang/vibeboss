@@ -72,6 +72,7 @@ const fixture = Effect.fn("AntigravityUsageTest.fixture")(function* (
     missingToken?: boolean;
     authMethod?: "oauth-personal" | "oauth-business" | "gemini-api-key";
     keyringSecret?: string;
+    onKeyringRead?: () => void;
     /** Reads the OS keyring instead of `keyringSecret`. */
     nativeKeyring?: boolean;
   } = {},
@@ -140,7 +141,14 @@ const fixture = Effect.fn("AntigravityUsageTest.fixture")(function* (
   const usage = yield* makeAntigravityUsageProbe({
     profileDirectory,
     authMethod: options.authMethod ?? "oauth-personal",
-    ...(options.nativeKeyring ? {} : { readKeyringSecret: Effect.succeed(options.keyringSecret) }),
+    ...(options.nativeKeyring
+      ? {}
+      : {
+          readKeyringSecret: Effect.sync(() => {
+            options.onKeyringRead?.();
+            return options.keyringSecret;
+          }),
+        }),
   }).pipe(Effect.provideService(HttpClient.HttpClient, http));
   return { ...usage, requests, writeToken, tokenPath };
 });
@@ -715,6 +723,18 @@ describe("Antigravity subscription limits", () => {
       expect(limits.unavailable).toBeUndefined();
       expect(limits.windows).toHaveLength(4);
       expect(signedIn.requests.some((request) => request.url.endsWith("/token"))).toBe(false);
+
+      // VibeBoss: each keyring read can raise a macOS prompt, so an unexpired secret is reused.
+      let keyringReads = 0;
+      const cachedProbe = yield* fixture({
+        missingToken: true,
+        userId: "google-user-1",
+        keyringSecret: keyringSecret("2026-10-09T14:00:00Z"),
+        onKeyringRead: () => keyringReads++,
+      });
+      yield* cachedProbe.probe;
+      yield* cachedProbe.probe;
+      expect(keyringReads).toBe(1);
 
       const expired = yield* fixture({
         authMethod: "oauth-business",
