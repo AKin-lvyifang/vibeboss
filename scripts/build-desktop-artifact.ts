@@ -2485,6 +2485,16 @@ export const stageAppleSpeech = Effect.fn("stageAppleSpeech")(function* (input: 
 }) {
   if (input.platform !== "mac") return;
   const path = yield* Path.Path;
+  // VibeBoss: building the helper needs Xcode 26. Without it, ship no helper; the app then
+  // reports Apple Speech as unavailable, as it already does on macOS before 26.
+  if (yield* Config.boolean("VIBEBOSS_SKIP_APPLE_SPEECH").pipe(Config.withDefault(false))) {
+    const fileSystem = yield* FileSystem.FileSystem;
+    yield* fileSystem.makeDirectory(path.join(input.stageResourcesDir, "apple-speech"), {
+      recursive: true,
+    });
+    yield* Effect.logWarning("Skipping the Apple Speech helper (VIBEBOSS_SKIP_APPLE_SPEECH).");
+    return;
+  }
   yield* runCommand(
     ChildProcess.make(
       "node",
