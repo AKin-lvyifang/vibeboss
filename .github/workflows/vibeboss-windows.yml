@@ -42,7 +42,7 @@ jobs:
         shell: bash
         run: |
           export PATH="$PWD/node_modules/.bin:$PATH"
-          node scripts/build-desktop-artifact.ts --platform win --target nsis --arch x64 --verbose
+          node scripts/build-desktop-artifact.ts --platform win --target nsis --arch x64 --verbose --keep-stage
 
       - name: Upload installer
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -55,4 +55,10 @@ jobs:
       - name: List packaged files
         if: failure()
         shell: bash
-        run: find release -path '*unpacked*' -type f | sed 's#^release/##' | sort
+        run: |
+          for root in "$RUNNER_TEMP" "$TEMP" "$TMP"; do
+            find "$root" -type d -name 'win-unpacked' 2>/dev/null
+          done | sort -u | while read -r dir; do
+            echo "== $dir"
+            find "$dir" -type f | sed "s#^$dir/##" | sort
+          done
