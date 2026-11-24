@@ -1,3 +1,12 @@
+# VibeBoss（本分支）
+
+本仓库是 T3 Code 的 VibeBoss 分支，给不写代码的人用。改动规矩：
+
+- 先用 T3 已有的能力和规范（组件、设置、RPC、`delegate_task`、Boring sidebar 等），缺什么再加；不另起一套。
+- 新功能放新文件（`vibeboss/`、`VibeBoss*`），上游文件只加入口；要藏的上游功能用过滤，不删。
+- 每轮改动登记在 `docs/更新/<日期>-<主题>.md`：需求、复用的 T3 能力、改了哪些文件、跟进上游时要注意什么。方案和评审放 `docs/claude建议/`。
+- 总览见 [docs/更新/2026-11-24-VibeBoss-M1魔改范围.md](docs/更新/2026-11-24-VibeBoss-M1魔改范围.md)。
+
 # T3 Code
 
 T3 Code is a minimal GUI for coding agents. A Node WebSocket server wraps provider CLIs and agents (Codex, Claude Code, Cursor, Grok, OpenCode, Antigravity, Kiro, Pi, Muse Code, fx) and serves web, desktop, and mobile clients.
