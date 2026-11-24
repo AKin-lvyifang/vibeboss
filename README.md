@@ -1,34 +1,98 @@
 <p align="center">
-  <img src="./assets/prod/t3-black-web-icon-192x192.png" width="80" height="80" alt="VibeBoss" />
+  <img width="96" height="96" alt="VibeBoss" src="assets/prod/t3-black-web-icon-192x192.png">
 </p>
 
 <h1 align="center">VibeBoss</h1>
 
-<p align="center">给产品经理用的 AI 编程桌面应用：在一个窗口里指挥 Claude、Codex、Antigravity 三家智能体一起干活。</p>
+<p align="center">面向产品经理等非研发人员的 AI Agent 桌面应用。<br>你只跟一个主控说需求，它按你定的分工，调动 GPT、Claude、Gemini 三家一起把活干完。</p>
 
-VibeBoss 基于开源项目 [T3 Code](https://github.com/pingdotgg/t3code)（MIT）魔改而来，并持续合并 T3 的更新。T3 Code 面向开发者，功能多、设置多；VibeBoss 把它改成不写代码的人也能上手的样子。
+<p align="center">
+  <a href="#开始使用"><b>开始使用</b></a> ·
+  <a href="#能做什么">功能</a> ·
+  <a href="#隐私与账号">隐私与账号</a> ·
+  <a href="#开源与致谢">开源与致谢</a>
+</p>
 
-## 和 T3 Code 有什么不同
+<p align="center">
+  <img src="https://img.shields.io/badge/version-0.1.11-0EA5E9?style=flat-square" alt="版本 0.1.11">
+  <img src="https://img.shields.io/badge/platform-macOS%20%2B%20Windows-16A34A?style=flat-square" alt="macOS 与 Windows">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-475569?style=flat-square" alt="MIT 许可"></a>
+</p>
 
-- **只留三家智能体**：Claude、Codex、Antigravity（Agy）。其他智能体和开发者才用得到的设置页都藏起来了。
-- **中文优先**：默认中文界面。
-- **分工与规则**：设一个主控智能体和若干有名字的成员，统一管理各家的全局规则、技能、MCP 和插件。
-- **一键登录**：Claude 显示“未认证”时，直接在设置页里登录，不用自己开终端。
-- **用量一眼看**：Claude、Agy 的额度都显示在用量页；Agy 的登录过期后会自动续上。
-- **会话按项目整理**：侧边栏按项目分组，可以拆成“项目 / 会话”双栏，会话能自建分区。
-- **本地版**：不接 T3 的云服务，遥测默认关闭。
-- **桌面端**：提供 Mac（苹果芯片）和 Windows 安装包。
+## 能做什么
 
-每一项改了哪里、为什么改，都记在 [docs/更新](./docs/更新/2026-11-24-VibeBoss-M1魔改范围.md)。
+|                                  |                                                                                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🧭 **一个主控，带一支团队**      | 你只面对主控。拆任务、派给谁、收结果都由它按分工完成，不用在几个 Agent 之间来回切换、复制上下文。                                           |
+| 🤝 **三家模型各用所长**          | Codex（GPT）、Claude Code（Claude）、Antigravity（Gemini）同在一个窗口。比如 Claude 统筹、GPT 写后端、Gemini 做前端或评审，怎么分你说了算。 |
+| 👑 **主控随时换**                | 哪天哪家模型特别强，在“分工”页把主控换成它，规则自动跟着重写。                                                                              |
+| ✍️ **分工用大白话写**            | 用自然语言写清楚“什么活交给谁、怎么验收”，也可以让 Agent 帮你写。不用搭固定死板的工作流，想调整随时改。                                     |
+| 📜 **规则统一维护**              | 三家的全局规则在一个页面里编辑、一键同步，主控规则只给主控，改之前自动备份原文件。                                                          |
+| 🧩 **技能、MCP、插件合在一起看** | 三家装的技能、MCP、插件列在同一页，标明哪些共用、哪些只有一家有、哪些版本不一致。                                                           |
+| 📊 **用量一眼看**                | 各家的剩余额度集中显示，Antigravity 的登录过期后会自动续上。                                                                                |
 
-## 安装
+## 一个主控，带一支团队
 
-安装包暂时没有正式签名，第一次打开会有安全提示：
+在“分工”页设置一个**主控**和几位**成员**。每位成员有自己的名字、背后的 Agent、模型、思考档位和备注。
 
-- **Mac**：打开一次被拦后，到“系统设置 → 隐私与安全性”点“仍要打开”。如果提示“已损坏”，在终端运行 `xattr -cr /Applications/VibeBoss.app`。
-- **Windows**：提示“已保护你的电脑”时，点“更多信息 → 仍要运行”。
+- **你只说需求**：主控按分工把活派给成员，成员做完交回，主控汇总给你。
+- **换人不用改规则**：规则里用 `@成员名` 指代成员。成员背后换了 Agent 或模型，`@成员名` 自动指向新的那一家，规则原文不用动。
+- **不会层层转包**：每位成员都会收到“被派活时只做这件事，不再往下派”。
 
-## 自己打包
+## 分工用大白话写
+
+不用拖节点、连线、配置 workflow。在“规则”页直接写，例如：
+
+> 大方案先交给 @评审 看，只给它用户原话和必要背景；前端交给 @前端，成块的后端交给 @后端，接口和验收标准由你来定。
+
+写不好也没关系，把想法告诉 Agent，让它替你写一版。改完点“同步”就生效，随时可以再调整。
+
+## 规则统一维护
+
+- 三家的全局规则文件（`~/.claude/CLAUDE.md`、`~/.codex/AGENTS.md`、`~/.gemini/GEMINI.md`）都在“规则”页编辑，每家写自己不同的部分。
+- 主控规则只追加给当前主控那一家；换了主控，规则会跟着挪过去。
+- 每份文件都显示是否已同步，第一次覆盖前会自动备份原文件。
+
+## 技能、MCP、插件合在一起看
+
+三家各自装的技能、MCP 服务和插件，合并在一个页面里列出，每一项都标明哪几家在用。可以按“共用”“只有一家”“版本不一致”筛选，一眼看出哪些已经共享、哪些需要补装、哪些要对齐版本。
+
+<details>
+<summary>其他功能</summary>
+
+| 功能           | 说明                                                            |
+| -------------- | --------------------------------------------------------------- |
+| 一键登录       | Claude 显示“未认证”时，直接在设置页里登录，不用自己开终端       |
+| 会话按项目整理 | 可以拆成“项目 / 会话”双栏；会话能放进自建分区，分区也能整个置顶 |
+| 上下文用量     | 会话详情里能看到上下文用了多少，可以一键压缩                    |
+| 更少的干扰     | 只保留这三家 Agent，开发者才用得到的设置都收起来了              |
+| 中文界面       | 默认中文                                                        |
+
+</details>
+
+## 开始使用
+
+1. **安装**：Mac（苹果芯片）用 `.dmg`，Windows 用 `.exe`。
+2. **登录 Agent**：在设置里分别登录 Claude、Codex、Antigravity，用的都是你自己的账号。
+3. **设分工**：在“分工”页选好主控，再加几位成员，在“规则”页写清分工并同步。
+4. **开始用**：新建会话，直接跟主控说你要做什么。
+
+## 隐私与账号
+
+- **自己登录，自己的额度**：每个人登录自己的账号、用自己的额度。VibeBoss 不内置任何账号、令牌或中转网关。
+- **数据留在本机**：会话和配置保存在你的电脑上，不接任何云服务；对话内容只发给你登录的那家模型服务。
+- **不做遥测**：使用统计默认关闭。
+- **会改动的本机文件**：只有点“同步”时，才会写入三家的全局规则文件，写入前先备份。
+
+## 使用须知
+
+- **安装包暂未签名**，第一次打开会有安全提示：
+  - **Mac**：第一次打开被拦下后，到“系统设置 → 隐私与安全性”点“仍要打开”。如果提示“已损坏”，在终端运行 `xattr -cr /Applications/VibeBoss.app`。
+  - **Windows**：提示“已保护你的电脑”时，点“更多信息 → 仍要运行”。
+- **需要先装好 Agent**：Claude Code 和 Codex 的命令行工具要先装在本机；Antigravity 由 VibeBoss 自动下载。
+
+<details>
+<summary>自己打包</summary>
 
 需要 Node 26 和 [Vite+](https://viteplus.dev)（`vp`）。
 
@@ -38,20 +102,12 @@ vp install
 VIBEBOSS_SKIP_APPLE_SPEECH=true node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64
 ```
 
-Windows 安装包在 GitHub Actions 的 “VibeBoss Windows” 流程里打。
+Windows 安装包在 GitHub Actions 的 “VibeBoss Windows” 流程里打。每一轮改动的范围和原因，记在 [docs/更新](docs/更新/2026-11-24-VibeBoss-M1魔改范围.md)。
 
-## 跟进 T3 更新
+</details>
 
-仓库不会自动同步 T3，需要定期手动合并：
+## 开源与致谢
 
-```bash
-git remote add upstream https://github.com/pingdotgg/t3code.git
-git fetch upstream && git merge upstream/main
-vp run vibeboss:rebrand
-```
+VibeBoss 按 [MIT 许可](LICENSE)开源。
 
-合并时要注意的地方见 [docs/更新](./docs/更新/2026-11-24-VibeBoss-M1魔改范围.md) 里各节的“上游注意”。
-
-## 许可证
-
-[MIT](./LICENSE)。保留 T3 Code 原作者的版权声明。
+VibeBoss 基于 [T3 Code](https://github.com/pingdotgg/t3code)（MIT）开发，并持续合并它的更新。感谢 T3 团队把这么好的多 Agent 底座开源出来，许可证里保留了 T3 Code 原作者的版权声明。
