@@ -51,3 +51,8 @@ jobs:
           path: release/*.exe
           if-no-files-found: error
           retention-days: 14
+
+      - name: List packaged files
+        if: failure()
+        shell: bash
+        run: find release -path '*unpacked*' -type f | sed 's#^release/##' | sort
