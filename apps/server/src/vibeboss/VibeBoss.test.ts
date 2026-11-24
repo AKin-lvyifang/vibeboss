@@ -48,6 +48,18 @@ it("writes lead rules only into the lead's file and keeps each agent's own rules
   assert.notInclude(claude, "只给人看的备注");
 });
 
+it("writes shared rules once into every agent's file, ahead of that agent's own rules", () => {
+  const shared = { ...config, sharedRules: "- 回复用中文" };
+  for (const [target, isLead] of [
+    ["claude", true],
+    ["codex", false],
+  ] as const) {
+    const text = renderRuleFile(shared, target, isLead, providers);
+    assert.include(text, "- 回复用中文");
+    assert.isBelow(text.indexOf("- 回复用中文"), text.indexOf(shared.perAgent[target]!));
+  }
+});
+
 it("expands @member to its current agent and delegate call, so swapping agents needs no edit", () => {
   const claude = renderRuleFile(config, "claude", true, providers);
   assert.include(claude, "@worker（派给 Codex）");

@@ -1,6 +1,6 @@
 import type { ProviderDriverKind, VibeBossConfig } from "@t3tools/contracts";
 import { T, useGT, Var } from "gt-react";
-import { AtSignIcon, CrownIcon } from "lucide-react";
+import { AtSignIcon, CrownIcon, LayersIcon } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 
 import { cn } from "../../lib/utils";
@@ -13,6 +13,7 @@ import { Textarea } from "../ui/textarea";
 import { VibeBossPage, useVibeBossState } from "./VibeBossShared";
 
 const LEAD_TAB = "lead-rules";
+const SHARED_TAB = "shared-rules";
 
 function NavButton({
   active,
@@ -141,6 +142,10 @@ export function RulesPage() {
       {config === null ? null : (
         <div className="grid gap-6 md:grid-cols-4">
           <nav className="flex flex-col gap-1">
+            <NavButton active={tab === SHARED_TAB} onClick={() => setTab(SHARED_TAB)}>
+              <LayersIcon className="size-4" />
+              <T>Shared rules</T>
+            </NavButton>
             <NavButton active={tab === LEAD_TAB} onClick={() => setTab(LEAD_TAB)}>
               <CrownIcon className="size-4" />
               <T>Lead rules</T>
@@ -165,7 +170,21 @@ export function RulesPage() {
           </nav>
 
           <div className="md:col-span-3">
-            {tab === LEAD_TAB ? (
+            {tab === SHARED_TAB ? (
+              <div className="overflow-hidden rounded-xl border">
+                <div className="border-b bg-muted/40 px-4 py-2 text-muted-foreground text-xs">
+                  <T>Written first into every agent's global rules</T>
+                </div>
+                <div className="p-3">
+                  <Textarea
+                    aria-label={gt("Shared rules")}
+                    className="min-h-96"
+                    value={config.sharedRules ?? ""}
+                    onChange={(event) => update({ sharedRules: event.target.value })}
+                  />
+                </div>
+              </div>
+            ) : tab === LEAD_TAB ? (
               <div className="overflow-hidden rounded-xl border">
                 <div className="flex items-center gap-2 border-b bg-muted/40 px-4 py-2">
                   {leadFile ? (
@@ -210,6 +229,11 @@ export function RulesPage() {
                     {file.inSync ? <T>Synced</T> : <T>Not synced</T>}
                   </span>
                 </div>
+                {(config.sharedRules ?? "").trim() !== "" ? (
+                  <AppendedBlock label={<T>Shared rules, added first</T>}>
+                    {config.sharedRules}
+                  </AppendedBlock>
+                ) : null}
                 <div className="p-3">
                   <Textarea
                     aria-label={gt("Global rules for {agent}", { agent: file.label })}

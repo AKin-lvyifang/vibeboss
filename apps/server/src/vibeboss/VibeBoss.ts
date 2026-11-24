@@ -367,9 +367,12 @@ export function renderRuleFile(
           .filter((part) => part !== "")
           .join("\n\n")
       : "";
-  const sections = [(config.perAgent[targetId] ?? "").trim(), leadSection, WORKER_RULES].filter(
-    (section) => section !== "",
-  );
+  const sections = [
+    (config.sharedRules ?? "").trim(),
+    (config.perAgent[targetId] ?? "").trim(),
+    leadSection,
+    WORKER_RULES,
+  ].filter((section) => section !== "");
   return `${GENERATED_MARKER}\n\n${sections.join("\n\n")}\n`;
 }
 

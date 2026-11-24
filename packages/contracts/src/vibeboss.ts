@@ -25,6 +25,8 @@ export type VibeBossLead = typeof VibeBossLead.Type;
 
 export const VibeBossConfig = Schema.Struct({
   version: Schema.Literal(2),
+  /** Written first into every agent's rule file; each agent's own part follows. */
+  sharedRules: Schema.optional(Schema.String),
   /** Written only into the lead's rule file. `@name` expands to that member's delegate call. */
   leadRules: Schema.String,
   /** Each agent's own global rules, keyed by rule target id (claude, codex, agy, hermes). */
