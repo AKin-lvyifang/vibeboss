@@ -79,7 +79,7 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
           src={fanggeHalfUrl}
           alt=""
           draggable={false}
-          className="absolute -top-1 right-2 h-24 w-auto opacity-90"
+          className="absolute -top-8 right-2 h-20 w-auto opacity-90"
         />
       </div>
       <div className="relative top-[calc(var(--workspace-controls-top)-env(safe-area-inset-top))] z-10 ml-[calc(var(--workspace-controls-left)+1px-env(safe-area-inset-left))] flex shrink-0 items-center md:hidden">
