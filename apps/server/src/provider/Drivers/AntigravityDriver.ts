@@ -576,9 +576,22 @@ export const AntigravityDriver: ProviderDriver<
       };
     });
 
+    // VibeBoss: `agy models` renews the saved Google sign-in without starting a turn.
+    const renewSignIn = Effect.gen(function* () {
+      const executable = yield* installation.resolve(settings.binaryPath, processEnvironment);
+      const child = yield* spawner.spawn(
+        ChildProcess.make(executable.executablePath, ["models"], {
+          env: processEnvironment,
+          extendEnv: false,
+          shell: false,
+        }),
+      );
+      yield* child.exitCode;
+    }).pipe(Effect.scoped, Effect.timeout("30 seconds"), Effect.ignore);
     const usage = yield* makeAntigravityUsageProbe({
       profileDirectory,
       authMethod: auth.authMethod,
+      renewSignIn,
     }).pipe(
       Effect.provideService(FileSystem.FileSystem, fileSystem),
       Effect.provideService(Path.Path, path),

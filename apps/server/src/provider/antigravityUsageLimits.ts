@@ -321,6 +321,7 @@ export const makeAntigravityUsageProbe = Effect.fn("makeAntigravityUsageProbe")(
   readonly profileDirectory: string;
   readonly authMethod: AntigravitySettings["authMethod"];
   readonly readKeyringSecret?: Effect.Effect<string | undefined, AntigravityKeyringError>;
+  readonly renewSignIn?: Effect.Effect<void>;
 }) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
@@ -340,6 +341,7 @@ export const makeAntigravityUsageProbe = Effect.fn("makeAntigravityUsageProbe")(
     | undefined;
   let generation = 0;
   let keyringSecret: { value: string; expiresAt: number } | undefined;
+  let lastRenewAt = Number.NEGATIVE_INFINITY;
 
   const request = (request: HttpClientRequest.HttpClientRequest) =>
     client.execute(request).pipe(
@@ -363,7 +365,8 @@ export const makeAntigravityUsageProbe = Effect.fn("makeAntigravityUsageProbe")(
       // VibeBoss: agy 1.5.15+ keeps a Google account's sign-in in the shared keyring entry even
       // when VibeBoss asks for file storage, so fall back to the keyring for personal accounts too.
       // Each keyring read can raise a macOS access prompt, so reuse the secret until it expires.
-      const stored = (yield* fs.exists(cliTokenPath))
+      const fromFile = yield* fs.exists(cliTokenPath);
+      let stored = fromFile
         ? yield* fs.readFileString(cliTokenPath)
         : keyringSecret !== undefined && keyringSecret.expiresAt > now + 60_000
           ? keyringSecret.value
@@ -375,7 +378,20 @@ export const makeAntigravityUsageProbe = Effect.fn("makeAntigravityUsageProbe")(
           message: "Sign in with Google to see Antigravity limits.",
         });
       }
-      const { token } = yield* decodeCliToken(stored);
+      let { token } = yield* decodeCliToken(stored);
+      // VibeBoss: the saved sign-in lasts about an hour. Any agy command renews it in the
+      // keyring, so run one (at most every 10 minutes) instead of asking for a new turn.
+      if (
+        !fromFile &&
+        input.renewSignIn !== undefined &&
+        !(Date.parse(token.expiry ?? "") > now + 60_000) &&
+        now - lastRenewAt > 10 * 60_000
+      ) {
+        lastRenewAt = now;
+        yield* input.renewSignIn;
+        stored = (yield* readKeyringSecret) ?? stored;
+        ({ token } = yield* decodeCliToken(stored));
+      }
       keyringSecret = { value: stored, expiresAt: Date.parse(token.expiry ?? "") || 0 };
       if (!(Date.parse(token.expiry ?? "") > now + 60_000)) {
         return makeUnavailableUsageLimits({

@@ -73,6 +73,7 @@ const fixture = Effect.fn("AntigravityUsageTest.fixture")(function* (
     authMethod?: "oauth-personal" | "oauth-business" | "gemini-api-key";
     keyringSecret?: string;
     onKeyringRead?: () => void;
+    renewSignIn?: Effect.Effect<void>;
     /** Reads the OS keyring instead of `keyringSecret`. */
     nativeKeyring?: boolean;
   } = {},
@@ -141,6 +142,7 @@ const fixture = Effect.fn("AntigravityUsageTest.fixture")(function* (
   const usage = yield* makeAntigravityUsageProbe({
     profileDirectory,
     authMethod: options.authMethod ?? "oauth-personal",
+    ...(options.renewSignIn ? { renewSignIn: options.renewSignIn } : {}),
     ...(options.nativeKeyring
       ? {}
       : {
@@ -743,6 +745,31 @@ describe("Antigravity subscription limits", () => {
       });
       expect((yield* expired.probe).unavailable?.reason).toBe("probeFailed");
       expect(expired.requests).toEqual([]);
+
+      // VibeBoss: an expired sign-in is renewed by running agy, at most every 10 minutes.
+      let renewals = 0;
+      const renewing: NonNullable<Parameters<typeof fixture>[0]> = {
+        missingToken: true,
+        userId: "google-user-1",
+        keyringSecret: keyringSecret("2026-10-09T12:00:30Z"),
+      };
+      renewing.renewSignIn = Effect.sync(() => {
+        renewals++;
+        renewing.keyringSecret = keyringSecret("2026-10-09T13:00:00Z");
+      });
+      const renewed = yield* fixture(renewing);
+      expect((yield* renewed.probe).unavailable).toBeUndefined();
+      expect(renewals).toBe(1);
+
+      let attempts = 0;
+      const stuck = yield* fixture({
+        missingToken: true,
+        keyringSecret: keyringSecret("2026-10-09T12:00:30Z"),
+        renewSignIn: Effect.sync(() => attempts++),
+      });
+      expect((yield* stuck.probe).unavailable?.reason).toBe("probeFailed");
+      expect((yield* stuck.probe).unavailable?.reason).toBe("probeFailed");
+      expect(attempts).toBe(1);
     }).pipe(Effect.scoped, Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
