@@ -1,7 +1,7 @@
 import { msg } from "gt-i18n";
 
 /**
- * Whole sentences for each T3 MCP tool row, keyed by the tool's labels from
+ * Whole sentences for each VibeBoss MCP tool row, keyed by the tool's labels from
  * `@t3tools/shared/t3McpToolPresentation`. Resolve with `{ status }`, and for
  * `changeRequest` also `{ changeRequest, number }`.
  */
@@ -245,15 +245,15 @@ const T3_TOOL_SENTENCES: ReadonlyMap<string, T3ToolSentence> = new Map<string, T
     "Create\nCreating\nCreated\nT3 threads",
     {
       detail: msg(
-        "{status, select, inProgress {Creating T3 threads} completed {Created T3 threads} failed {Failed to create T3 threads} declined {Declined to create T3 threads} stopped {Stopped creating T3 threads} other {Creating T3 threads}}",
+        "{status, select, inProgress {Creating VibeBoss threads} completed {Created VibeBoss threads} failed {Failed to create VibeBoss threads} declined {Declined to create VibeBoss threads} stopped {Stopped creating VibeBoss threads} other {Creating VibeBoss threads}}",
       ),
     },
   ],
   [
-    "Start\nStarting\nStarted\na T3 thread",
+    "Start\nStarting\nStarted\na VibeBoss thread",
     {
       detail: msg(
-        "{status, select, inProgress {Starting a T3 thread} completed {Started a T3 thread} failed {Failed to start a T3 thread} declined {Declined to start a T3 thread} stopped {Stopped starting a T3 thread} other {Starting a T3 thread}}",
+        "{status, select, inProgress {Starting a VibeBoss thread} completed {Started a VibeBoss thread} failed {Failed to start a VibeBoss thread} declined {Declined to start a VibeBoss thread} stopped {Stopped starting a VibeBoss thread} other {Starting a VibeBoss thread}}",
       ),
     },
   ],
@@ -261,31 +261,31 @@ const T3_TOOL_SENTENCES: ReadonlyMap<string, T3ToolSentence> = new Map<string, T
     "List\nListing\nListed\nT3 threads",
     {
       detail: msg(
-        "{status, select, inProgress {Listing T3 threads} completed {Listed T3 threads} failed {Failed to list T3 threads} declined {Declined to list T3 threads} stopped {Stopped listing T3 threads} other {Listing T3 threads}}",
+        "{status, select, inProgress {Listing VibeBoss threads} completed {Listed VibeBoss threads} failed {Failed to list VibeBoss threads} declined {Declined to list VibeBoss threads} stopped {Stopped listing VibeBoss threads} other {Listing VibeBoss threads}}",
       ),
     },
   ],
   [
-    "Read\nReading\nRead\na T3 thread",
+    "Read\nReading\nRead\na VibeBoss thread",
     {
       detail: msg(
-        "{status, select, inProgress {Reading a T3 thread} completed {Read a T3 thread} failed {Failed to read a T3 thread} declined {Declined to read a T3 thread} stopped {Stopped reading a T3 thread} other {Reading a T3 thread}}",
+        "{status, select, inProgress {Reading a VibeBoss thread} completed {Read a VibeBoss thread} failed {Failed to read a VibeBoss thread} declined {Declined to read a VibeBoss thread} stopped {Stopped reading a VibeBoss thread} other {Reading a VibeBoss thread}}",
       ),
     },
   ],
   [
-    "Send\nSending\nSent\nto a T3 thread",
+    "Send\nSending\nSent\nto a VibeBoss thread",
     {
       detail: msg(
-        "{status, select, inProgress {Sending to a T3 thread} completed {Sent to a T3 thread} failed {Failed to send to a T3 thread} declined {Declined to send to a T3 thread} stopped {Stopped sending to a T3 thread} other {Sending to a T3 thread}}",
+        "{status, select, inProgress {Sending to a VibeBoss thread} completed {Sent to a VibeBoss thread} failed {Failed to send to a VibeBoss thread} declined {Declined to send to a VibeBoss thread} stopped {Stopped sending to a VibeBoss thread} other {Sending to a VibeBoss thread}}",
       ),
     },
   ],
   [
-    "Wait\nWaiting\nWaited\nfor a T3 thread",
+    "Wait\nWaiting\nWaited\nfor a VibeBoss thread",
     {
       detail: msg(
-        "{status, select, inProgress {Waiting for a T3 thread} completed {Waited for a T3 thread} failed {Failed to wait for a T3 thread} declined {Declined to wait for a T3 thread} stopped {Stopped waiting for a T3 thread} other {Waiting for a T3 thread}}",
+        "{status, select, inProgress {Waiting for a VibeBoss thread} completed {Waited for a VibeBoss thread} failed {Failed to wait for a VibeBoss thread} declined {Declined to wait for a VibeBoss thread} stopped {Stopped waiting for a VibeBoss thread} other {Waiting for a VibeBoss thread}}",
       ),
     },
   ],
@@ -306,10 +306,10 @@ const T3_TOOL_SENTENCES: ReadonlyMap<string, T3ToolSentence> = new Map<string, T
     },
   ],
   [
-    "Interrupt\nInterrupting\nRequested an interrupt of\na T3 thread",
+    "Interrupt\nInterrupting\nRequested an interrupt of\na VibeBoss thread",
     {
       detail: msg(
-        "{status, select, inProgress {Interrupting a T3 thread} completed {Requested an interrupt of a T3 thread} failed {Failed to interrupt a T3 thread} declined {Declined to interrupt a T3 thread} stopped {Stopped interrupting a T3 thread} other {Interrupting a T3 thread}}",
+        "{status, select, inProgress {Interrupting a VibeBoss thread} completed {Requested an interrupt of a VibeBoss thread} failed {Failed to interrupt a VibeBoss thread} declined {Declined to interrupt a VibeBoss thread} stopped {Stopped interrupting a VibeBoss thread} other {Interrupting a VibeBoss thread}}",
       ),
     },
   ],
@@ -685,7 +685,7 @@ const T3_TOOL_SENTENCES: ReadonlyMap<string, T3ToolSentence> = new Map<string, T
     "Update\nUpdating\nUpdated\nT3 thread metadata",
     {
       detail: msg(
-        "{status, select, inProgress {Updating T3 thread metadata} completed {Updated T3 thread metadata} failed {Failed to update T3 thread metadata} declined {Declined to update T3 thread metadata} stopped {Stopped updating T3 thread metadata} other {Updating T3 thread metadata}}",
+        "{status, select, inProgress {Updating VibeBoss thread metadata} completed {Updated VibeBoss thread metadata} failed {Failed to update VibeBoss thread metadata} declined {Declined to update VibeBoss thread metadata} stopped {Stopped updating VibeBoss thread metadata} other {Updating VibeBoss thread metadata}}",
       ),
     },
   ],

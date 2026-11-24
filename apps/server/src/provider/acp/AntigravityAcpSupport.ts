@@ -48,7 +48,7 @@ export interface AntigravityAcpRuntimeInput extends Omit<
 > {
   readonly childProcessSpawner: ChildProcessSpawner.ChildProcessSpawner["Service"];
   readonly onAuthorizationUrl?: (url: string) => Effect.Effect<void, EffectAcpErrors.AcpError>;
-  /** Serve `fs/read_text_file` from T3 instead of the agent's native reader. */
+  /** Serve `fs/read_text_file` from VibeBoss instead of the agent's native reader. */
   readonly clientFileReads?: boolean;
   readonly clientCapabilities?: AcpSessionRuntime.AcpSessionRuntimeOptions["clientCapabilities"];
   /** The installed version, known before `initialize`; it picks the client name. */
@@ -107,7 +107,7 @@ export function antigravitySessionMeta(
 export function antigravityClientInfo(version: string | null | undefined) {
   const parsed = parseAntigravityVersion(version);
   return parsed !== undefined && compareVersions(parsed, OPEN_MODEL_ACCESS_RELEASE) >= 0
-    ? { name: "t3-code", title: "T3 Code", version: packageJson.version }
+    ? { name: "t3-code", title: "VibeBoss", version: packageJson.version }
     : { name: "zed", version: "0.0.0" };
 }
 
@@ -168,7 +168,7 @@ export function antigravityPermissionMode(runtimeMode: RuntimeMode): string {
 
 /**
  * The agy CLI rejects `yolo` and `auto_edit`, and sessions without native Auto reject `auto`.
- * Those stay in `default`, where it asks before acting and T3 answers from the live runtime
+ * Those stay in `default`, where it asks before acting and VibeBoss answers from the live runtime
  * policy, so permission changes apply on the next turn without a restart.
  */
 export function antigravitySessionMode(
@@ -207,7 +207,7 @@ export function antigravityPermissionDisposition(
 ) {
   const disposition = acpPermissionDisposition(policy, request);
   if (disposition === "deny") return "deny";
-  // T3 authorizes its own MCP server, so Auto and Auto-accept edits run it unasked, as Claude does.
+  // VibeBoss authorizes its own MCP server, so Auto and Auto-accept edits run it unasked, as Claude does.
   if (
     (policy.runtimeMode === "auto" || policy.runtimeMode === "auto-accept-edits") &&
     (policy.approvalPolicy === undefined || policy.approvalPolicy === "never") &&

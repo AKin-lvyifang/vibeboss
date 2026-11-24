@@ -947,7 +947,7 @@ describe("CursorAdapterV2", () => {
     ),
   );
 
-  it.effect("sends T3 instructions to each Cursor conversation that lacks them", () =>
+  it.effect("sends VibeBoss instructions to each Cursor conversation that lacks them", () =>
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const workspace = yield* fileSystem.makeTempDirectoryScoped({ prefix: "cursor-v2-device-" });
@@ -1117,8 +1117,8 @@ describe("CursorAdapterV2", () => {
           lastProviderTurn = providerTurn.providerTurn;
         const sent = sentMessages.at(-1)!;
         return {
-          orchestration: sent.includes("## T3 Code orchestration"),
-          devices: sent.includes("## T3 Code devices"),
+          orchestration: sent.includes("## VibeBoss orchestration"),
+          devices: sent.includes("## VibeBoss devices"),
           runtime: sent.includes("<runtime_info>"),
         };
       });

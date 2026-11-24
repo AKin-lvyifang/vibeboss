@@ -432,7 +432,7 @@ export interface AcpAdapterV2Flavor {
   >;
   readonly requiresSignIn?: (cause: unknown) => boolean;
   /**
-   * Runs before attachment paths, T3 instructions and native slash-command detection,
+   * Runs before attachment paths, VibeBoss instructions and native slash-command detection,
    * so a rewrite can turn the user's text into a native command.
    */
   readonly rewriteUserText?: (
@@ -446,7 +446,7 @@ export interface AcpAdapterV2Flavor {
     EffectAcpSchema.InitializeRequest["clientCapabilities"]
   >["_meta"];
   readonly mcpOverHttp?: boolean;
-  /** The agent has no tool search of its own, so T3 lists optional tools on demand. */
+  /** The agent has no tool search of its own, so VibeBoss lists optional tools on demand. */
   readonly deferMcpTools?: boolean;
   readonly normalizeSessionUpdate?: (
     notification: EffectAcpSchema.SessionNotification,
@@ -548,7 +548,7 @@ export interface AcpAdapterV2Flavor {
         ) => EffectAcpSchema.RequestPermissionResponse | undefined;
       }
     | undefined;
-  /** Grok Auto asks only about classifier refusals; T3 policy must not auto-approve them. */
+  /** Grok Auto asks only about classifier refusals; VibeBoss policy must not auto-approve them. */
   readonly permissionDisposition?: (
     policy: ProviderAdapter.ProviderAdapterV2RuntimePolicy,
     request: EffectAcpSchema.RequestPermissionRequest,
@@ -556,7 +556,7 @@ export interface AcpAdapterV2Flavor {
   readonly approvalOptions?: (
     request: EffectAcpSchema.RequestPermissionRequest,
   ) => ReadonlyArray<ProviderApprovalOption>;
-  /** Options T3 may answer with; the rest (e.g. Devin's bypass-permissions plan exit) are never sent. */
+  /** Options VibeBoss may answer with; the rest (e.g. Devin's bypass-permissions plan exit) are never sent. */
   readonly answerablePermissionOptions?: (
     request: EffectAcpSchema.RequestPermissionRequest,
   ) => ReadonlyArray<EffectAcpSchema.PermissionOption>;
@@ -1124,7 +1124,7 @@ function acpMcpContext(
     authorization: session.authorizationHeader,
     processEnvironment: {
       // The thread id every process the agent starts inherits, so a tool run
-      // from its shell can find its T3 thread. Claude and Codex sessions set
+      // from its shell can find its VibeBoss thread. Claude and Codex sessions set
       // the same variable (PortScanner.AGENT_THREAD_ENV; a string literal here
       // because this package cannot reach apps/server).
       T3CODE_THREAD_ID: session.threadId,
@@ -6712,7 +6712,7 @@ export const makeAcpAdapterV2 = Effect.fn("makeAcpAdapterV2")(function* (
           const waiting = turnAttached;
           turnAttached = yield* Deferred.make<boolean>();
           yield* Deferred.succeed(waiting, false);
-          // session/cancel does not end the agent's MCP calls; T3 runs them, so it stops them.
+          // session/cancel does not end the agent's MCP calls; VibeBoss runs them, so it stops them.
           if (options.stopMcpCalls && runtimeMcpBridge !== undefined) {
             yield* runtimeMcpBridge.stopCalls;
           }
@@ -7217,8 +7217,8 @@ export const makeAcpAdapterV2 = Effect.fn("makeAcpAdapterV2")(function* (
               Effect.fail(
                 EffectAcpErrors.AcpRequestError.internalError(
                   disposition === "ask"
-                    ? `The active T3 runtime policy requires approval for ${operation}. Request permission with session/request_permission before retrying.`
-                    : `The active T3 runtime policy does not allow ${operation}.`,
+                    ? `The active VibeBoss runtime policy requires approval for ${operation}. Request permission with session/request_permission before retrying.`
+                    : `The active VibeBoss runtime policy does not allow ${operation}.`,
                 ),
               ),
             ),
@@ -8993,7 +8993,7 @@ export const makeAcpAdapterV2 = Effect.fn("makeAcpAdapterV2")(function* (
                 recorded?.failure ??
                   makeProviderFailure({
                     class: "provider_error",
-                    message: `${flavor.runtimeHarness ?? driver} sent nothing for ${minutes} ${minutes === 1 ? "minute" : "minutes"}, so T3 Code stopped the turn and restarted the agent. Send a message to continue.`,
+                    message: `${flavor.runtimeHarness ?? driver} sent nothing for ${minutes} ${minutes === 1 ? "minute" : "minutes"}, so VibeBoss stopped the turn and restarted the agent. Send a message to continue.`,
                   }),
                 recorded === undefined
                   ? undefined

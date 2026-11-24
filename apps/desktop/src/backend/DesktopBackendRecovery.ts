@@ -187,7 +187,7 @@ export function make(input: {
   readonly onRecovery: (pid: number) => void;
   readonly onError: (operation: string, error: unknown) => void;
 }) {
-  // Use Application Support even when the T3 home or the app lives on removable storage.
+  // Use Application Support even when the VibeBoss home or the app lives on removable storage.
   const directory = NodePath.join(input.appDataDirectory, directoryName);
   const scope = async () => {
     const [home, executable] = await Promise.all([

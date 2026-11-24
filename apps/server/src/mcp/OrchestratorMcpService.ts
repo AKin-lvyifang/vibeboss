@@ -1182,7 +1182,7 @@ function turnItemText(item: OrchestrationV2TurnItem): string | null {
     case "secret_request":
       return `Asked the user for ${item.label}: ${item.secretStatus}.`;
     case "feedback_request":
-      return `Asked the user to approve a ${item.preview.kind} report about ${item.preview.subject} for the T3 team: ${item.feedbackStatus}.`;
+      return `Asked the user to approve a ${item.preview.kind} report about ${item.preview.subject} for the VibeBoss team: ${item.feedbackStatus}.`;
     case "link_request":
       return item.linkStatus === "linked"
         ? `Linked ${item.linkedLabel ?? item.url ?? "an environment"} (${item.linkedAccess}).`
@@ -1435,7 +1435,7 @@ const make = Effect.gen(function* () {
   const resolveProjectTarget = (
     parent: Pick<OrchestrationV2ThreadProjection, "thread"> | undefined,
     projectId: ProjectId | undefined,
-    missingMessage = "Pass projectId: this MCP client is not running inside a T3 thread.",
+    missingMessage = "Pass projectId: this MCP client is not running inside a VibeBoss thread.",
   ) =>
     projectId !== undefined
       ? Effect.succeed(projectId)
@@ -2412,7 +2412,7 @@ const make = Effect.gen(function* () {
         return yield* failure(
           "invalid_request",
           parent === undefined
-            ? "bindToCurrentThread needs an agent running inside a T3 thread."
+            ? "bindToCurrentThread needs an agent running inside a VibeBoss thread."
             : "bindToCurrentThread binds to this thread, which belongs to a different project.",
         );
       }
@@ -2496,7 +2496,7 @@ const make = Effect.gen(function* () {
           return yield* failure(
             "invalid_request",
             parent === undefined
-              ? "bindToCurrentThread needs an agent running inside a T3 thread."
+              ? "bindToCurrentThread needs an agent running inside a VibeBoss thread."
               : "bindToCurrentThread binds to this thread, which belongs to a different project.",
           );
         }
@@ -3453,7 +3453,7 @@ const make = Effect.gen(function* () {
         : yield* resolveProjectTarget(
             parent,
             input.projectId,
-            "Pass projectId, or allProjects: true for every project. This MCP client is not running inside a T3 thread.",
+            "Pass projectId, or allProjects: true for every project. This MCP client is not running inside a VibeBoss thread.",
           );
       if (!input.allProjects && input.projectId !== undefined) {
         yield* requireProject(input.projectId);

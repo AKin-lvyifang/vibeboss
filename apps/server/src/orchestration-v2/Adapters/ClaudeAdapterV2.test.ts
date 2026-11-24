@@ -919,7 +919,7 @@ describe("ClaudeAdapterV2 native protocol logging", () => {
     assert.equal(systemPrompt.preset, "claude_code");
     assert.include(systemPrompt.append ?? "", "Use `delegate_task`");
     assert.include(systemPrompt.append ?? "", "call `t3_background_wait`");
-    assert.notInclude(systemPrompt.append ?? "", "## T3 Code devices");
+    assert.notInclude(systemPrompt.append ?? "", "## VibeBoss devices");
     const logged = ClaudeAdapterV2.loggedClaudeQueryOptions(options);
     assert.equal(logged.hasMcpServers, true);
     assert.notInclude(JSON.stringify(logged), "secret-claude-token");
@@ -939,7 +939,7 @@ describe("ClaudeAdapterV2 native protocol logging", () => {
   });
 });
 
-describe("ClaudeAdapterV2 T3 tool instructions", () => {
+describe("ClaudeAdapterV2 VibeBoss tool instructions", () => {
   const options = (input: {
     readonly mcp: boolean;
     readonly deviceToolsAvailable: boolean;
@@ -969,12 +969,12 @@ describe("ClaudeAdapterV2 T3 tool instructions", () => {
     assert.include(text, "Use `delegate_task`");
   });
 
-  it("leaves the device block out without device access or without T3 tools", () => {
-    assert.notInclude(append({ mcp: true, deviceToolsAvailable: false }), "## T3 Code devices");
-    assert.notInclude(append({ mcp: false, deviceToolsAvailable: true }), "## T3 Code devices");
+  it("leaves the device block out without device access or without VibeBoss tools", () => {
+    assert.notInclude(append({ mcp: true, deviceToolsAvailable: false }), "## VibeBoss devices");
+    assert.notInclude(append({ mcp: false, deviceToolsAvailable: true }), "## VibeBoss devices");
   });
 
-  it("gives the agent feedback line only to a session with T3 tools", () => {
+  it("gives the agent feedback line only to a session with VibeBoss tools", () => {
     const feedback = (mcp: boolean, agentFeedback: "off" | "auto") =>
       append({ mcp, deviceToolsAvailable: false, agentFeedback }).includes("t3_feedback");
     assert.include(
@@ -1016,7 +1016,7 @@ describe("ClaudeAdapterV2 T3 tool instructions", () => {
     ]);
     assert.deepEqual(await subagentContext({ mcp: true, deviceToolsAvailable: false }), []);
     assert.deepEqual(await subagentContext({ mcp: false, deviceToolsAvailable: true }), []);
-    // A custom subagent can lack T3 tools even when this session has them.
+    // A custom subagent can lack VibeBoss tools even when this session has them.
     assert.notInclude(
       JSON.stringify(
         await subagentContext({
@@ -1597,7 +1597,7 @@ describe("ClaudeAdapterV2 append-system-prompt-file launch argument", () => {
     ),
   );
 
-  it.effect("sends append launch arguments to Claude after the T3 instructions", () =>
+  it.effect("sends append launch arguments to Claude after the VibeBoss instructions", () =>
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const cwd = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-claude-append-cwd-" });
@@ -3375,7 +3375,7 @@ describe("ClaudeAdapterV2 MCP credential channel", () => {
           ...ClaudeAdapterV2.makeClaudeQueryOptions({
             modelSelection: CLAUDE_TEST_MODEL_SELECTION,
             nativeThreadId: "native-thread-claude-mcp-channel",
-            title: "Existing T3 title",
+            title: "Existing VibeBoss title",
             resume: false,
             cwd: null,
             environment: { PATH: "/usr/bin" },
@@ -3432,7 +3432,7 @@ describe("ClaudeAdapterV2 MCP credential channel", () => {
       });
       assert.deepInclude(
         cli.controlRequests.find((request) => Reflect.get(request, "subtype") === "initialize"),
-        { title: "Existing T3 title" },
+        { title: "Existing VibeBoss title" },
       );
       const spawned = JSON.stringify(cli.spawns);
       assert.notInclude(spawned, "--title");
@@ -3607,7 +3607,7 @@ describe("ClaudeAdapterV2 native session identity", () => {
     }),
   );
 
-  it.effect("resumes an imported native session on its first T3 turn", () =>
+  it.effect("resumes an imported native session on its first VibeBoss turn", () =>
     Effect.gen(function* () {
       const openedQueries = yield* openTurnWithOrdinal(1, false, "imported-native-session");
       assert.equal(openedQueries.length, 1);
@@ -6944,7 +6944,7 @@ describe("ClaudeAdapterV2 background wake turns", () => {
         server: "probe.server",
       });
       assert.deepInclude(tool, { name: "show_weather", inputSchema: { type: "object" } });
-      // T3 skips the app-call confirmation only for `readOnlyHint` tools.
+      // VibeBoss skips the app-call confirmation only for `readOnlyHint` tools.
       assert.deepInclude(appOnlyTool, {
         annotations: { readOnlyHint: true, destructiveHint: false },
       });
@@ -7083,7 +7083,7 @@ describe("ClaudeAdapterV2 background wake turns", () => {
       readOnly: false,
     },
     {
-      case: "a deny rule for this tool on a server alias T3 can't list",
+      case: "a deny rule for this tool on a server alias VibeBoss can't list",
       rules: [{ behavior: "deny", rule: "mcp__probe_alias__refresh_weather" }],
       called: false,
       readOnly: false,
@@ -11386,7 +11386,7 @@ describe("ClaudeAdapterV2 background wake turns", () => {
       entry("user", terminalPrompt, secondReply, "Typed in the terminal") +
       entry("assistant", terminalReply, terminalPrompt, [{ type: "text", text: "Answered." }]);
 
-    // Streams one T3 turn of two reply blocks, writes the transcript, then starts the next turn.
+    // Streams one VibeBoss turn of two reply blocks, writes the transcript, then starts the next turn.
     const nextTurnAfter = Effect.fnUntraced(function* (input: {
       readonly transcript: ((promptUuid: string) => string) | null;
       readonly backgroundShell?: boolean;
@@ -11488,7 +11488,7 @@ describe("ClaudeAdapterV2 background wake turns", () => {
         transcript: (promptUuid: string) => t3Turn(promptUuid) + terminalExchange,
       },
       {
-        // The terminal's rows alone are longer than the tail T3 reads first.
+        // The terminal's rows alone are longer than the tail VibeBoss reads first.
         name: "a long terminal exchange followed its last message",
         transcript: (promptUuid: string) =>
           t3Turn(promptUuid) +
@@ -11556,7 +11556,7 @@ describe("ClaudeAdapterV2 background wake turns", () => {
         wakeFiresDuringRead: true,
       },
       {
-        // Longer than the tail T3 reads, and the process's own messages are not written yet.
+        // Longer than the tail VibeBoss reads, and the process's own messages are not written yet.
         name: "a long transcript's tail holds none of its messages",
         transcript: () =>
           entry("user", "old-1", null, "x".repeat(1_200_000)) +
@@ -17048,7 +17048,7 @@ describe("ClaudeAdapterV2 background wake turns", () => {
 
   // regression: #17531 a mod that holds a tool behind a focused pane must fail the turn, not hang it
   it.effect.each([
-    { case: "fails a turn whose mod requests focus for a pane T3 cannot show", focus: true },
+    { case: "fails a turn whose mod requests focus for a pane VibeBoss cannot show", focus: true },
     { case: "keeps a turn running beside a passive mod pane", focus: false },
   ] as const)("$case", ({ focus }) =>
     Effect.gen(function* () {
@@ -18361,7 +18361,7 @@ describe("ClaudeAdapterV2 background wake turns", () => {
         );
         assert.lengthOf(harness.continuationRequests, 1);
 
-        // An empty session-task lifecycle result arriving before T3 opens the
+        // An empty session-task lifecycle result arriving before VibeBoss opens the
         // wake run must not replace the root's terminal usage-limit result.
         yield* harness.offerAndWait(wakeTurnInit);
         yield* harness.offerAndWait(
@@ -25843,77 +25843,79 @@ describe("ClaudeAdapterV2 background wake turns", () => {
       ),
     );
 
-    it.effect("ends a goal check without re-prompting while T3 work will wake the thread", () =>
-      Effect.gen(function* () {
-        const harness = yield* makeWakeHarness;
-        const mcpSessions = yield* McpProviderSessions.McpProviderSessions;
-        yield* mcpSessions.set({
-          environmentId: EnvironmentId.make("environment-goal-wake"),
-          threadId: harness.threadId,
-          providerSessionId: "mcp-session-goal-wake",
-          providerInstanceId: ProviderInstanceId.make("claudeAgent"),
-          endpoint: "http://127.0.0.1:43123/mcp",
-          authorizationHeader: "Bearer secret-claude-token",
-          browserToolsAvailable: true,
-          hasPendingWake: Effect.succeed(true),
-        });
-        const stop = Effect.promise(() =>
-          Promise.all(
-            (harness.getOpenedOptions()?.hooks?.Stop ?? []).flatMap((matcher) =>
-              matcher.hooks.map((hook) =>
-                hook(
-                  {
-                    hook_event_name: "Stop",
-                    stop_hook_active: true,
-                    session_id: WAKE_NATIVE_SESSION,
-                    transcript_path: "/transcript.jsonl",
-                    cwd: "/workspace",
-                  },
-                  undefined,
-                  { signal: new AbortController().signal },
+    it.effect(
+      "ends a goal check without re-prompting while VibeBoss work will wake the thread",
+      () =>
+        Effect.gen(function* () {
+          const harness = yield* makeWakeHarness;
+          const mcpSessions = yield* McpProviderSessions.McpProviderSessions;
+          yield* mcpSessions.set({
+            environmentId: EnvironmentId.make("environment-goal-wake"),
+            threadId: harness.threadId,
+            providerSessionId: "mcp-session-goal-wake",
+            providerInstanceId: ProviderInstanceId.make("claudeAgent"),
+            endpoint: "http://127.0.0.1:43123/mcp",
+            authorizationHeader: "Bearer secret-claude-token",
+            browserToolsAvailable: true,
+            hasPendingWake: Effect.succeed(true),
+          });
+          const stop = Effect.promise(() =>
+            Promise.all(
+              (harness.getOpenedOptions()?.hooks?.Stop ?? []).flatMap((matcher) =>
+                matcher.hooks.map((hook) =>
+                  hook(
+                    {
+                      hook_event_name: "Stop",
+                      stop_hook_active: true,
+                      session_id: WAKE_NATIVE_SESSION,
+                      transcript_path: "/transcript.jsonl",
+                      cwd: "/workspace",
+                    },
+                    undefined,
+                    { signal: new AbortController().signal },
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-        const condition = "the delegated review is addressed";
-        yield* harness.runtime.startTurn(
-          makeClaudeTestTurnInput({
-            threadId: harness.threadId,
-            providerThread: harness.providerThread,
-            now: yield* DateTime.now,
-            attemptId: RunAttemptId.make("goal-wake-attempt"),
-            text: `/goal ${condition}`,
-            attachments: [],
-          }),
-        );
-        // Without a goal, Stop keeps Claude Code's own behavior.
-        assert.deepEqual(yield* stop, [{}]);
-        yield* harness.offerAndWait(syntheticFrame("goal-wake-set", `Goal set: ${condition}`));
-        assert.deepEqual(yield* stop, [{ continue: false }]);
-        // The turn ends without an error and the goal waits for the wake.
-        yield* Queue.offer(
-          harness.sdkMessages,
-          makeResultFrame({
-            uuid: "goal-wake-result",
-            result: "Waiting for the review.",
-            terminalReason: "stop_hook_prevented",
-          }),
-        );
-        const terminal = yield* Queue.take(harness.terminalReceipts);
-        assert.equal(terminal.status, "completed");
-        assert.equal(goalStatuses(harness.events).at(-1)?.status, "active");
-      }).pipe(
-        Effect.scoped,
-        Effect.provide(
-          Layer.mergeAll(
-            IdAllocator.layer,
-            McpProviderSessions.layer,
-            NodeServices.layer,
-            NodeCrypto.layer,
+          );
+          const condition = "the delegated review is addressed";
+          yield* harness.runtime.startTurn(
+            makeClaudeTestTurnInput({
+              threadId: harness.threadId,
+              providerThread: harness.providerThread,
+              now: yield* DateTime.now,
+              attemptId: RunAttemptId.make("goal-wake-attempt"),
+              text: `/goal ${condition}`,
+              attachments: [],
+            }),
+          );
+          // Without a goal, Stop keeps Claude Code's own behavior.
+          assert.deepEqual(yield* stop, [{}]);
+          yield* harness.offerAndWait(syntheticFrame("goal-wake-set", `Goal set: ${condition}`));
+          assert.deepEqual(yield* stop, [{ continue: false }]);
+          // The turn ends without an error and the goal waits for the wake.
+          yield* Queue.offer(
+            harness.sdkMessages,
+            makeResultFrame({
+              uuid: "goal-wake-result",
+              result: "Waiting for the review.",
+              terminalReason: "stop_hook_prevented",
+            }),
+          );
+          const terminal = yield* Queue.take(harness.terminalReceipts);
+          assert.equal(terminal.status, "completed");
+          assert.equal(goalStatuses(harness.events).at(-1)?.status, "active");
+        }).pipe(
+          Effect.scoped,
+          Effect.provide(
+            Layer.mergeAll(
+              IdAllocator.layer,
+              McpProviderSessions.layer,
+              NodeServices.layer,
+              NodeCrypto.layer,
+            ),
           ),
         ),
-      ),
     );
 
     it.effect(

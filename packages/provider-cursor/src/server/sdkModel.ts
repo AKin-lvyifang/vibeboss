@@ -85,7 +85,7 @@ export function cursorSdkModelSelection(
   const descriptors =
     models.find((model) => model.slug === modelSelection.model)?.capabilities?.optionDescriptors ??
     [];
-  // Some Cursor plans reject runs that leave a catalog parameter unset; T3 keeps Fast off until picked.
+  // Some Cursor plans reject runs that leave a catalog parameter unset; VibeBoss keeps Fast off until picked.
   const defaults = descriptors.flatMap((descriptor) => {
     if (explicit.some((option) => option.id === descriptor.id)) return [];
     const value = descriptor.id === "fastMode" ? false : getProviderOptionCurrentValue(descriptor);

@@ -39,7 +39,7 @@ export const resolveUserDataPath = Effect.fn("desktop.userData.resolveUserDataPa
   }) {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    // VibeBoss: its own Chromium profile, never an installed T3 Code's (and no T3 legacy import).
+    // VibeBoss: its own Chromium profile, never an installed VibeBoss's (and no VibeBoss legacy import).
     const names = input.isDevelopment
       ? { current: "vibeboss-dev", legacy: "VibeBoss (Dev legacy)" }
       : { current: "vibeboss", legacy: "VibeBoss (legacy)" };

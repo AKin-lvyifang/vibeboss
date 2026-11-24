@@ -41,7 +41,7 @@ const TokenFile = Schema.Struct({
   project_id: Schema.optional(Schema.String),
 });
 // The 1.5.x CLI never writes acp_token.json: it keeps its sign-in in the OS keyring, or in
-// antigravity-oauth-token without one or when T3 bypasses the keyring. It stores no OAuth client, so T3 cannot refresh it.
+// antigravity-oauth-token without one or when VibeBoss bypasses the keyring. It stores no OAuth client, so VibeBoss cannot refresh it.
 const CliToken = Schema.Struct({
   token: Schema.Struct({
     access_token: Schema.NonEmptyString,
@@ -361,7 +361,7 @@ export const makeAntigravityUsageProbe = Effect.fn("makeAntigravityUsageProbe")(
     if (!(yield* fs.exists(tokenPath))) {
       cached = undefined;
       // VibeBoss: agy 1.5.15+ keeps a Google account's sign-in in the shared keyring entry even
-      // when T3 asks for file storage, so fall back to the keyring for personal accounts too.
+      // when VibeBoss asks for file storage, so fall back to the keyring for personal accounts too.
       // Each keyring read can raise a macOS access prompt, so reuse the secret until it expires.
       const stored = (yield* fs.exists(cliTokenPath))
         ? yield* fs.readFileString(cliTokenPath)

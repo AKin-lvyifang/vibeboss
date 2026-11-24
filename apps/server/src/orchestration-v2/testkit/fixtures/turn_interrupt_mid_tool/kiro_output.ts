@@ -28,7 +28,7 @@ function kiroRunningBeforeCancel(transcript: ProviderReplayTranscript): Set<stri
   );
 }
 
-/** Stop reaches Kiro while its command runs; Kiro fails it and T3 shows it interrupted. */
+/** Stop reaches Kiro while its command runs; Kiro fails it and VibeBoss shows it interrupted. */
 export function assertTurnInterruptMidToolKiroOutput(
   result: OrchestratorV2ScenarioResult,
   transcript: ProviderReplayTranscript,

@@ -413,7 +413,7 @@ export class GitVcsDriver extends Context.Service<
       key: string,
     ) => Effect.Effect<string | null, GitCommandError>;
     /**
-     * The branch, named as on the host, that T3 recorded `branch` was cut from. Null when none
+     * The branch, named as on the host, that VibeBoss recorded `branch` was cut from. Null when none
      * was recorded.
      */
     readonly readBranchBase: (
@@ -1145,9 +1145,9 @@ export const makeVcsDriverShape = Effect.fn("makeGitVcsDriverShape")(function* (
     (excludePaths ?? []).map((relativePath) => `:(exclude,literal)${relativePath}`);
 
   const checkpointIdentity: NodeJS.ProcessEnv = {
-    GIT_AUTHOR_NAME: "T3 Code",
+    GIT_AUTHOR_NAME: "VibeBoss",
     GIT_AUTHOR_EMAIL: "t3code@users.noreply.github.com",
-    GIT_COMMITTER_NAME: "T3 Code",
+    GIT_COMMITTER_NAME: "VibeBoss",
     GIT_COMMITTER_EMAIL: "t3code@users.noreply.github.com",
   };
 
@@ -1268,9 +1268,9 @@ export const makeVcsDriverShape = Effect.fn("makeGitVcsDriverShape")(function* (
         GIT_ALTERNATE_OBJECT_DIRECTORIES: quotedObjects.startsWith('"')
           ? quotedObjects
           : `"${quotedObjects}"`,
-        GIT_AUTHOR_NAME: "T3 Code",
+        GIT_AUTHOR_NAME: "VibeBoss",
         GIT_AUTHOR_EMAIL: "t3code@users.noreply.github.com",
-        GIT_COMMITTER_NAME: "T3 Code",
+        GIT_COMMITTER_NAME: "VibeBoss",
         GIT_COMMITTER_EMAIL: "t3code@users.noreply.github.com",
       };
 

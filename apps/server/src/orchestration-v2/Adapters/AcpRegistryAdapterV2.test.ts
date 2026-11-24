@@ -1618,7 +1618,7 @@ describe("AcpRegistryAdapterV2", () => {
         load: stdio("Bearer rotated-token"),
       });
       // Command Code cannot start the stdio bridge on Windows: it spawns MCP commands through
-      // cmd.exe, which splits the unquoted T3 executable path at the space.
+      // cmd.exe, which splits the unquoted VibeBoss executable path at the space.
       const commandCode = {
         source: "local",
         commandPath: "C:\\tools\\cmdc.exe",
@@ -1664,7 +1664,7 @@ describe("AcpRegistryAdapterV2", () => {
       });
       // Several agents can run from one directory at once; the spawn env is how
       // a process the agent starts (an MCP server, a shell tool) finds its own
-      // T3 thread, the same way Claude and Codex sessions do.
+      // VibeBoss thread, the same way Claude and Codex sessions do.
       const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
       const spawnEnvironments: Array<Record<string, unknown> | undefined> = [];
       const capturingSpawner = ChildProcessSpawner.make((command) =>

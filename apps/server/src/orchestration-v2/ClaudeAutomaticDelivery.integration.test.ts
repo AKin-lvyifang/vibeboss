@@ -1567,7 +1567,7 @@ const exitWhileIdle = (options: {
               : [emptyRoster, notification, killed],
           );
         }
-        // The CLI exits while the thread is idle, after its last frames; the T3 server keeps running.
+        // The CLI exits while the thread is idle, after its last frames; the VibeBoss server keeps running.
         yield* Queue.end(firstProcess);
         yield* Fiber.join(recorded);
         yield* worker.drain();

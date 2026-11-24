@@ -192,7 +192,7 @@ describe("CodexAdapterV2 runtime policy", () => {
       }),
   );
 
-  it.effect("derives concrete Codex turn policies from every T3 runtime mode", () =>
+  it.effect("derives concrete Codex turn policies from every VibeBoss runtime mode", () =>
     Effect.gen(function* () {
       const build = (
         runtimeMode: "approval-required" | "auto-accept-edits" | "auto" | "full-access",
@@ -261,7 +261,7 @@ describe("CodexAdapterV2 runtime policy", () => {
       });
       assert.deepEqual((yield* build("approval-required")).sandboxPolicy, { type: "readOnly" });
       assert.deepEqual((yield* build("full-access")).sandboxPolicy, { type: "dangerFullAccess" });
-      // The folder list reaches the model without T3 Code's MCP tools.
+      // The folder list reaches the model without VibeBoss's MCP tools.
       assert.deepEqual(Object.keys(autoAcceptEdits.additionalContext ?? {}), ["t3_code_workspace"]);
       assert.include(
         autoAcceptEdits.additionalContext?.["t3_code_workspace"]?.value,
@@ -711,7 +711,7 @@ function codexReplayPreamble(input: {
         id: 1,
         method: "initialize",
         params: {
-          clientInfo: { name: "T3 Code", title: "T3 Code", version: packageJson.version },
+          clientInfo: { name: "VibeBoss", title: "VibeBoss", version: packageJson.version },
           capabilities: {
             experimentalApi: true,
             optOutNotificationMethods: ["turn/diff/updated"],
@@ -728,7 +728,7 @@ function codexReplayPreamble(input: {
       frame: {
         id: 1,
         result: {
-          userAgent: "T3 Code/0.156.1",
+          userAgent: "VibeBoss/0.156.1",
           codexHome: "/tmp/codex-home",
           platformFamily: "unix",
           platformOs: "macos",
@@ -1360,7 +1360,7 @@ describe("CodexAdapterV2 session initialize", () => {
               frame: {
                 id: 1,
                 result: {
-                  userAgent: "T3 Code/0.144.3 (Mac OS 15.5.0; x86_64) unknown (T3 Code; 0.1.5)",
+                  userAgent: "VibeBoss/0.144.3 (Mac OS 15.5.0; x86_64) unknown (VibeBoss; 0.1.5)",
                   codexHome: "/tmp/codex-home",
                   platformFamily: "unix",
                   platformOs: "macos",
@@ -1384,7 +1384,7 @@ describe("CodexAdapterV2 session initialize", () => {
       assert.instanceOf(failure.cause, ProviderSetupError);
       assert.equal(
         failure.cause.message,
-        "Codex 0.144.3 does not work with this T3 Code release. Update Codex to >=0.159.0, then retry.",
+        "Codex 0.144.3 does not work with this VibeBoss release. Update Codex to >=0.159.0, then retry.",
       );
     }).pipe(
       Effect.scoped,
@@ -3758,7 +3758,7 @@ describe("CodexAdapterV2 post-settle continuation", () => {
     ),
   );
 
-  it.effect("names the native thread after the T3 title and retries a failed rename", () =>
+  it.effect("names the native thread after the VibeBoss title and retries a failed rename", () =>
     Effect.gen(function* () {
       const nativeThreadId = "thread-name-thread";
       const nameSet = (
@@ -4286,7 +4286,7 @@ describe("CodexAdapterV2 post-settle continuation", () => {
     ),
   );
 
-  it.effect("preserves T3 context on the wire and restores it after compaction", () =>
+  it.effect("preserves VibeBoss context on the wire and restores it after compaction", () =>
     Effect.gen(function* () {
       const nativeThreadId = "context-thread";
       const nativeTurnId = "context-turn";
@@ -4427,7 +4427,7 @@ describe("CodexAdapterV2 post-settle continuation", () => {
       assert.deepEqual(
         wireOrder,
         ["item/completed", "turn/completed", "thread/inject_items"],
-        "restored T3 context while the compacting native turn was still running",
+        "restored VibeBoss context while the compacting native turn was still running",
       );
     }).pipe(
       Effect.provide(
@@ -4564,7 +4564,7 @@ describe("CodexAdapterV2 post-settle continuation", () => {
                   item: {
                     type: itemType,
                     id,
-                    ...(itemType === "webSearch" ? { query: "T3 Code", action: null } : {}),
+                    ...(itemType === "webSearch" ? { query: "VibeBoss", action: null } : {}),
                   },
                   ...timestamps,
                 },
@@ -4651,7 +4651,7 @@ describe("CodexAdapterV2 post-settle continuation", () => {
         assert.equal(unfinished[0]?.id, unfinished[1]?.id);
         assert.deepEqual(unfinished[1]?.startedAt, DateTime.makeUnsafe(1782622443000));
         if (unfinished[1]?.type === "web_search") {
-          assert.deepEqual(unfinished[1].patterns, ["T3 Code"]);
+          assert.deepEqual(unfinished[1].patterns, ["VibeBoss"]);
           assert.deepEqual(
             harness.events.flatMap((event) =>
               event.type === "node.updated" &&

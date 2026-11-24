@@ -187,7 +187,7 @@ interface FakePi {
     readonly model?: string;
     readonly thinking?: string;
   }) => void;
-  /** T3 extension's service tier as each prompt was sent; Pi resets it with each session. */
+  /** VibeBoss extension's service tier as each prompt was sent; Pi resets it with each session. */
   readonly promptServiceTiers: ReadonlyArray<string | null>;
   /** Pi reloads extensions without the adapter seeing it, e.g. a user extension's ctx.newSession(). */
   readonly reloadExtensions: (newSessionFile?: string) => void;
@@ -2003,7 +2003,7 @@ describe("PiAdapterV2", () => {
       }).pipe(Effect.scoped, Effect.provide(layerTest)),
   );
 
-  it.effect("stops provider-initiated work that has no T3 turn owner", () =>
+  it.effect("stops provider-initiated work that has no VibeBoss turn owner", () =>
     Effect.gen(function* () {
       const fake = yield* makeFakePi;
       const { runtime, takeEvent } = yield* openRuntime(fake);
@@ -2150,7 +2150,7 @@ describe("PiAdapterV2", () => {
     }).pipe(Effect.scoped, Effect.provide(layerTest)),
   );
 
-  it.effect("injects the T3 MCP extension and bearer when a session exists", () =>
+  it.effect("injects the VibeBoss MCP extension and bearer when a session exists", () =>
     Effect.gen(function* () {
       yield* (yield* McpProviderSessions.McpProviderSessions).set({
         environmentId: EnvironmentId.make("environment-pi-mcp"),
@@ -4437,7 +4437,7 @@ describe("PiAdapterV2", () => {
       assert.deepEqual(forkedEntries(), []);
       assert.equal(missing._tag, "Failure");
 
-      // An adopted wake precedes its T3 turn, but follows turn 1 and its steer.
+      // An adopted wake precedes its VibeBoss turn, but follows turn 1 and its steer.
       fake.queueEntries(UNCAPTURED_TURN_TREE);
       yield* rollBackToFirst(uncapturedTurns(providerThread.id));
       assert.deepEqual(forkedEntries(), ["u2"]);

@@ -936,7 +936,7 @@ export const buildCodexTurnStartParams = Effect.fn("CodexAdapterV2.buildCodexTur
             },
           )
         : undefined;
-    // Its own entry, so the folder list reaches the model without T3 Code's MCP tools too.
+    // Its own entry, so the folder list reaches the model without VibeBoss's MCP tools too.
     const workspaceInstructions = buildWorkspaceInstructions(input.runtimePolicy);
     const workspaceContext =
       workspaceInstructions === ""
@@ -1629,7 +1629,7 @@ export const CODEX_THREAD_CONFIG = {
 
 // request_secret can wait an hour; keep Codex's MCP timeout above that.
 const CODEX_T3_MCP_TOOL_TIMEOUT_SEC = 65 * 60;
-// Holds T3 tools Codex must call directly, never from Code Mode. Calls arrive as
+// Holds VibeBoss tools Codex must call directly, never from Code Mode. Calls arrive as
 // `t3-code-direct.<tool>`; t3McpToolPresentation.ts must keep resolving that form.
 const CODEX_T3_DIRECT_MCP_SERVER = "t3-code-direct";
 const CODEX_DIRECT_ONLY_T3_TOOLS = ["t3_thread_wait", "delegate_task"];
@@ -1775,7 +1775,7 @@ const CODEX_THREAD_ENV_CONFIG_KEY = `shell_environment_policy.set.${PortScanner.
 
 /**
  * One app-server serves every Codex thread on an instance, so each frame is routed to the
- * T3 thread it belongs to. Frames tied to no thread, such as `initialize`, go to the global log.
+ * VibeBoss thread it belongs to. Frames tied to no thread, such as `initialize`, go to the global log.
  */
 function makeCodexProtocolThreadRouter() {
   const threadIdsByNativeId = new Map<string, ThreadId>();
@@ -9134,7 +9134,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
                   catch: () =>
                     new ProviderMcpSignInError({
                       server,
-                      detail: `Codex returned a sign-in page for ${server} that T3 Code can't open.`,
+                      detail: `Codex returned a sign-in page for ${server} that VibeBoss can't open.`,
                     }),
                 });
                 const redirectUri = params.get("redirect_uri");

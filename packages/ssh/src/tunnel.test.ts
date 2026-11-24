@@ -1518,7 +1518,7 @@ server.listen(Number(flag("--port") ?? 0), "127.0.0.1", () => {
       const error = yield* Effect.flip(launch);
       assert.include(
         error.message,
-        `The previous remote T3 server (PID ${pid}) is still shutting down.`,
+        `The previous remote VibeBoss server (PID ${pid}) is still shutting down.`,
       );
       assert.isTrue(yield* isRunning(pid), "the launcher signalled the stopping server");
     }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
@@ -1745,7 +1745,7 @@ const canBind = (port) =>
 
   // Installs a fake runtime per version so the runner never downloads. The
   // seeded remembered port keeps the test off the default 3773, which a live
-  // T3 on this machine may own.
+  // VibeBoss on this machine may own.
   const prepareLaunch = (versions: ReadonlyArray<string>) =>
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;

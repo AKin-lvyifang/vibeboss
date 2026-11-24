@@ -59,7 +59,7 @@ const windowsTaskOptions = {
   conhostPath: "C:\\Windows\\System32\\conhost.exe",
 };
 
-it("reads the served T3 home and log back out of a rendered unit, plist, or task", () => {
+it("reads the served VibeBoss home and log back out of a rendered unit, plist, or task", () => {
   const plan = (baseDir: string) => ({
     program: [`${baseDir}/runtime/versions/1.2.3/t3`, "__service-launcher"],
     baseDir,
@@ -72,12 +72,12 @@ it("reads the served T3 home and log back out of a rendered unit, plist, or task
   ).toBe("/home/theo/.t3");
   expect(
     BootService.bootServiceBaseDirOf(
-      BootService.renderBootServiceUnit(plan("/home/theo/T3 Data/100%")),
+      BootService.renderBootServiceUnit(plan("/home/theo/VibeBoss Data/100%")),
     ),
-  ).toBe("/home/theo/T3 Data/100%");
+  ).toBe("/home/theo/VibeBoss Data/100%");
   expect(
-    serviceUnitLogPathOf(BootService.renderBootServiceUnit(plan("/home/theo/T3 Data/100%"))),
-  ).toBe("/home/theo/T3 Data/100%/userdata/logs/boot-service.log");
+    serviceUnitLogPathOf(BootService.renderBootServiceUnit(plan("/home/theo/VibeBoss Data/100%"))),
+  ).toBe("/home/theo/VibeBoss Data/100%/userdata/logs/boot-service.log");
   expect(
     serviceUnitLogPathOf(
       BootService.renderBootServicePlist(plan("/Users/theo/a&b"), {
@@ -96,9 +96,12 @@ it("reads the served T3 home and log back out of a rendered unit, plist, or task
   ).toBe("/Users/theo/a&b");
   expect(
     BootService.bootServiceBaseDirOf(
-      BootService.renderBootServiceTask(plan("C:\\Users\\theo\\T3 a&b\\"), windowsTaskOptions),
+      BootService.renderBootServiceTask(
+        plan("C:\\Users\\theo\\VibeBoss a&b\\"),
+        windowsTaskOptions,
+      ),
     ),
-  ).toBe("C:\\Users\\theo\\T3 a&b\\");
+  ).toBe("C:\\Users\\theo\\VibeBoss a&b\\");
   expect(BootService.bootServiceBaseDirOf("[Service]\nExecStart=/x\n")).toBeUndefined();
 });
 
@@ -122,7 +125,7 @@ it("protects the server unit from agents under CPU and memory pressure", () => {
 });
 
 it.each([
-  ["a unit", "/home/theo/T3 Data/100%$x", BootService.renderBootServiceUnit],
+  ["a unit", "/home/theo/VibeBoss Data/100%$x", BootService.renderBootServiceUnit],
   [
     "a plist",
     "/Users/theo/a&b <c>",
@@ -131,7 +134,7 @@ it.each([
   ],
   [
     "a task",
-    "C:\\Users\\theo\\T3 a&b <c>",
+    "C:\\Users\\theo\\VibeBoss a&b <c>",
     (plan: BootService.BootServicePlan) =>
       BootService.renderBootServiceTask(plan, windowsTaskOptions),
   ],
@@ -150,7 +153,7 @@ it.each([
   ["a single quote", "/home/theo/Theo's T3"],
   ["a backslash", "/home/theo/T3\\Data"],
   ["a newline", "/home/theo/T3\nData"],
-])("renders a loadable unit, or refuses, for a T3 home with %s", (_, baseDir) => {
+])("renders a loadable unit, or refuses, for a VibeBoss home with %s", (_, baseDir) => {
   let unit: string;
   try {
     unit = BootService.renderBootServiceUnit({
@@ -1279,7 +1282,7 @@ process.disconnect();
     }),
   );
 
-  it.effect("restart and install leave a service that serves another T3 home alone", () =>
+  it.effect("restart and install leave a service that serves another VibeBoss home alone", () =>
     Effect.gen(function* () {
       const { service, fs, baseDir, commands, makeService } = yield* makeHarness();
       const plan = yield* service.install();
@@ -1308,7 +1311,7 @@ process.disconnect();
     }),
   );
 
-  it.effect("treats a symlinked T3 home path as the same home", () =>
+  it.effect("treats a symlinked VibeBoss home path as the same home", () =>
     Effect.gen(function* () {
       const { service, fs, baseDir, commands, makeService } = yield* makeHarness();
       yield* service.install();
@@ -1335,7 +1338,7 @@ process.disconnect();
       const { fs, commands, invocations, control, makeService } = yield* makeHarness();
       const path = yield* Path.Path;
       const home = yield* fs.makeTempDirectoryScoped({ prefix: "t3-handoff-" });
-      const baseDir = path.join(home, "T3 Data 100%", "${UNSET}", "$literal");
+      const baseDir = path.join(home, "VibeBoss Data 100%", "${UNSET}", "$literal");
       const outside = yield* makeService(undefined, "1.2.3", baseDir);
       const plan = yield* outside.install();
       const statePath = path.join(baseDir, "runtime", "service-state.json");
@@ -1364,7 +1367,7 @@ process.disconnect();
         "service",
         "install",
         "--base-dir",
-        path.join(home, "T3 Data 100%", "$${UNSET}", "$$literal"),
+        path.join(home, "VibeBoss Data 100%", "$${UNSET}", "$$literal"),
         "--allow-downgrade",
       ]);
 

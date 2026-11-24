@@ -21,7 +21,7 @@ export function kiroFailedAfterCancel(transcript: ProviderReplayTranscript): Arr
   });
 }
 
-/** Kiro fails the sub-agent and its running command on cancel; T3 shows both interrupted. */
+/** Kiro fails the sub-agent and its running command on cancel; VibeBoss shows both interrupted. */
 export function assertKiroSubagentInterruptOutput(
   result: OrchestratorV2ScenarioResult,
   transcript: ProviderReplayTranscript,

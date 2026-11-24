@@ -458,7 +458,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeSettings, ClaudeDriverEnv, Path.
       orchestrationAdapter,
       textGeneration,
       consumeResetCredit,
-      auth,
+      ...(auth ? { auth } : {}),
     } satisfies ProviderInstance;
   }),
 };

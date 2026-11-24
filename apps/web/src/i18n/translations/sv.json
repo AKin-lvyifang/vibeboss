@@ -1156,7 +1156,7 @@
   "4410caad205bcac7": "Den här länken pekar på en pull request som VibeBoss inte kan läsa.",
   "df1915cc1c939ef9": "Den här länken har ingen prompt.",
   "6024bfa21d5b2f40": "Den här länken pekar på ett repo som VibeBoss inte kan läsa.",
-  "207267a58d3542ba": "När du stoppar skickar {environment} inspelningen till OpenRouter. OpenRouter väljer vem som kör din modell. T3 begär att ingen data sparas; ditt OpenRouter-konto kan tillåta lagring av säkerhetsskäl.",
+  "207267a58d3542ba": "När du stoppar skickar {environment} inspelningen till OpenRouter. OpenRouter väljer vem som kör din modell. VibeBoss begär att ingen data sparas; ditt OpenRouter-konto kan tillåta lagring av säkerhetsskäl.",
   "81b64c298285297c": "När du stoppar skickar {environment} din inspelning och dina ordförrådstips, inklusive projektnamn, till {provider}.",
   "615ce9f2edf7208f": "Länka en pull request",
   "4ece383dad280e57": "Länka pull requests",
