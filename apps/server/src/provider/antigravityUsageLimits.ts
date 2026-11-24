@@ -359,12 +359,11 @@ export const makeAntigravityUsageProbe = Effect.fn("makeAntigravityUsageProbe")(
     let projectId: string | undefined;
     if (!(yield* fs.exists(tokenPath))) {
       cached = undefined;
-      // Google account instances bypass the keyring, whose one entry every profile shares.
+      // VibeBoss: agy 1.5.15+ keeps a Google account's sign-in in the shared keyring entry even
+      // when T3 asks for file storage, so fall back to the keyring for personal accounts too.
       const stored = (yield* fs.exists(cliTokenPath))
         ? yield* fs.readFileString(cliTokenPath)
-        : input.authMethod === "oauth-business"
-          ? yield* readKeyringSecret
-          : undefined;
+        : yield* readKeyringSecret;
       if (stored === undefined) {
         return makeUnavailableUsageLimits({
           checkedAt,
