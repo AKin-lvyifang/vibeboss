@@ -1,10 +1,11 @@
-# VibeBoss（本分支）
+# VibeBoss（本仓库）
 
-本仓库是 T3 Code 的 VibeBoss 分支，给不写代码的人用。改动规矩：
+VibeBoss 给不写代码的人用。它起步于 T3 Code 源码，2026-11-24 起独立迭代，不再合并 T3 上游；T3 只作参考（`upstream` 远程只拉取不合并）。改动规矩：
 
-- 先用 T3 已有的能力和规范（组件、设置、RPC、`delegate_task`、Boring sidebar 等），缺什么再加；不另起一套。
-- 新功能放新文件（`vibeboss/`、`VibeBoss*`），上游文件只加入口；要藏的上游功能用过滤，不删。
-- 每轮改动登记在 `docs/更新/<日期>-<主题>.md`：需求、复用的 T3 能力、改了哪些文件、跟进上游时要注意什么。方案和评审放 `docs/claude建议/`。
+- 先看 T3 已有的能力和规范（组件、设置、RPC、`delegate_task`、Boring sidebar 等）能不能用，缺什么再加；不另起一套。
+- 不用再为合并上游迁就：该改就直接改，用不上的可以删（删大块功能前先跟方哥确认）。
+- 从 T3 搬代码进来后跑 `vp run vibeboss:rebrand`，界面里不出现 T3。保留 `LICENSE` 里 T3 的版权声明（MIT 要求）。
+- 每轮改动登记在 `docs/更新/<日期>-<主题>.md`：需求、复用的能力、改了哪些文件。方案和评审放 `docs/claude建议/`。
 - 总览见 [docs/更新/2026-11-24-VibeBoss-M1魔改范围.md](docs/更新/2026-11-24-VibeBoss-M1魔改范围.md)。
 
 # T3 Code
