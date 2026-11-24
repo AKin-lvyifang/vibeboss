@@ -72,7 +72,7 @@ export function RulesPage() {
   const config = draft ?? data?.config ?? null;
   const files = data?.files ?? [];
   const outOfSync = files.some((file) => !file.inSync);
-  const tab = selectedTab ?? files[0]?.targetId ?? LEAD_TAB;
+  const tab = selectedTab ?? LEAD_TAB;
   const file = files.find((item) => item.targetId === tab) ?? null;
   const leadFile = files.find((item) => item.isLead) ?? null;
 
@@ -141,7 +141,11 @@ export function RulesPage() {
       {config === null ? null : (
         <div className="grid gap-6 md:grid-cols-4">
           <nav className="flex flex-col gap-1">
-            <div className="px-2.5 pt-1 pb-0.5 text-muted-foreground text-xs">
+            <NavButton active={tab === LEAD_TAB} onClick={() => setTab(LEAD_TAB)}>
+              <CrownIcon className="size-4" />
+              <T>Lead rules</T>
+            </NavButton>
+            <div className="mt-3 border-t px-2.5 pt-3 pb-0.5 text-muted-foreground text-xs">
               <T>Global rules</T>
             </div>
             {files.map((item) => (
@@ -158,12 +162,6 @@ export function RulesPage() {
                 {item.isLead ? <CrownIcon className="size-3.5 text-muted-foreground" /> : null}
               </NavButton>
             ))}
-            <div className="mt-3 border-t pt-3">
-              <NavButton active={tab === LEAD_TAB} onClick={() => setTab(LEAD_TAB)}>
-                <CrownIcon className="size-4" />
-                <T>Lead rules</T>
-              </NavButton>
-            </div>
           </nav>
 
           <div className="md:col-span-3">
