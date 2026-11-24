@@ -3,6 +3,7 @@ import { useGT } from "gt-react";
 import * as Schema from "effect/Schema";
 import {
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   type CSSProperties,
@@ -65,7 +66,11 @@ import {
 } from "./ui/sidebar";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 import { appAtomRegistry } from "../rpc/atomRegistry";
-import { setSplitColumnElement, useSplitByProject } from "../vibebossSplitView";
+import {
+  setSplitColumnElement,
+  useSplitByProject,
+  useSplitColumnWidth,
+} from "../vibebossSplitView";
 import { registerCommands, registerMenuAction } from "../shortcuts/dispatcher";
 import { resolveThreadRouteRef } from "../threadRoutes";
 
@@ -128,17 +133,61 @@ function readInitialThreadSidebarWidth(): number {
   }
 }
 
+// Matches the column before it became resizable.
+const DEFAULT_SPLIT_COLUMN_WIDTH = 288;
+
 /** VibeBoss split view: the sidebar renders the chosen project's threads into this column. */
-function VibeBossSplitColumn() {
+function VibeBossSplitColumn({ sidebarWidth }: { sidebarWidth: number }) {
+  const gt = useGT();
   const [splitByProject] = useSplitByProject();
+  const [storedWidth, setStoredWidth] = useSplitColumnWidth();
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
+  const drag = useRef<{ startX: number; startWidth: number } | null>(null);
+  const viewportWidth = useSyncExternalStore(subscribeToViewportWidth, readViewportWidth);
   const { open, isMobile } = useSidebar();
   if (!splitByProject || !open || isMobile) return null;
+
+  // No narrower than the sidebar beside it, and never squeezing the chat below its minimum.
+  const maxWidth = Math.max(
+    sidebarWidth,
+    viewportWidth - sidebarWidth - THREAD_MAIN_CONTENT_MIN_WIDTH,
+  );
+  const clamp = (value: number) => Math.round(Math.min(maxWidth, Math.max(sidebarWidth, value)));
+  const width = clamp(
+    dragWidth ?? storedWidth ?? Math.max(sidebarWidth, DEFAULT_SPLIT_COLUMN_WIDTH),
+  );
+
+  const endDrag = () => {
+    if (drag.current === null) return;
+    drag.current = null;
+    if (dragWidth !== null) setStoredWidth(dragWidth);
+    setDragWidth(null);
+  };
+
   return (
     <div
       ref={setSplitColumnElement}
       data-vibeboss-split-column=""
-      className="flex h-dvh w-72 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
-    />
+      style={{ width }}
+      className="relative flex h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
+    >
+      <button
+        type="button"
+        aria-label={gt("Resize column")}
+        className="absolute inset-y-0 -right-2 z-20 w-4 cursor-col-resize touch-none after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border"
+        onDoubleClick={() => setStoredWidth(null)}
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          drag.current = { startX: event.clientX, startWidth: width };
+        }}
+        onPointerMove={(event) => {
+          if (drag.current === null) return;
+          setDragWidth(clamp(drag.current.startWidth + event.clientX - drag.current.startX));
+        }}
+        onPointerUp={endDrag}
+        onLostPointerCapture={endDrag}
+      />
+    </div>
   );
 }
 
@@ -512,7 +561,13 @@ export function AppSidebarLayout({
               <ThreadSidebar routeReveal={sidebarRouteReveal} />
               <SidebarRail onDoubleClick={resetSidebarWidth} />
             </Sidebar>
-            <VibeBossSplitColumn />
+            <VibeBossSplitColumn
+              sidebarWidth={clampThreadSidebarWidth(
+                sidebarWidth,
+                sidebarMinimumWidth,
+                sidebarMaximumWidth,
+              )}
+            />
           </>
         ) : null}
         {children}

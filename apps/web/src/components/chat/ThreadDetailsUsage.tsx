@@ -15,6 +15,7 @@ import {
 import { formatDuration, limitsNotice } from "@t3tools/shared/usageLimitsCopy";
 import { Link } from "@tanstack/react-router";
 import { msg, useGT, useLocale, useMessages } from "gt-react";
+import { Minimize2Icon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { usePrimarySettings } from "../../hooks/useSettings";
@@ -23,6 +24,7 @@ import type { ContextWindowSnapshot } from "@t3tools/client-runtime/state/contex
 import { formatContextWindowTokens } from "../../lib/contextWindow";
 import { cn } from "../../lib/utils";
 import { formatUpcomingTimestamp } from "../../timestampFormat";
+import { Button } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { formatContextWindowCompactionMessage } from "./compaction.logic";
 import { ThreadDetailsSection } from "./ThreadDetailsSection";
@@ -40,6 +42,9 @@ export interface ThreadDetailsUsageInput {
   readonly providers: readonly ServerProvider[];
   readonly sources: UsageLimitSourceSnapshots;
   readonly contextWindow: ContextWindowSnapshot | null;
+  /** VibeBoss: manual compaction beside the context row (the same `/compact` the composer sends). */
+  readonly onCompact?: (() => void) | undefined;
+  readonly compactDisabled?: boolean | undefined;
 }
 
 type UsageTone = "error" | "warning" | null;
@@ -106,13 +111,22 @@ function InstanceRows({
 }
 
 /** The thread's context window. The bar fills as context is used; the tick marks auto-compaction. */
-export function ThreadDetailsContext({ usage }: { readonly usage: ContextWindowSnapshot }) {
-  const maxTokens = usage.maxTokens != null && usage.maxTokens > 0 ? usage.maxTokens : null;
+export function ThreadDetailsContext({
+  usage,
+  onCompact,
+  compactDisabled = false,
+}: {
+  /** Null until the agent first reports usage; the row still shows so it is easy to find. */
+  readonly usage: ContextWindowSnapshot | null;
+  readonly onCompact?: (() => void) | undefined;
+  readonly compactDisabled?: boolean | undefined;
+}) {
+  const maxTokens = usage?.maxTokens != null && usage.maxTokens > 0 ? usage.maxTokens : null;
   const used =
-    maxTokens !== null && usage.usedPercentage !== null
+    maxTokens !== null && usage?.usedPercentage != null
       ? Math.round(Math.max(0, Math.min(100, usage.usedPercentage)))
       : null;
-  const threshold = usage.autoCompactThreshold ?? null;
+  const threshold = usage?.autoCompactThreshold ?? null;
   const tick =
     maxTokens !== null && threshold !== null && threshold > 0 && threshold < maxTokens
       ? (threshold / maxTokens) * 100
@@ -120,53 +134,79 @@ export function ThreadDetailsContext({ usage }: { readonly usage: ContextWindowS
   const gt = useGT();
   const m = useMessages();
   const locale = useLocale();
-  const usedTokens = formatContextWindowTokens(usage.usedTokens);
+  const usedTokens = formatContextWindowTokens(usage?.usedTokens ?? null);
+  const tokens =
+    maxTokens !== null ? `${usedTokens} / ${formatContextWindowTokens(maxTokens)}` : usedTokens;
   return (
     <ThreadDetailsSection
       headingId="thread-details-context-heading"
       title={gt("Context window")}
       showHeading={false}
     >
-      <div className="grid grid-cols-[auto_minmax(3rem,1fr)_auto] gap-x-3 text-xs">
-        <UsageRow
-          label={gt("Context", { $context: "context window row label" })}
-          fill={used}
-          tone={used === null ? null : used >= 90 ? "error" : used >= 80 ? "warning" : null}
-          tick={tick}
-          muted
-          value={
-            maxTokens !== null
-              ? `${usedTokens} / ${formatContextWindowTokens(maxTokens)}`
-              : usedTokens
-          }
-          ariaValue={
-            used !== null
-              ? gt("{used}% used", { used })
-              : gt("{usedTokens} tokens used", { usedTokens })
-          }
-          tooltip={
-            <>
-              <span className="text-foreground">
-                {used !== null
-                  ? gt("Context: {used}% used", { used })
-                  : gt("Context: {usedTokens} tokens used", { usedTokens })}
-              </span>
-              {maxTokens !== null ? (
-                <span className="text-muted-foreground">
-                  {gt("{used} of {max} tokens", {
-                    used: usage.usedTokens.toLocaleString(locale),
-                    max: maxTokens.toLocaleString(locale),
-                  })}
-                </span>
-              ) : null}
-              {threshold !== null && threshold > 0 ? (
-                <span className="text-muted-foreground">
-                  {formatContextWindowCompactionMessage(threshold, m)}
-                </span>
-              ) : null}
-            </>
-          }
-        />
+      <div className="flex items-center gap-1">
+        <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(3rem,1fr)_auto] gap-x-3 text-xs">
+          <UsageRow
+            label={gt("Context", { $context: "context window row label" })}
+            fill={usage === null ? null : (used ?? null)}
+            tone={used === null ? null : used >= 90 ? "error" : used >= 80 ? "warning" : null}
+            tick={tick}
+            muted
+            value={
+              usage === null ? gt("Not started") : used !== null ? `${used}% · ${tokens}` : tokens
+            }
+            ariaValue={
+              usage === null
+                ? gt("Not started")
+                : used !== null
+                  ? gt("{used}% used", { used })
+                  : gt("{usedTokens} tokens used", { usedTokens })
+            }
+            tooltip={
+              usage === null ? (
+                <span className="text-foreground">{gt("Shows after the first reply")}</span>
+              ) : (
+                <>
+                  <span className="text-foreground">
+                    {used !== null
+                      ? gt("Context: {used}% used", { used })
+                      : gt("Context: {usedTokens} tokens used", { usedTokens })}
+                  </span>
+                  {maxTokens !== null ? (
+                    <span className="text-muted-foreground">
+                      {gt("{used} of {max} tokens", {
+                        used: usage.usedTokens.toLocaleString(locale),
+                        max: maxTokens.toLocaleString(locale),
+                      })}
+                    </span>
+                  ) : null}
+                  {threshold !== null && threshold > 0 ? (
+                    <span className="text-muted-foreground">
+                      {formatContextWindowCompactionMessage(threshold, m)}
+                    </span>
+                  ) : null}
+                </>
+              )
+            }
+          />
+        </div>
+        {onCompact ? (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  size="icon-xs"
+                  variant="ghost-muted"
+                  aria-label={gt("Compact context")}
+                  disabled={compactDisabled || usage === null}
+                  onClick={onCompact}
+                />
+              }
+            >
+              <Minimize2Icon aria-hidden />
+            </TooltipTrigger>
+            <TooltipPopup side="left">{gt("Compact context")}</TooltipPopup>
+          </Tooltip>
+        ) : null}
       </div>
     </ThreadDetailsSection>
   );

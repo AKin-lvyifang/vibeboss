@@ -7,6 +7,7 @@ const SPLIT_KEY = "vibeboss:split-by-project";
 const SECTIONS_KEY = "vibeboss:project-sections";
 const ASSIGNMENTS_KEY = "vibeboss:thread-sections";
 const COLLAPSED_KEY = "vibeboss:collapsed-sections";
+const COLUMN_WIDTH_KEY = "vibeboss:split-column-width";
 
 const CustomSection = Schema.Struct({ id: Schema.String, name: Schema.String });
 export type CustomSection = typeof CustomSection.Type;
@@ -36,6 +37,12 @@ export function useThreadSections() {
 export function useCollapsedSections() {
   return useLocalStorage(COLLAPSED_KEY, NO_COLLAPSED, CollapsedSections);
 }
+
+/** The second column's dragged width; null until the user drags it. */
+export function useSplitColumnWidth() {
+  return useLocalStorage(COLUMN_WIDTH_KEY, null, SplitColumnWidth);
+}
+const SplitColumnWidth = Schema.NullOr(Schema.Finite);
 
 // The layout owns the second column; the sidebar renders the project's threads into it.
 let splitColumnElement: HTMLElement | null = null;
