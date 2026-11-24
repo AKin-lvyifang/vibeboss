@@ -16,7 +16,8 @@ export function resolveDesktopBaseDir(input: {
   readonly t3Home: Option.Option<string>;
 }): string {
   return Option.getOrElse(normalizeConfiguredBaseDir(input.t3Home), () =>
-    input.joinPath(input.homeDirectory, ".t3"),
+    // VibeBoss keeps its own data so it never shares (or migrates) an installed T3 Code's ~/.t3.
+    input.joinPath(input.homeDirectory, ".vibeboss"),
   );
 }
 
