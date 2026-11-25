@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.12-0EA5E9?style=flat-square" alt="版本 0.1.12">
+  <img src="https://img.shields.io/badge/version-0.1.13-0EA5E9?style=flat-square" alt="版本 0.1.13">
   <img src="https://img.shields.io/badge/platform-macOS%20%2B%20Windows-16A34A?style=flat-square" alt="macOS 与 Windows">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-475569?style=flat-square" alt="MIT 许可"></a>
 </p>
