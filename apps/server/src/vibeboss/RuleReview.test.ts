@@ -94,7 +94,7 @@ it("keeps model findings only when they quote a real line not already found", ()
 
 it.effect("returns the fixed checks when the model fails", () =>
   Effect.gen(function* () {
-    const review = yield* reviewRules(sections, () => Effect.fail("offline"));
+    const review = yield* reviewRules(sections, () => Effect.fail({ _tag: "Offline" }));
     assert.strictEqual(review.suggestions.length, 3);
     assert.isNotNull(review.modelError);
   }),

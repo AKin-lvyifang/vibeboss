@@ -23,6 +23,13 @@ export const VibeBossLead = Schema.Struct({
 });
 export type VibeBossLead = typeof VibeBossLead.Type;
 
+export const VibeBossReviewModel = Schema.Struct({
+  providerInstanceId: Schema.String,
+  model: Schema.String,
+  effort: Schema.String,
+});
+export type VibeBossReviewModel = typeof VibeBossReviewModel.Type;
+
 export const VibeBossConfig = Schema.Struct({
   version: Schema.Literal(2),
   /** Written first into every agent's rule file; each agent's own part follows. */
@@ -33,6 +40,8 @@ export const VibeBossConfig = Schema.Struct({
   perAgent: Schema.Record(Schema.String, Schema.String),
   lead: VibeBossLead,
   members: Schema.Array(VibeBossMember),
+  /** The model the Rules page's check asks; unset falls back to the text generation model. */
+  reviewModel: Schema.optional(VibeBossReviewModel),
 });
 export type VibeBossConfig = typeof VibeBossConfig.Type;
 

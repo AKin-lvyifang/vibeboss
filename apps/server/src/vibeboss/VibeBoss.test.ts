@@ -1,7 +1,12 @@
-import type { ServerProvider, VibeBossConfig } from "@t3tools/contracts";
+import { ProviderInstanceId, type ServerProvider, type VibeBossConfig } from "@t3tools/contracts";
 import { assert, it } from "@effect/vitest";
 
-import { enabledRuleTargets, migrateLegacyConfig, renderRuleFile } from "./VibeBoss.ts";
+import {
+  enabledRuleTargets,
+  migrateLegacyConfig,
+  renderRuleFile,
+  reviewModelSelection,
+} from "./VibeBoss.ts";
 
 const provider = (instanceId: string, driver: string, extra: Partial<ServerProvider> = {}) =>
   ({ instanceId, driver, enabled: true, ...extra }) as unknown as ServerProvider;
@@ -131,4 +136,53 @@ it("passes the member's model slug and effort option straight into delegate_task
     '{"providerInstanceId":"codex","model":"gpt-6.2-astra","options":[{"id":"reasoningEffort","value":"xhigh"}]}',
   );
   assert.notInclude(claude, "按 orchestrator_capabilities");
+});
+
+it("runs the rules check at low effort unless a level is picked", () => {
+  const haiku = provider("claudeAgent", "claudeAgent", {
+    models: [
+      {
+        slug: "claude-haiku-5-5",
+        name: "Haiku 5.5",
+        isCustom: false,
+        capabilities: {
+          optionDescriptors: [
+            {
+              id: "effort",
+              label: "Effort",
+              type: "select",
+              options: [
+                { id: "low", label: "Low" },
+                { id: "high", label: "High" },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  } as unknown as Partial<ServerProvider>);
+  const fallback = {
+    instanceId: ProviderInstanceId.make("claudeAgent"),
+    model: "claude-haiku-5-5",
+  };
+  assert.deepStrictEqual(reviewModelSelection(undefined, [haiku], fallback), {
+    ...fallback,
+    options: [{ id: "effort", value: "low" }],
+  });
+  assert.deepStrictEqual(
+    reviewModelSelection(
+      { providerInstanceId: "claudeAgent", model: "claude-haiku-5-5", effort: "high" },
+      [haiku],
+      fallback,
+    ),
+    { ...fallback, options: [{ id: "effort", value: "high" }] },
+  );
+  // "Default" model on another agent still gets its small model at low effort.
+  assert.deepStrictEqual(
+    reviewModelSelection({ providerInstanceId: "claudeAgent", model: "", effort: "" }, [haiku], {
+      instanceId: ProviderInstanceId.make("codex"),
+      model: "gpt-6-luna",
+    }),
+    { ...fallback, options: [{ id: "effort", value: "low" }] },
+  );
 });

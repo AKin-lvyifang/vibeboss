@@ -2697,7 +2697,7 @@ export const layerWsRpc = (
           withVibeBossServices(VibeBoss.listCapabilities()),
         [WS_METHODS.vibebossResolveNativeTranscript]: (input) =>
           withVibeBossServices(VibeBoss.resolveNativeTranscript(input)),
-        // The rules check asks the small model chosen for titles and commit messages.
+        // The rules check asks the model picked on the Rules page, else the text generation model.
         [WS_METHODS.vibebossReviewRules]: (input) =>
           withVibeBossServices(
             providerRegistry.getProviders.pipe(
@@ -2708,13 +2708,17 @@ export const layerWsRpc = (
                     ? "skip"
                     : Option.isNone(vibeBossTextGeneration)
                       ? null
-                      : (prompt) =>
+                      : (prompt, reviewModel) =>
                           serverSettings.getSettings.pipe(
                             Effect.flatMap((settings) =>
                               vibeBossTextGeneration.value.generateTranscriptionPostProcessing({
                                 cwd: config.stateDir,
                                 prompt,
-                                modelSelection: settings.textGenerationModelSelection,
+                                modelSelection: VibeBoss.reviewModelSelection(
+                                  reviewModel,
+                                  providers,
+                                  settings.textGenerationModelSelection,
+                                ),
                               }),
                             ),
                             Effect.map((result) => result.transcription),

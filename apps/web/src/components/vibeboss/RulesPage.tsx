@@ -1,7 +1,7 @@
 import type {
   ProviderDriverKind,
   VibeBossConfig,
-  VibeBossRuleReview,
+  VibeBossReviewModel,
   VibeBossRuleSuggestion,
 } from "@t3tools/contracts";
 import { T, useGT, Var } from "gt-react";
@@ -16,6 +16,8 @@ import { Button } from "../ui/button";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { Textarea } from "../ui/textarea";
 import { applyRuleSuggestion } from "../../vibebossRuleEdits";
+import { setRulesPage, useRulesPageStore } from "../../vibebossRuleReviewStore";
+import { RuleCheckButton } from "./RuleCheckButton";
 import { RuleReviewPanel } from "./RuleReviewPanel";
 import { VibeBossPage, useVibeBossState } from "./VibeBossShared";
 
@@ -73,12 +75,11 @@ export function RulesPage() {
   const saveConfig = useAtomCommand(vibeBossEnvironment.saveConfig);
   const syncRules = useAtomCommand(vibeBossEnvironment.syncRules);
   const reviewRules = useAtomCommand(vibeBossEnvironment.reviewRules);
-  const [review, setReview] = useState<VibeBossRuleReview | null>(null);
-  const [handled, setHandled] = useState<ReadonlySet<string>>(new Set());
-  const [reviewing, setReviewing] = useState(false);
-  const [modelReviewing, setModelReviewing] = useState(false);
+  const { draft, review, handled, applied, checking, modelStartedAt, lastModelMs } =
+    useRulesPageStore();
+  const modelReviewing = modelStartedAt !== null;
+  const setDraft = (next: VibeBossConfig | null) => setRulesPage({ draft: next });
   const [selectedTab, setTab] = useState<string | null>(null);
-  const [draft, setDraft] = useState<VibeBossConfig | null>(null);
   const [busy, setBusy] = useState(false);
   const [backups, setBackups] = useState<number | null>(null);
   const leadRulesRef = useRef<HTMLTextAreaElement>(null);
@@ -102,35 +103,59 @@ export function RulesPage() {
     update({ leadRules: `${text.slice(0, start)}@${name} ${text.slice(end)}` });
   };
 
-  // The check reads the saved rules, so unsaved edits are saved first.
+  // The check reads the saved rules, so unsaved edits are saved first. State goes to the store,
+  // so the check keeps going and its findings stay when the user leaves the page.
   const runReview = async () => {
     if (environmentId === null) return;
-    setReviewing(true);
-    if (draft !== null) {
-      const saved = await saveConfig({ environmentId, input: { config: draft } });
+    setRulesPage({ checking: true });
+    const pending = useRulesPageStore.getState().draft;
+    if (pending !== null) {
+      const saved = await saveConfig({ environmentId, input: { config: pending } });
       if (saved._tag !== "Success") {
-        setReviewing(false);
+        setRulesPage({ checking: false });
         return;
       }
-      setDraft(null);
+      setRulesPage({ draft: null });
       refresh();
     }
     const fixed = await reviewRules({ environmentId, input: {} });
-    setReviewing(false);
-    if (fixed._tag !== "Success") return;
-    setHandled(new Set());
-    setReview(fixed.value);
+    if (fixed._tag !== "Success") {
+      setRulesPage({ checking: false });
+      return;
+    }
+    const startedAt = Date.now();
     // The small model adds its findings when it answers; the fixed ones keep their ids.
-    setModelReviewing(true);
+    setRulesPage({
+      checking: false,
+      review: fixed.value,
+      handled: [],
+      applied: 0,
+      modelStartedAt: startedAt,
+    });
     const full = await reviewRules({ environmentId, input: { useModel: true } });
-    setModelReviewing(false);
-    if (full._tag === "Success") setReview(full.value);
+    setRulesPage({
+      modelStartedAt: null,
+      ...(full._tag === "Success"
+        ? { review: full.value, lastModelMs: Date.now() - startedAt }
+        : {}),
+    });
   };
 
   const accept = (suggestions: ReadonlyArray<VibeBossRuleSuggestion>) => {
     if (config === null) return;
-    setDraft(suggestions.reduce(applyRuleSuggestion, config));
-    setHandled((current) => new Set([...current, ...suggestions.map((item) => item.id)]));
+    setRulesPage({
+      draft: suggestions.reduce(applyRuleSuggestion, config),
+      handled: [...handled, ...suggestions.map((item) => item.id)],
+      applied: applied + suggestions.length,
+    });
+  };
+
+  // Saved at once and on its own, so unsaved rule edits stay a draft.
+  const saveReviewModel = async (reviewModel: VibeBossReviewModel) => {
+    if (environmentId === null || !data) return;
+    if (draft !== null) setDraft({ ...draft, reviewModel });
+    await saveConfig({ environmentId, input: { config: { ...data.config, reviewModel } } });
+    refresh();
   };
 
   const labelOf = (target: string) =>
@@ -154,7 +179,10 @@ export function RulesPage() {
     }
     const synced = await syncRules({ environmentId, input: {} });
     setBusy(false);
-    if (synced._tag === "Success") setBackups(synced.value.backups.length);
+    if (synced._tag === "Success") {
+      setBackups(synced.value.backups.length);
+      setRulesPage({ applied: 0 });
+    }
     refresh();
   };
 
@@ -174,14 +202,16 @@ export function RulesPage() {
               )}
             </span>
           ) : null}
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={reviewing || modelReviewing}
-            onClick={runReview}
-          >
-            {reviewing ? <T>Checking…</T> : <T>Check rules</T>}
-          </Button>
+          {environmentId === null ? null : (
+            <RuleCheckButton
+              environmentId={environmentId}
+              reviewModel={config?.reviewModel}
+              checking={checking}
+              disabled={checking || modelReviewing}
+              onCheck={runReview}
+              onReviewModelChange={saveReviewModel}
+            />
+          )}
           <Button size="sm" disabled={busy || (draft === null && !outOfSync)} onClick={saveAndSync}>
             <T>Sync rule files</T>
           </Button>
@@ -200,12 +230,14 @@ export function RulesPage() {
       {review !== null ? (
         <RuleReviewPanel
           review={review}
-          modelReviewing={modelReviewing}
-          handled={handled}
+          modelStartedAt={modelStartedAt}
+          lastModelMs={lastModelMs}
+          handled={new Set(handled)}
+          applied={applied}
           labelOf={labelOf}
           onAccept={accept}
-          onDismiss={(id) => setHandled((current) => new Set([...current, id]))}
-          onClose={() => setReview(null)}
+          onDismiss={(id) => setRulesPage({ handled: [...handled, id] })}
+          onClose={() => setRulesPage({ review: null })}
         />
       ) : null}
       {config === null ? null : (

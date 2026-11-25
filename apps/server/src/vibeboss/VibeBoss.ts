@@ -1,6 +1,9 @@
 import * as NodeOS from "node:os";
 
 import {
+  DEFAULT_TEXT_GENERATION_MODEL_BY_PROVIDER,
+  type ModelSelection,
+  ProviderInstanceId,
   type ServerProvider,
   type VibeBossAgentKind,
   type VibeBossCapabilities,
@@ -10,6 +13,7 @@ import {
   VibeBossError,
   type VibeBossMember,
   type VibeBossNativeTranscriptInput,
+  type VibeBossReviewModel,
   type VibeBossRuleFile,
   type VibeBossState,
   type VibeBossSyncResult,
@@ -293,7 +297,10 @@ const EFFORT_OPTION_IDS: ReadonlySet<string> = new Set([
 ]);
 
 /** The member's model as the slug `delegate_task` takes, and its effort as that model's own option. */
-function delegateTarget(member: VibeBossMember, providers: ReadonlyArray<ServerProvider>) {
+function delegateTarget(
+  member: Pick<VibeBossMember, "providerInstanceId" | "model" | "effort">,
+  providers: ReadonlyArray<ServerProvider>,
+) {
   const provider = providers.find((item) => item.instanceId === member.providerInstanceId);
   const models = provider?.models ?? [];
   const typed = member.model.trim();
@@ -319,6 +326,50 @@ function delegateTarget(member: VibeBossMember, providers: ReadonlyArray<ServerP
     ...(effortDescriptor !== undefined && effortChoice !== undefined
       ? { options: [{ id: effortDescriptor.id, value: effortChoice.id }] }
       : {}),
+  };
+}
+
+const REVIEW_DEFAULT_EFFORT = "low";
+
+/**
+ * The rules check's model: the one picked on the Rules page, else the text generation model.
+ * Without a chosen level it runs at low effort; higher levels mostly add thinking time here.
+ */
+export function reviewModelSelection(
+  reviewModel: VibeBossReviewModel | undefined,
+  providers: ReadonlyArray<ServerProvider>,
+  fallback: ModelSelection,
+): ModelSelection {
+  const fallbackEffort = fallback.options?.find((option) => EFFORT_OPTION_IDS.has(option.id));
+  const pick = reviewModel ?? {
+    providerInstanceId: fallback.instanceId,
+    model: fallback.model,
+    effort: typeof fallbackEffort?.value === "string" ? fallbackEffort.value : "",
+  };
+  // "Default" model means the agent's small model, so its effort option can still be found.
+  const driver = providers.find((item) => item.instanceId === pick.providerInstanceId)?.driver;
+  const model =
+    pick.model.trim() !== ""
+      ? pick.model
+      : pick.providerInstanceId === fallback.instanceId
+        ? fallback.model
+        : driver === undefined
+          ? undefined
+          : DEFAULT_TEXT_GENERATION_MODEL_BY_PROVIDER[driver];
+  // An agent without a known small model keeps the text generation model.
+  if (model === undefined) return fallback;
+  const target = delegateTarget(
+    {
+      providerInstanceId: pick.providerInstanceId,
+      model,
+      effort: pick.effort.trim() === "" ? REVIEW_DEFAULT_EFFORT : pick.effort,
+    },
+    providers,
+  );
+  return {
+    instanceId: ProviderInstanceId.make(target.providerInstanceId),
+    model: target.model ?? model,
+    ...(target.options === undefined ? {} : { options: target.options }),
   };
 }
 
@@ -463,7 +514,13 @@ export const saveConfig = Effect.fn("VibeBoss.saveConfig")(function* (
 /** The Rules page's check over the saved rules of the enabled agents. */
 export const reviewRuleConfig = Effect.fn("VibeBoss.reviewRuleConfig")(function* (
   providers: ReadonlyArray<ServerProvider>,
-  generate: ((prompt: string) => Effect.Effect<string, unknown>) | null | "skip",
+  generate:
+    | ((
+        prompt: string,
+        reviewModel: VibeBossReviewModel | undefined,
+      ) => Effect.Effect<string, object>)
+    | null
+    | "skip",
 ) {
   const paths = yield* resolvePaths;
   const config = yield* loadConfig(paths);
@@ -471,7 +528,10 @@ export const reviewRuleConfig = Effect.fn("VibeBoss.reviewRuleConfig")(function*
     id: target.id,
     label: RULE_TARGET_LABEL[target.id],
   }));
-  return yield* reviewRules(ruleSections(config, agents), generate);
+  return yield* reviewRules(
+    ruleSections(config, agents),
+    typeof generate === "function" ? (prompt) => generate(prompt, config.reviewModel) : generate,
+  );
 });
 
 /** Writes the enabled agents' rule files, backing up any file whose content would change. */

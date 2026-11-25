@@ -237,7 +237,7 @@ export function parseModelReview(
 /** Fixed checks always return; the model's findings are added when it answers. */
 export const reviewRules = Effect.fn("VibeBoss.reviewRules")(function* (
   sections: ReadonlyArray<RuleSection>,
-  generate: ((prompt: string) => Effect.Effect<string, unknown>) | null | "skip",
+  generate: ((prompt: string) => Effect.Effect<string, object>) | null | "skip",
 ) {
   const fixed = checkRules(sections);
   if (generate === "skip") {
