@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // @effect-diagnostics nodeBuiltinImport:off - Node's typed junction API avoids Windows symlink privileges while keeping the probe isolated.
 
+import * as NodeChildProcess from "node:child_process";
 import * as NodeFSP from "node:fs/promises";
 import * as NodeCrypto from "node:crypto";
 import * as NodeModule from "node:module";
@@ -2814,6 +2815,20 @@ export function resolveDesktopProductName(version: string): string {
     : (desktopPackageJson.productName ?? "T3 Code");
 }
 
+const LOCAL_MAC_SIGNING_IDENTITY = "VibeBoss Local Signing";
+
+/** Self-signed cert in the login keychain; "-" (ad hoc) when it is missing, e.g. on CI. */
+function resolveLocalMacSigningIdentity(hostPlatform: string): string {
+  const wanted = process.env.VIBEBOSS_MAC_SIGN_IDENTITY ?? LOCAL_MAC_SIGNING_IDENTITY;
+  if (hostPlatform !== "darwin" || wanted === "-") return "-";
+  const result = NodeChildProcess.spawnSync(
+    "/usr/bin/security",
+    ["find-identity", "-v", "-p", "codesigning"],
+    { encoding: "utf8" },
+  );
+  return result.status === 0 && result.stdout.includes(`"${wanted}"`) ? wanted : "-";
+}
+
 export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
   platform: typeof BuildPlatform.Type,
   target: string,
@@ -2927,11 +2942,14 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
           role: "Viewer",
         },
       ],
-      // VibeBoss: without a Developer ID, sign ad hoc so the app opens via "Open Anyway"
-      // instead of being reported as damaged on other Macs.
+      // VibeBoss: without a Developer ID, sign with a stable local certificate when present so
+      // Keychain "Always Allow" survives rebuilds; otherwise fall back to ad hoc signing.
       ...(signed
         ? { sign: path.join(repoRoot, "scripts/sign-macos.ts") }
-        : { identity: "-", hardenedRuntime: false }),
+        : {
+            identity: resolveLocalMacSigningIdentity(yield* HostProcess.Platform),
+            hardenedRuntime: false,
+          }),
       ...(macPasskeySigning
         ? {
             entitlements: macPasskeySigning.entitlementsPath,

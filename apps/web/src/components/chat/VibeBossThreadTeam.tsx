@@ -176,7 +176,11 @@ export function ThreadTeamSection(props: {
   if (groups.length === 0) return null;
 
   return (
-    <ThreadDetailsSection headingId="thread-details-team-heading" title={gt("Team")}>
+    <ThreadDetailsSection
+      headingId="thread-details-team-heading"
+      title={gt("Team")}
+      data-thread-team-panel
+    >
       <div className="flex flex-col">
         {groups.map((group) => {
           const running = group.items.filter((item) =>
@@ -388,6 +392,7 @@ export function ThreadDeliverablesSection(props: {
           <ThreadDetailsSection
             headingId="thread-details-deliverables-heading"
             title={gt("Deliverables")}
+            data-thread-deliverables-panel
           >
             <div className="flex flex-col">
               {groups.map((group) => (
