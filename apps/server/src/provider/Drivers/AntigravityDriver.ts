@@ -192,7 +192,7 @@ export const AntigravityDriver: ProviderDriver<
       fileSystem,
       host.paths.stateDir,
       yield* HostProcess.Platform,
-    ).pipe(Effect.catch(() => Effect.succeed(null)));
+    ).pipe(Effect.orElseSucceed(() => null));
     // Only a session reports whether agy offers Auto, so keep the last answer across restarts.
     const runtimeModesPath = path.join(profileDirectory, "t3-runtime-modes.json");
     const rememberedRuntimeModes = yield* fileSystem.readFileString(runtimeModesPath).pipe(

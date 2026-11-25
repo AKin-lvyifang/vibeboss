@@ -76,6 +76,7 @@ export function RulesPage() {
   const [review, setReview] = useState<VibeBossRuleReview | null>(null);
   const [handled, setHandled] = useState<ReadonlySet<string>>(new Set());
   const [reviewing, setReviewing] = useState(false);
+  const [modelReviewing, setModelReviewing] = useState(false);
   const [selectedTab, setTab] = useState<string | null>(null);
   const [draft, setDraft] = useState<VibeBossConfig | null>(null);
   const [busy, setBusy] = useState(false);
@@ -114,12 +115,16 @@ export function RulesPage() {
       setDraft(null);
       refresh();
     }
-    const result = await reviewRules({ environmentId, input: {} });
+    const fixed = await reviewRules({ environmentId, input: {} });
     setReviewing(false);
-    if (result._tag === "Success") {
-      setHandled(new Set());
-      setReview(result.value);
-    }
+    if (fixed._tag !== "Success") return;
+    setHandled(new Set());
+    setReview(fixed.value);
+    // The small model adds its findings when it answers; the fixed ones keep their ids.
+    setModelReviewing(true);
+    const full = await reviewRules({ environmentId, input: { useModel: true } });
+    setModelReviewing(false);
+    if (full._tag === "Success") setReview(full.value);
   };
 
   const accept = (suggestions: ReadonlyArray<VibeBossRuleSuggestion>) => {
@@ -169,7 +174,12 @@ export function RulesPage() {
               )}
             </span>
           ) : null}
-          <Button size="sm" variant="outline" disabled={reviewing} onClick={runReview}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={reviewing || modelReviewing}
+            onClick={runReview}
+          >
             {reviewing ? <T>Checking…</T> : <T>Check rules</T>}
           </Button>
           <Button size="sm" disabled={busy || (draft === null && !outOfSync)} onClick={saveAndSync}>
@@ -190,6 +200,7 @@ export function RulesPage() {
       {review !== null ? (
         <RuleReviewPanel
           review={review}
+          modelReviewing={modelReviewing}
           handled={handled}
           labelOf={labelOf}
           onAccept={accept}

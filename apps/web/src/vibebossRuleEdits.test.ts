@@ -23,7 +23,7 @@ const suggestion = (patch: Partial<VibeBossRuleSuggestion>): VibeBossRuleSuggest
   line: "",
   reason: "",
   replacement: null,
-  targets: [],
+  removals: [],
   ...patch,
 });
 
@@ -47,7 +47,10 @@ describe("applyRuleSuggestion", () => {
         kind: "shared",
         target: "shared",
         line: "- 先给结论",
-        targets: ["claude", "codex"],
+        removals: [
+          { target: "claude", line: "- 先给结论" },
+          { target: "codex", line: "* 先给结论" },
+        ],
       }),
     );
     expect(next.sharedRules).toBe("- 回复用中文\n- 先给结论");

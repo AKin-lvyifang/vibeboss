@@ -29,7 +29,10 @@ it("flags CLI dispatch, copies of shared rules and lines every agent repeats", (
       ["shared", "shared", "- 先给结论"],
     ],
   );
-  assert.deepStrictEqual(found[2]!.targets, ["claude", "codex"]);
+  assert.deepStrictEqual(found[2]!.removals, [
+    { target: "claude", line: "- 先给结论" },
+    { target: "codex", line: "- 先给结论" },
+  ]);
 });
 
 it("keeps model findings only when they quote a real line not already found", () => {
@@ -58,6 +61,31 @@ it("keeps model findings only when they quote a real line not already found", ()
     },
   ]);
   const found = parseModelReview(`结果：${answer}`, sections, fixed);
+  const merged = parseModelReview(
+    JSON.stringify([
+      {
+        kind: "shared",
+        line: "- 改完要验证",
+        reason: "两家意思相同",
+        copies: [
+          { target: "claude", line: "- 先给结论" },
+          { target: "codex", line: "- 改完跑测试" },
+        ],
+      },
+      {
+        kind: "shared",
+        line: "- x",
+        reason: "引用了不存在的句子",
+        copies: [{ target: "codex", line: "- 没有" }],
+      },
+    ]),
+    sections,
+    [],
+  );
+  assert.deepStrictEqual(
+    merged.map((suggestion) => [suggestion.kind, suggestion.line, suggestion.removals.length]),
+    [["shared", "- 改完要验证", 2]],
+  );
   assert.deepStrictEqual(
     found.map((suggestion) => [suggestion.kind, suggestion.line, suggestion.replacement]),
     [["cli", "- 让 Antigravity 在后台独立出一版", "- 设计方案派给 @reviewer"]],

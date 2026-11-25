@@ -2124,7 +2124,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
     fileSystem,
     serverConfig.stateDir,
     yield* HostProcess.Platform,
-  ).pipe(Effect.catch(() => Effect.succeed(null)));
+  ).pipe(Effect.orElseSucceed(() => null));
   const codexThreadRuntimeParams = (input: Parameters<typeof codexThreadRuntimeParamsBase>[0]) => {
     const params = codexThreadRuntimeParamsBase(input);
     const guardedPath = withAgentCliGuardPath(agentCliGuardDir, adapterOptions.environment.PATH);

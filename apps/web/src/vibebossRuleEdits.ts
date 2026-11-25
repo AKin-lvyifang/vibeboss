@@ -1,14 +1,6 @@
 // VibeBoss: applies accepted rules-check suggestions to the Rules page's draft config.
 import type { VibeBossConfig, VibeBossRuleSuggestion } from "@t3tools/contracts";
 
-/** Bullets and spacing differ between copies of the same rule. */
-function normalized(line: string): string {
-  return line
-    .trim()
-    .replace(/^[-*+]\s+|^\d+[.)]\s+/, "")
-    .replace(/\s+/g, " ");
-}
-
 function textOf(config: VibeBossConfig, target: string): string {
   if (target === "shared") return config.sharedRules ?? "";
   if (target === "lead") return config.leadRules;
@@ -37,13 +29,16 @@ export function applyRuleSuggestion(
   suggestion: VibeBossRuleSuggestion,
 ): VibeBossConfig {
   if (suggestion.kind === "shared") {
-    const key = normalized(suggestion.line);
-    const cleaned = suggestion.targets.reduce(
-      (next, target) =>
+    const cleaned = suggestion.removals.reduce(
+      (next, removal) =>
         withText(
           next,
-          target,
-          editLines(textOf(next, target), (line) => normalized(line) === key, null),
+          removal.target,
+          editLines(
+            textOf(next, removal.target),
+            (line) => line.trim() === removal.line.trim(),
+            null,
+          ),
         ),
       config,
     );

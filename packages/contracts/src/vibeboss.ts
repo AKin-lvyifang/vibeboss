@@ -99,10 +99,10 @@ export const VibeBossRuleSuggestion = Schema.Struct({
   /** The rule line as it is written now. */
   line: Schema.String,
   reason: Schema.String,
-  /** What the line becomes; null removes it. For "shared", the line moves into the shared rules. */
+  /** What the line becomes; null removes it. For "shared", `line` is what the shared rules gain. */
   replacement: Schema.NullOr(Schema.String),
-  /** For "shared": every agent target the line appears in. */
-  targets: Schema.Array(Schema.String),
+  /** For "shared": the copy each agent has now, removed when the line moves into the shared rules. */
+  removals: Schema.Array(Schema.Struct({ target: Schema.String, line: Schema.String })),
 });
 export type VibeBossRuleSuggestion = typeof VibeBossRuleSuggestion.Type;
 

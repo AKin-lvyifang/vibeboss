@@ -2698,26 +2698,28 @@ export const layerWsRpc = (
         [WS_METHODS.vibebossResolveNativeTranscript]: (input) =>
           withVibeBossServices(VibeBoss.resolveNativeTranscript(input)),
         // The rules check asks the small model chosen for titles and commit messages.
-        [WS_METHODS.vibebossReviewRules]: () =>
+        [WS_METHODS.vibebossReviewRules]: (input) =>
           withVibeBossServices(
             providerRegistry.getProviders.pipe(
               Effect.flatMap((providers) =>
                 VibeBoss.reviewRuleConfig(
                   providers,
-                  Option.isNone(vibeBossTextGeneration)
-                    ? null
-                    : (prompt) =>
-                        serverSettings.getSettings.pipe(
-                          Effect.flatMap((settings) =>
-                            vibeBossTextGeneration.value.generateTranscriptionPostProcessing({
-                              cwd: config.stateDir,
-                              prompt,
-                              modelSelection: settings.textGenerationModelSelection,
-                            }),
+                  input.useModel !== true
+                    ? "skip"
+                    : Option.isNone(vibeBossTextGeneration)
+                      ? null
+                      : (prompt) =>
+                          serverSettings.getSettings.pipe(
+                            Effect.flatMap((settings) =>
+                              vibeBossTextGeneration.value.generateTranscriptionPostProcessing({
+                                cwd: config.stateDir,
+                                prompt,
+                                modelSelection: settings.textGenerationModelSelection,
+                              }),
+                            ),
+                            Effect.map((result) => result.transcription),
+                            Effect.timeout("3 minutes"),
                           ),
-                          Effect.map((result) => result.transcription),
-                          Effect.timeout("90 seconds"),
-                        ),
                 ),
               ),
             ),

@@ -463,7 +463,7 @@ export const saveConfig = Effect.fn("VibeBoss.saveConfig")(function* (
 /** The Rules page's check over the saved rules of the enabled agents. */
 export const reviewRuleConfig = Effect.fn("VibeBoss.reviewRuleConfig")(function* (
   providers: ReadonlyArray<ServerProvider>,
-  generate: ((prompt: string) => Effect.Effect<string, unknown>) | null,
+  generate: ((prompt: string) => Effect.Effect<string, unknown>) | null | "skip",
 ) {
   const paths = yield* resolvePaths;
   const config = yield* loadConfig(paths);

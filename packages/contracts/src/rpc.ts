@@ -1838,7 +1838,8 @@ const WsVibeBossResolveNativeTranscriptRpc = Rpc.make(WS_METHODS.vibebossResolve
 });
 
 const WsVibeBossReviewRulesRpc = Rpc.make(WS_METHODS.vibebossReviewRules, {
-  payload: Schema.Struct({}),
+  /** The fixed checks answer at once; asking the small model as well takes up to minutes. */
+  payload: Schema.Struct({ useModel: Schema.optional(Schema.Boolean) }),
   success: VibeBossRuleReview,
   error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
 });

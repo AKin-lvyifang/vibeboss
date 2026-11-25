@@ -8,6 +8,7 @@ import { Button } from "../ui/button";
 /** Findings of the Rules page's check; each one is accepted into the draft or dismissed. */
 export function RuleReviewPanel(props: {
   readonly review: VibeBossRuleReview;
+  readonly modelReviewing: boolean;
   readonly handled: ReadonlySet<string>;
   readonly labelOf: (target: string) => string;
   readonly onAccept: (suggestions: ReadonlyArray<VibeBossRuleSuggestion>) => void;
@@ -19,7 +20,7 @@ export function RuleReviewPanel(props: {
   const kindLabel: Record<VibeBossRuleSuggestion["kind"], string> = {
     cli: gt("Calls an agent from the command line"),
     duplicate: gt("Repeats a shared rule"),
-    shared: gt("Every agent has it"),
+    shared: gt("Several agents repeat it"),
     conflict: gt("Conflicts with another rule"),
     outdated: gt("Out of date"),
     other: gt("Other", { $context: "kind of rules-check finding" }),
@@ -46,12 +47,17 @@ export function RuleReviewPanel(props: {
           <XIcon />
         </Button>
       </div>
+      {props.modelReviewing ? (
+        <p className="border-b px-4 py-2 text-muted-foreground text-xs">
+          <T>The small model is still checking; its findings will be added here.</T>
+        </p>
+      ) : null}
       {props.review.modelError ? (
         <p className="border-b px-4 py-2 text-muted-foreground text-xs">
           {props.review.modelError}
         </p>
       ) : null}
-      {open.length === 0 ? (
+      {open.length === 0 && !props.modelReviewing ? (
         <p className="px-4 py-6 text-center text-muted-foreground text-sm">
           <T>Nothing to fix</T>
         </p>
@@ -66,7 +72,7 @@ export function RuleReviewPanel(props: {
               </Badge>
               <span className="text-muted-foreground text-xs">
                 {item.kind === "shared"
-                  ? item.targets.map(props.labelOf).join("、")
+                  ? item.removals.map((removal) => props.labelOf(removal.target)).join("、")
                   : props.labelOf(item.target)}
               </span>
               {item.source === "model" ? (
