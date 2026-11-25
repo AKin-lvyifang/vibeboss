@@ -141,8 +141,11 @@ function ComboboxPopup({
   align = "start",
   collisionAvoidance,
   anchor: anchorProp,
+  render,
   ...props
 }: ComboboxPrimitive.Popup.Props & {
+  /** VibeBoss: Animate UI's popup has no `render`; this element wraps the popup instead. */
+  render?: React.ReactElement<{ className?: string; children?: React.ReactNode }>;
   align?: ComboboxPrimitive.Positioner.Props["align"];
   sideOffset?: ComboboxPrimitive.Positioner.Props["sideOffset"];
   alignOffset?: ComboboxPrimitive.Positioner.Props["alignOffset"];
@@ -152,6 +155,16 @@ function ComboboxPopup({
 }) {
   const { chipsRef, multiple } = React.use(ComboboxContext);
   const anchor = anchorProp ?? (multiple ? chipsRef : undefined);
+  const popup = (
+    <ComboboxPrimitive.Popup
+      // Electron drag hit-testing ignores z-index; items over a drag region would swallow clicks.
+      className="flex min-w-0 max-h-[min(var(--available-height),23rem)] flex-1 flex-col overflow-hidden text-foreground [-webkit-app-region:no-drag]"
+      data-slot="combobox-popup"
+      {...props}
+    >
+      {children}
+    </ComboboxPrimitive.Popup>
+  );
 
   return (
     <ComboboxPrimitive.Portal>
@@ -171,14 +184,7 @@ function ComboboxPopup({
             className,
           )}
         >
-          <ComboboxPrimitive.Popup
-            // Electron drag hit-testing ignores z-index; items over a drag region would swallow clicks.
-            className="flex min-w-0 max-h-[min(var(--available-height),23rem)] flex-1 flex-col overflow-hidden text-foreground [-webkit-app-region:no-drag]"
-            data-slot="combobox-popup"
-            {...props}
-          >
-            {children}
-          </ComboboxPrimitive.Popup>
+          {render ? React.cloneElement(render, { className: "contents" }, popup) : popup}
         </span>
       </ComboboxPrimitive.Positioner>
     </ComboboxPrimitive.Portal>
