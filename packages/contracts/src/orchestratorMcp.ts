@@ -182,6 +182,13 @@ export const OrchestratorMcpDelegateTaskInput = Schema.Struct({
         "'shared' (default): parent checkout. 'worktree': new prepared checkout from the parent commit, for a separate checkout or PR per child. Uncommitted edits stay out.",
     }),
   ),
+  // VibeBoss: which repository a worktree child gets in a project folder of several.
+  repository: Schema.optional(
+    Schema.String.annotate({
+      description:
+        "Isolation 'worktree' in a project folder of Git repositories: the one the child changes (name or path). Only it gets a worktree, from its current branch.",
+    }),
+  ),
   mode: Schema.optional(
     Schema.Literals(["async", "wait"]).annotate({
       description:

@@ -116,6 +116,7 @@ import * as ThreadManagementService from "../orchestration-v2/ThreadManagementSe
 import { placeholderThreadTitle } from "../orchestration-v2/placeholderThreadTitle.ts";
 import * as ThreadLaunchService from "../orchestration-v2/ThreadLaunchService.ts";
 import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
+import { pickFolderRepository } from "./vibebossFolderWorktree.ts";
 import { isSnoozed } from "../orchestration-v2/ThreadSettlementService.ts";
 import { userFacingDispatchErrorMessage } from "../orchestration-v2/UserFacingErrors.ts";
 import * as ProjectService from "../project/ProjectService.ts";
@@ -1636,6 +1637,32 @@ const make = Effect.gen(function* () {
 
   const loadProviders = providerRegistry.getProviders;
 
+  /** VibeBoss: a worktree of one tracked repository, started from its current branch. */
+  const folderRepositoryStrategy = Effect.fn("OrchestratorMcpService.folderRepositoryStrategy")(
+    function* (project: Effect.Success<ReturnType<typeof requireProject>>, repository: string) {
+      const picked = pickFolderRepository(
+        project.trackedFolders ?? [],
+        repository,
+        project.workspaceRoot,
+      );
+      if ("error" in picked) return yield* failure("invalid_request", picked.error);
+      const branch = yield* gitDriver
+        .resolveBranchName(picked.folder.path, "HEAD")
+        .pipe(Effect.orElseSucceed(() => null));
+      if (branch === null)
+        return yield* failure(
+          "invalid_request",
+          `Repository "${picked.folder.name}" has no branch checked out. Check one out, or omit \`repository\`.`,
+        );
+      return {
+        type: "worktree",
+        baseRef: branch,
+        startFromOrigin: false,
+        repositories: [{ path: picked.folder.path }],
+      } satisfies OrchestrationV2ThreadLaunchWorkspaceStrategy;
+    },
+  );
+
   /** The folder the composer's model picker scans for this thread. */
   const parentWorkspaceCwd = (parent: Pick<OrchestrationV2ThreadProjection, "thread">) =>
     parent.thread.worktreePath
@@ -2981,7 +3008,14 @@ const make = Effect.gen(function* () {
         (yield* threadLaunch.isNonGitProject(parent.thread.projectId))
       ) {
         // A plain project folder has no commit of its own; `HEAD` leaves each repository on its default branch.
-        workspaceStrategy = { type: "worktree", baseRef: "HEAD" };
+        // VibeBoss: a named `repository` gets the only worktree, from its current branch.
+        workspaceStrategy =
+          input.repository === undefined
+            ? { type: "worktree", baseRef: "HEAD" }
+            : yield* folderRepositoryStrategy(
+                yield* requireProject(parent.thread.projectId),
+                input.repository,
+              );
       } else if (input.isolation === "worktree" && !isRetryOfAcceptedDelegation) {
         const project = yield* requireProject(parent.thread.projectId);
         const base = yield* gitDriver

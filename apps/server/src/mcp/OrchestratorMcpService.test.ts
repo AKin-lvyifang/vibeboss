@@ -2988,6 +2988,118 @@ describe("OrchestratorMcpService provider resolution", () => {
     }),
   );
 
+  describe("VibeBoss: worktree isolation for one repository of a project folder", () => {
+    const workspaceRoot = "/work/folder";
+    const trackedFolders = [
+      { path: "/work/folder/plugin", name: "plugin", discovered: true },
+      { path: "/work/folder/web", name: "web", discovered: true },
+    ];
+    const run = (repository: string | undefined) =>
+      Effect.gen(function* () {
+        const commands: Array<unknown> = [];
+        const layerDependencies = Layer.mergeAll(
+          NodeServices.layer,
+          NodeCrypto.layer,
+          Layer.mock(ThreadManagementService.ThreadManagementService)({
+            hasReceipt: () => Effect.succeed(false),
+            getThreadRecords: () => Effect.succeed(parentProjection([])),
+            dispatch: (command) =>
+              Effect.sync(() => commands.push(command)).pipe(
+                Effect.andThen(
+                  Effect.fail(
+                    new OrchestratorDispatchError({
+                      commandId: command.commandId,
+                      commandType: command.type,
+                      cause: new Error("stop after capture"),
+                    }) as never,
+                  ),
+                ),
+              ),
+          }),
+          ServerSettings.layerTest(),
+          providerRegistryLayer([
+            providerSnapshot({
+              instanceId: codexInstanceId,
+              driver: ProviderDriverKind.make("codex"),
+              model: "gpt-5.4",
+            }),
+          ]),
+          adapterRegistryLayer([codexInstanceId]),
+          Layer.mock(ProjectService.ProjectService)({
+            getById: () =>
+              Effect.succeedSome({ id: projectId, workspaceRoot, trackedFolders } as never),
+          }),
+          Layer.mock(SecretRequests.SecretRequests)({}),
+          Layer.mock(RemoteDelegation.RemoteDelegation)({}),
+          Layer.mock(ScheduledTaskService.ScheduledTaskService)({}),
+        );
+        const layer = OrchestratorMcpService.layer.pipe(
+          Layer.provide(
+            Layer.mock(ThreadLaunchService.ThreadLaunchService)({
+              isNonGitProject: () => Effect.succeed(true),
+            }),
+          ),
+          Layer.provide(
+            Layer.mock(GitVcsDriver.GitVcsDriver)({
+              resolveBranchName: (cwd) =>
+                Effect.succeed(cwd === "/work/folder/plugin" ? "remote/feature" : null),
+            }),
+          ),
+          Layer.provide(layerDependencies),
+        );
+        const error = yield* Effect.gen(function* () {
+          const service = yield* OrchestratorMcpService.OrchestratorMcpService;
+          return yield* service
+            .delegateTask(scope, {
+              task: "Change the plugin.",
+              isolation: "worktree",
+              ...(repository === undefined ? {} : { repository }),
+              mode: "async",
+              clientRequestId: `folder-worktree-${repository ?? "none"}`,
+            })
+            .pipe(Effect.flip);
+        }).pipe(Effect.provide(layer));
+        const strategies = commands.flatMap((command) => {
+          const strategy = (command as { workspaceStrategy?: unknown }).workspaceStrategy;
+          return strategy === undefined ? [] : [strategy];
+        });
+        return { error, strategies };
+      });
+
+    it.effect("gives only the named repository a worktree, from its current branch", () =>
+      Effect.gen(function* () {
+        const { strategies } = yield* run("plugin");
+        assert.deepEqual(strategies, [
+          {
+            type: "worktree",
+            baseRef: "remote/feature",
+            startFromOrigin: false,
+            repositories: [{ path: "/work/folder/plugin" }],
+          },
+        ]);
+      }),
+    );
+
+    it.effect("keeps upstream's default-branch worktrees when no repository is named", () =>
+      Effect.gen(function* () {
+        const { strategies } = yield* run(undefined);
+        assert.deepEqual(strategies, [{ type: "worktree", baseRef: "HEAD" }]);
+      }),
+    );
+
+    it.effect("rejects an unknown repository or one with no branch checked out", () =>
+      Effect.gen(function* () {
+        const unknown = yield* run("docs");
+        assert.equal(unknown.error.code, "invalid_request");
+        assert.include(unknown.error.message, "plugin, web");
+        const detached = yield* run("web");
+        assert.equal(detached.error.code, "invalid_request");
+        assert.include(detached.error.message, '"web" has no branch');
+        assert.deepEqual([...unknown.strategies, ...detached.strategies], []);
+      }),
+    );
+  });
+
   it.effect("reports the dispatch cause instead of the generic wrapper when delegating fails", () =>
     Effect.gen(function* () {
       const layerDependencies = Layer.mergeAll(
