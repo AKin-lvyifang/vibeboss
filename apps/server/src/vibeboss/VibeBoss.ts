@@ -24,6 +24,7 @@ import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 
 import * as ServerConfig from "../config.ts";
+import { reviewRules, ruleSections } from "./RuleReview.ts";
 
 const KINDS: ReadonlyArray<VibeBossAgentKind> = ["claude", "codex", "agy"];
 const GENERATED_MARKER = "<!-- 由 VibeBoss 生成，别手改；改规则去 VibeBoss 的「规则」页 -->";
@@ -457,6 +458,20 @@ export const saveConfig = Effect.fn("VibeBoss.saveConfig")(function* (
   const paths = yield* resolvePaths;
   yield* writeConfig(paths.configPath, config);
   return yield* buildState(paths, config, providers);
+});
+
+/** The Rules page's check over the saved rules of the enabled agents. */
+export const reviewRuleConfig = Effect.fn("VibeBoss.reviewRuleConfig")(function* (
+  providers: ReadonlyArray<ServerProvider>,
+  generate: ((prompt: string) => Effect.Effect<string, unknown>) | null,
+) {
+  const paths = yield* resolvePaths;
+  const config = yield* loadConfig(paths);
+  const agents = enabledRuleTargets(providers).map((target) => ({
+    id: target.id,
+    label: RULE_TARGET_LABEL[target.id],
+  }));
+  return yield* reviewRules(ruleSections(config, agents), generate);
 });
 
 /** Writes the enabled agents' rule files, backing up any file whose content would change. */

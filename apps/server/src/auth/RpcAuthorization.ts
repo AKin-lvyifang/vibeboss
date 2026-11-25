@@ -204,6 +204,7 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.vibebossSyncRules]: AuthSettingsWriteScope,
   [WS_METHODS.vibebossListCapabilities]: AuthOrchestrationReadScope,
   [WS_METHODS.vibebossResolveNativeTranscript]: AuthOrchestrationReadScope,
+  [WS_METHODS.vibebossReviewRules]: AuthSettingsWriteScope,
   [WS_METHODS.mcpAppsToolInfo]: AuthOrchestrationReadScope,
   [WS_METHODS.mcpAppsReadResource]: AuthOrchestrationReadScope,
   [WS_METHODS.mcpAppsUpdateModelContext]: AuthOrchestrationOperateScope,

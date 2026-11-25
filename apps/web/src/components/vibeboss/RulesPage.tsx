@@ -1,4 +1,9 @@
-import type { ProviderDriverKind, VibeBossConfig } from "@t3tools/contracts";
+import type {
+  ProviderDriverKind,
+  VibeBossConfig,
+  VibeBossRuleReview,
+  VibeBossRuleSuggestion,
+} from "@t3tools/contracts";
 import { T, useGT, Var } from "gt-react";
 import { AtSignIcon, CrownIcon, LayersIcon } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
@@ -10,6 +15,8 @@ import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { Button } from "../ui/button";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { Textarea } from "../ui/textarea";
+import { applyRuleSuggestion } from "../../vibebossRuleEdits";
+import { RuleReviewPanel } from "./RuleReviewPanel";
 import { VibeBossPage, useVibeBossState } from "./VibeBossShared";
 
 const LEAD_TAB = "lead-rules";
@@ -65,6 +72,10 @@ export function RulesPage() {
   const { environmentId, data, error, refresh } = useVibeBossState();
   const saveConfig = useAtomCommand(vibeBossEnvironment.saveConfig);
   const syncRules = useAtomCommand(vibeBossEnvironment.syncRules);
+  const reviewRules = useAtomCommand(vibeBossEnvironment.reviewRules);
+  const [review, setReview] = useState<VibeBossRuleReview | null>(null);
+  const [handled, setHandled] = useState<ReadonlySet<string>>(new Set());
+  const [reviewing, setReviewing] = useState(false);
   const [selectedTab, setTab] = useState<string | null>(null);
   const [draft, setDraft] = useState<VibeBossConfig | null>(null);
   const [busy, setBusy] = useState(false);
@@ -89,6 +100,40 @@ export function RulesPage() {
     const end = field?.selectionEnd ?? text.length;
     update({ leadRules: `${text.slice(0, start)}@${name} ${text.slice(end)}` });
   };
+
+  // The check reads the saved rules, so unsaved edits are saved first.
+  const runReview = async () => {
+    if (environmentId === null) return;
+    setReviewing(true);
+    if (draft !== null) {
+      const saved = await saveConfig({ environmentId, input: { config: draft } });
+      if (saved._tag !== "Success") {
+        setReviewing(false);
+        return;
+      }
+      setDraft(null);
+      refresh();
+    }
+    const result = await reviewRules({ environmentId, input: {} });
+    setReviewing(false);
+    if (result._tag === "Success") {
+      setHandled(new Set());
+      setReview(result.value);
+    }
+  };
+
+  const accept = (suggestions: ReadonlyArray<VibeBossRuleSuggestion>) => {
+    if (config === null) return;
+    setDraft(suggestions.reduce(applyRuleSuggestion, config));
+    setHandled((current) => new Set([...current, ...suggestions.map((item) => item.id)]));
+  };
+
+  const labelOf = (target: string) =>
+    target === "shared"
+      ? gt("Shared rules")
+      : target === "lead"
+        ? gt("Lead rules")
+        : (files.find((item) => item.targetId === target)?.label ?? target);
 
   const saveAndSync = async () => {
     if (environmentId === null) return;
@@ -124,6 +169,9 @@ export function RulesPage() {
               )}
             </span>
           ) : null}
+          <Button size="sm" variant="outline" disabled={reviewing} onClick={runReview}>
+            {reviewing ? <T>Checking…</T> : <T>Check rules</T>}
+          </Button>
           <Button size="sm" disabled={busy || (draft === null && !outOfSync)} onClick={saveAndSync}>
             <T>Sync rule files</T>
           </Button>
@@ -138,6 +186,16 @@ export function RulesPage() {
             untouched.
           </T>
         </p>
+      ) : null}
+      {review !== null ? (
+        <RuleReviewPanel
+          review={review}
+          handled={handled}
+          labelOf={labelOf}
+          onAccept={accept}
+          onDismiss={(id) => setHandled((current) => new Set([...current, id]))}
+          onClose={() => setReview(null)}
+        />
       ) : null}
       {config === null ? null : (
         <div className="grid gap-6 md:grid-cols-4">

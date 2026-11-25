@@ -90,6 +90,29 @@ export const VibeBossCapabilities = Schema.Struct({
 });
 export type VibeBossCapabilities = typeof VibeBossCapabilities.Type;
 
+/** One finding of the rules check. `target` is "shared", "lead" or an agent's rule target id. */
+export const VibeBossRuleSuggestion = Schema.Struct({
+  id: Schema.String,
+  source: Schema.Literals(["check", "model"]),
+  kind: Schema.Literals(["cli", "duplicate", "shared", "conflict", "outdated", "other"]),
+  target: Schema.String,
+  /** The rule line as it is written now. */
+  line: Schema.String,
+  reason: Schema.String,
+  /** What the line becomes; null removes it. For "shared", the line moves into the shared rules. */
+  replacement: Schema.NullOr(Schema.String),
+  /** For "shared": every agent target the line appears in. */
+  targets: Schema.Array(Schema.String),
+});
+export type VibeBossRuleSuggestion = typeof VibeBossRuleSuggestion.Type;
+
+export const VibeBossRuleReview = Schema.Struct({
+  suggestions: Schema.Array(VibeBossRuleSuggestion),
+  /** Why the small model did not add its findings, when it did not. */
+  modelError: Schema.NullOr(Schema.String),
+});
+export type VibeBossRuleReview = typeof VibeBossRuleReview.Type;
+
 /** A provider thread's native id, as the client already has it from the thread detail. */
 export const VibeBossNativeTranscriptInput = Schema.Struct({
   driver: Schema.String,

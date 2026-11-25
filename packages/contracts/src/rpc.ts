@@ -21,6 +21,7 @@ import {
   VibeBossError,
   VibeBossNativeTranscriptInput,
   VibeBossNativeTranscriptResult,
+  VibeBossRuleReview,
   VibeBossSaveConfigInput,
   VibeBossState,
   VibeBossSyncResult,
@@ -529,6 +530,7 @@ export const WS_METHODS = {
   vibebossSyncRules: "vibeboss.syncRules",
   vibebossListCapabilities: "vibeboss.listCapabilities",
   vibebossResolveNativeTranscript: "vibeboss.resolveNativeTranscript",
+  vibebossReviewRules: "vibeboss.reviewRules",
 
   providerUploadFeedback: "provider.uploadFeedback",
   providerMcpSignInStart: "provider.mcpSignIn.start",
@@ -1835,6 +1837,12 @@ const WsVibeBossResolveNativeTranscriptRpc = Rpc.make(WS_METHODS.vibebossResolve
   error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
 });
 
+const WsVibeBossReviewRulesRpc = Rpc.make(WS_METHODS.vibebossReviewRules, {
+  payload: Schema.Struct({}),
+  success: VibeBossRuleReview,
+  error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+});
+
 const WsProviderUploadFeedbackRpc = Rpc.make(WS_METHODS.providerUploadFeedback, {
   payload: ProviderUploadFeedbackInput,
   success: ProviderUploadFeedbackResult,
@@ -2687,6 +2695,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsVibeBossSyncRulesRpc,
   WsVibeBossListCapabilitiesRpc,
   WsVibeBossResolveNativeTranscriptRpc,
+  WsVibeBossReviewRulesRpc,
   WsProviderUploadFeedbackRpc,
   WsProviderMcpSignInStartRpc,
   WsProviderMcpSignInCompleteRpc,

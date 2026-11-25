@@ -278,6 +278,7 @@ import * as PullRequestSyncReactor from "./orchestration-v2/PullRequestSyncReact
 import * as SourceControlDiscovery from "./sourceControl/SourceControlDiscovery.ts";
 import * as OtlpEndpointCheck from "./observability/OtlpEndpointCheck.ts";
 import * as TextGenerators from "./textGeneration/TextGenerators.ts";
+import * as TextGeneration from "./textGeneration/TextGeneration.ts";
 import * as SourceControlRepositoryService from "./sourceControl/SourceControlRepositoryService.ts";
 import * as SourceControlSignIn from "./sourceControl/SourceControlSignIn.ts";
 import * as SourceControlBuiltInDrivers from "./sourceControl/builtInDrivers.ts";
@@ -1583,6 +1584,7 @@ export const layerWsRpc = (
       const config = yield* ServerConfig.ServerConfig;
       const vibeBossFileSystem = yield* FileSystem.FileSystem;
       const vibeBossPath = yield* Path.Path;
+      const vibeBossTextGeneration = yield* Effect.serviceOption(TextGeneration.TextGeneration);
       const withVibeBossServices = <A, E>(
         effect: Effect.Effect<A, E, FileSystem.FileSystem | Path.Path | ServerConfig.ServerConfig>,
       ) =>
@@ -2695,6 +2697,31 @@ export const layerWsRpc = (
           withVibeBossServices(VibeBoss.listCapabilities()),
         [WS_METHODS.vibebossResolveNativeTranscript]: (input) =>
           withVibeBossServices(VibeBoss.resolveNativeTranscript(input)),
+        // The rules check asks the small model chosen for titles and commit messages.
+        [WS_METHODS.vibebossReviewRules]: () =>
+          withVibeBossServices(
+            providerRegistry.getProviders.pipe(
+              Effect.flatMap((providers) =>
+                VibeBoss.reviewRuleConfig(
+                  providers,
+                  Option.isNone(vibeBossTextGeneration)
+                    ? null
+                    : (prompt) =>
+                        serverSettings.getSettings.pipe(
+                          Effect.flatMap((settings) =>
+                            vibeBossTextGeneration.value.generateTranscriptionPostProcessing({
+                              cwd: config.stateDir,
+                              prompt,
+                              modelSelection: settings.textGenerationModelSelection,
+                            }),
+                          ),
+                          Effect.map((result) => result.transcription),
+                          Effect.timeout("90 seconds"),
+                        ),
+                ),
+              ),
+            ),
+          ),
         [WS_METHODS.mcpAppsReadResource]: (input) => mcpAppRequests.readResource(input),
         [WS_METHODS.providerMcpSignInStart]: (input) => mcpSignIn.start(input),
         [WS_METHODS.providerMcpSignInComplete]: (input) => mcpSignIn.complete(input),

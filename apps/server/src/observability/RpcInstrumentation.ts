@@ -218,6 +218,7 @@ const RPC_AGGREGATES = {
   [WS_METHODS.vibebossSyncRules]: "server",
   [WS_METHODS.vibebossListCapabilities]: "server",
   [WS_METHODS.vibebossResolveNativeTranscript]: "server",
+  [WS_METHODS.vibebossReviewRules]: "server",
   [WS_METHODS.mcpAppsToolInfo]: "provider",
   [WS_METHODS.mcpAppsUpdateModelContext]: "provider",
   [WS_METHODS.mcpAppsReadResource]: "provider",
