@@ -66,7 +66,7 @@ import {
 } from "./ClaudeHome.ts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import { makeClaudeMaintenanceResolution } from "./ClaudeMaintenance.ts";
-import { makeClaudeTerminalAuth } from "../../vibeboss/ClaudeTerminalAuth.ts";
+import { makeTerminalAuth } from "../../vibeboss/TerminalAuth.ts";
 const decodeClaudeSettings = Schema.decodeSync(ClaudeSettings);
 
 const DRIVER_KIND = ProviderDriverKind.make("claudeAgent");
@@ -155,7 +155,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeSettings, ClaudeDriverEnv, Path.
       accentColor,
       continuationGroupKey,
     });
-    // VibeBoss: settings offers in-app sign-in (see ClaudeTerminalAuth).
+    // VibeBoss: settings offers in-app sign-in (see TerminalAuth).
     const stampIdentity = (provider: Parameters<typeof withIdentity>[0]) => ({
       ...withIdentity(provider),
       setup: { canAuthenticate: true, canInstall: false },
@@ -423,8 +423,11 @@ export const ClaudeDriver: ProviderDriver<ClaudeSettings, ClaudeDriverEnv, Path.
       ),
     );
 
-    const auth = yield* makeClaudeTerminalAuth({
+    const auth = yield* makeTerminalAuth({
       instanceId,
+      agent: "Claude",
+      loginArgs: ["auth", "login"],
+      logoutArgs: ["auth", "logout"],
       binaryPath: effectiveConfig.binaryPath,
       env: processEnv,
       cwd: yield* HostProcess.HomeDirectory,

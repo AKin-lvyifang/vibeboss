@@ -25,11 +25,15 @@ interface Flow {
 }
 
 /**
- * Claude sign-in through the providers' terminal interaction: `claude auth login` runs in a PTY
+ * Sign-in through the providers' terminal interaction: the agent's own login command runs in a PTY
  * on the server and the settings page shows it, so it works from any client.
  */
-export const makeClaudeTerminalAuth = Effect.fn("makeClaudeTerminalAuth")(function* (input: {
+export const makeTerminalAuth = Effect.fn("makeTerminalAuth")(function* (input: {
   readonly instanceId: ProviderInstanceId;
+  /** Shown in messages and flow ids, e.g. "Claude". */
+  readonly agent: string;
+  readonly loginArgs: ReadonlyArray<string>;
+  readonly logoutArgs: ReadonlyArray<string>;
   readonly binaryPath: string;
   readonly env: NodeJS.ProcessEnv;
   readonly cwd: string;
@@ -78,11 +82,11 @@ export const makeClaudeTerminalAuth = Effect.fn("makeClaudeTerminalAuth")(functi
   });
   yield* Effect.addFinalizer(() => stop);
 
-  const run = (args: string[], id: string) =>
+  const run = (args: ReadonlyArray<string>, id: string) =>
     pty
       .spawn({
         shell: input.binaryPath,
-        args,
+        args: [...args],
         cwd: input.cwd,
         cols: 100,
         rows: 24,
@@ -105,9 +109,10 @@ export const makeClaudeTerminalAuth = Effect.fn("makeClaudeTerminalAuth")(functi
         ),
       );
 
-  const start = Effect.fn("ClaudeTerminalAuth.start")(function* (owner: string) {
+  const flowPrefix = input.agent.toLowerCase();
+  const start = Effect.fn("TerminalAuth.start")(function* (owner: string) {
     yield* stop;
-    const id = `claude-login-${++sequence}`;
+    const id = `${flowPrefix}-login-${++sequence}`;
     yield* SubscriptionRef.set<Flow | null>(flowRef, {
       id,
       owner,
@@ -116,7 +121,7 @@ export const makeClaudeTerminalAuth = Effect.fn("makeClaudeTerminalAuth")(functi
       offset: 0,
       message: null,
     });
-    const process = yield* run(["auth", "login"], id).pipe(
+    const process = yield* run(input.loginArgs, id).pipe(
       Effect.tapError((error) =>
         SubscriptionRef.set<Flow | null>(flowRef, {
           id,
@@ -135,14 +140,18 @@ export const makeClaudeTerminalAuth = Effect.fn("makeClaudeTerminalAuth")(functi
           ? flow
           : exitCode === 0
             ? { ...flow, phase: "succeeded", message: null }
-            : { ...flow, phase: "failed", message: "Claude sign-in did not finish. Try again." },
+            : {
+                ...flow,
+                phase: "failed",
+                message: `${input.agent} sign-in did not finish. Try again.`,
+              },
       );
       if (exitCode === 0) runFork(input.onCredentialsChanged);
     });
     return yield* current(owner);
   });
 
-  const cancel = Effect.fn("ClaudeTerminalAuth.cancel")(function* (owner: string, flowId: string) {
+  const cancel = Effect.fn("TerminalAuth.cancel")(function* (owner: string, flowId: string) {
     const flow = yield* SubscriptionRef.get(flowRef);
     if (flow?.id === flowId && flow.phase === "waiting") {
       yield* SubscriptionRef.set<Flow | null>(flowRef, { ...flow, phase: "cancelled" });
@@ -151,7 +160,7 @@ export const makeClaudeTerminalAuth = Effect.fn("makeClaudeTerminalAuth")(functi
     return yield* current(owner);
   });
 
-  const respond = Effect.fn("ClaudeTerminalAuth.respond")(function* (
+  const respond = Effect.fn("TerminalAuth.respond")(function* (
     owner: string,
     request: ProviderAuthRespondInput,
   ) {
@@ -168,13 +177,13 @@ export const makeClaudeTerminalAuth = Effect.fn("makeClaudeTerminalAuth")(functi
     return yield* current(owner);
   });
 
-  const logout = Effect.fn("ClaudeTerminalAuth.logout")(function* (
+  const logout = Effect.fn("TerminalAuth.logout")(function* (
     stopSessions: Effect.Effect<void, ProviderSetupError>,
   ) {
     yield* stopSessions;
     yield* stop;
-    const id = `claude-logout-${++sequence}`;
-    const process = yield* run(["auth", "logout"], id);
+    const id = `${flowPrefix}-logout-${++sequence}`;
+    const process = yield* run(input.logoutArgs, id);
     yield* Effect.callback<void>((resume) => {
       process.onExit(() => resume(Effect.void));
     });

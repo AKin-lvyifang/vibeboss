@@ -38,6 +38,7 @@ import * as ModelCatalog from "@t3tools/provider-core/server/ModelCatalog";
 import { applyCodexModelCatalog } from "../codexModelCatalog.ts";
 import type { ProviderDriver, ProviderInstance } from "@t3tools/provider-core/server/driver";
 import { withInstanceIdentity } from "@t3tools/provider-core/server/instanceIdentity";
+import { makeTerminalAuth } from "../../vibeboss/TerminalAuth.ts";
 import { mergeProviderInstanceEnvironment } from "@t3tools/provider-core/server/instanceEnvironment";
 import {
   enrichProviderSnapshotWithVersionAdvisory,
@@ -197,12 +198,17 @@ export const CodexDriver: ProviderDriver<
         : config;
     const homeLayout = yield* resolveCodexHomeLayout(homeConfig);
     const continuationIdentity = codexContinuationIdentity(homeLayout);
-    const stampIdentity = withInstanceIdentity({
+    const withIdentity = withInstanceIdentity({
       instanceId,
       driverKind: DRIVER_KIND,
       displayName,
       accentColor,
       continuationGroupKey: continuationIdentity.continuationKey,
+    });
+    // VibeBoss: settings offers in-app sign-in (see TerminalAuth).
+    const stampIdentity = (provider: Parameters<typeof withIdentity>[0]) => ({
+      ...withIdentity(provider),
+      setup: { canAuthenticate: true, canInstall: false },
     });
     yield* materializeCodexShadowHome(homeLayout).pipe(
       Effect.mapError(
@@ -414,6 +420,19 @@ export const CodexDriver: ProviderDriver<
         Effect.forkScoped,
       );
     }
+    // The auth.json watcher above refreshes the status once the login writes it.
+    const auth = yield* makeTerminalAuth({
+      instanceId,
+      agent: "Codex",
+      loginArgs: ["login"],
+      logoutArgs: ["logout"],
+      binaryPath: effectiveConfig.binaryPath,
+      env: effectiveConfig.homePath
+        ? { ...processEnv, CODEX_HOME: effectiveConfig.homePath }
+        : processEnv,
+      cwd: yield* HostProcess.HomeDirectory,
+      onCredentialsChanged: snapshot.refresh.pipe(Effect.ignore),
+    });
     return {
       instanceId,
       driverKind: DRIVER_KIND,
@@ -426,6 +445,7 @@ export const CodexDriver: ProviderDriver<
       consumeResetCredit,
       orchestrationAdapter,
       textGeneration,
+      ...(auth === undefined ? {} : { auth }),
     } satisfies ProviderInstance;
   }),
 };
