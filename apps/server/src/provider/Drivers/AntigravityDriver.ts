@@ -71,6 +71,7 @@ import {
 import { makeAcpNativeLoggerFactory } from "@t3tools/provider-acp/server/nativeLogging";
 import { ProviderDriverError } from "../Errors.ts";
 import { makeAntigravityProvider } from "../AntigravityProvider.ts";
+import { ensureAgentCliGuard, withAgentCliGuardPath } from "../../vibeboss/AgentCliGuard.ts";
 import { makeAntigravityUsageProbe } from "../antigravityUsageLimits.ts";
 import * as ProviderEventLoggers from "@t3tools/provider-core/server/ProviderEventLoggers";
 import * as ModelCatalog from "@t3tools/provider-core/server/ModelCatalog";
@@ -186,6 +187,12 @@ export const AntigravityDriver: ProviderDriver<
       ),
     );
     const profileDirectory = directories.profile;
+    // VibeBoss: thread shells find stand-ins for other agents' CLIs first, which point to delegate_task.
+    const agentCliGuardDir = yield* ensureAgentCliGuard(
+      fileSystem,
+      host.paths.stateDir,
+      yield* HostProcess.Platform,
+    ).pipe(Effect.catch(() => Effect.succeed(null)));
     // Only a session reports whether agy offers Auto, so keep the last answer across restarts.
     const runtimeModesPath = path.join(profileDirectory, "t3-runtime-modes.json");
     const rememberedRuntimeModes = yield* fileSystem.readFileString(runtimeModesPath).pipe(
@@ -321,11 +328,18 @@ export const AntigravityDriver: ProviderDriver<
       // `buildAntigravityAcpSpawnInput` sets `extendEnv: false`, so thread variables only reach the
       // agent's shell through `baseEnv`.
       const { processEnvironment: threadEnvironment, ...runtimeInput } = input;
-      const { executable, spawn } = yield* prepareSpawn(
-        runtimeInput.cwd,
+      const runtimeEnvironment =
         threadEnvironment === undefined
           ? processEnvironment
-          : { ...processEnvironment, ...threadEnvironment },
+          : { ...processEnvironment, ...threadEnvironment };
+      const { executable, spawn } = yield* prepareSpawn(
+        runtimeInput.cwd,
+        runtimeEnvironment.PATH === undefined
+          ? runtimeEnvironment
+          : {
+              ...runtimeEnvironment,
+              PATH: withAgentCliGuardPath(agentCliGuardDir, runtimeEnvironment.PATH),
+            },
       );
       const runtime = yield* makeAntigravityAcpRuntime({
         ...runtimeInput,

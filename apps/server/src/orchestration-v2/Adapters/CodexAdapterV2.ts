@@ -116,6 +116,7 @@ import { resolveAttachmentPath, resolveAttachmentPathById } from "../../attachme
 import * as PortScanner from "../../preview/PortScanner.ts";
 import { getCodexServiceTierOptionValue } from "../../codexModelOptions.ts";
 import { ServerConfig } from "../../config.ts";
+import { ensureAgentCliGuard, withAgentCliGuardPath } from "../../vibeboss/AgentCliGuard.ts";
 import { expandHomePath } from "@t3tools/provider-core/server/pathExpansion";
 import { buildCodexAdditionalContext } from "../../provider/CodexDeveloperInstructions.ts";
 import {
@@ -1698,7 +1699,7 @@ function codexStdioMcpServerNames(mcpServers: unknown): ReadonlyArray<string> {
     .map(([name]) => name);
 }
 
-function codexThreadRuntimeParams(input: {
+function codexThreadRuntimeParamsBase(input: {
   readonly threadId: ThreadId | null;
   readonly mcpSession: McpProviderSession.McpProviderSessionConfig | undefined;
   readonly stdioMcpServers?: ReadonlyArray<string>;
@@ -2118,6 +2119,24 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
   const readMcpSession = (threadId: ThreadId | null) =>
     threadId === null ? Effect.undefined : mcpSessions.read(threadId);
   const { clientFactory, digest, fileSystem, idAllocator, serverConfig } = adapterOptions;
+  // VibeBoss: thread shells find stand-ins for other agents' CLIs first, which point to delegate_task.
+  const agentCliGuardDir = yield* ensureAgentCliGuard(
+    fileSystem,
+    serverConfig.stateDir,
+    yield* HostProcess.Platform,
+  ).pipe(Effect.catch(() => Effect.succeed(null)));
+  const codexThreadRuntimeParams = (input: Parameters<typeof codexThreadRuntimeParamsBase>[0]) => {
+    const params = codexThreadRuntimeParamsBase(input);
+    const guardedPath = withAgentCliGuardPath(agentCliGuardDir, adapterOptions.environment.PATH);
+    return guardedPath === undefined ||
+      guardedPath === adapterOptions.environment.PATH ||
+      input.threadId === null
+      ? params
+      : {
+          ...params,
+          config: { ...params.config, "shell_environment_policy.set.PATH": guardedPath },
+        };
+  };
   const continuationRequests = adapterOptions.continuationRequests;
 
   return ProviderAdapter.ProviderAdapterV2.of({

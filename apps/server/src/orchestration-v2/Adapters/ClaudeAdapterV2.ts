@@ -66,6 +66,7 @@ import {
   type SDKResultMessage,
   type SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
+import { claudeAgentCliGuard } from "../../vibeboss/AgentCliGuard.ts";
 import type {
   AskUserQuestionInput,
   WebSearchOutput,
@@ -2712,16 +2713,12 @@ export function makeClaudeQueryOptions(input: {
         ...launchAppendSystemPrompt,
       ].join("\n\n"),
     },
-    ...(deviceInstructions || input.onStop !== undefined
-      ? {
-          hooks: {
-            ...(deviceInstructions
-              ? { SubagentStart: [{ hooks: [subagentDeviceInstructions] }] }
-              : {}),
-            ...(input.onStop === undefined ? {} : { Stop: [{ hooks: [input.onStop] }] }),
-          },
-        }
-      : {}),
+    hooks: {
+      // VibeBoss: other agents are reached through delegate_task, never their CLIs.
+      PreToolUse: [{ matcher: "Bash", hooks: [claudeAgentCliGuard] }],
+      ...(deviceInstructions ? { SubagentStart: [{ hooks: [subagentDeviceInstructions] }] } : {}),
+      ...(input.onStop === undefined ? {} : { Stop: [{ hooks: [input.onStop] }] }),
+    },
     ...(pluginDirectories.length === 0
       ? {}
       : { plugins: pluginDirectories.map((path) => ({ type: "local" as const, path })) }),
