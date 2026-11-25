@@ -43,7 +43,7 @@
 
 ## 和普通多 Agent 工具比，好在哪
 
-<p align="center"><img width="100%" alt="普通多 Agent 用法与 VibeBoss 主控派活的对比" src="assets/readme/collaboration.png"></p>
+<p align="center"><img width="100%" alt="普通多 Agent 用法与 VibeBoss 主控派活的对比" src="assets/readme/collaboration-v2.png"></p>
 
 |                   | 普通多 Agent 客户端（如 T3 Code 原版）        | VibeBoss                                   |
 | ----------------- | --------------------------------------------- | ------------------------------------------ |
