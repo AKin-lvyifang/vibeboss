@@ -43,6 +43,7 @@ it("writes lead rules only into the lead's file and keeps each agent's own rules
   const codex = renderRuleFile(config, "codex", false, providers);
   assert.include(claude, "# 原来的 CLAUDE.md\n\n- 改全再说做完");
   assert.include(claude, "## 主控规则");
+  assert.include(claude, "派活一律调用 delegate_task 工具");
   assert.notInclude(codex, "## 主控规则");
   assert.include(codex, "收到主控派来的任务时");
   assert.notInclude(claude, "只给人看的备注");

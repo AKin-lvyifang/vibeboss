@@ -36,6 +36,10 @@ const DEFAULT_LEAD_RULES = [
   "- 交回后你读改动、自己跑测试；不对就在同一个子会话里让它返工。",
 ].join("\n");
 
+// Other rule files may name a CLI for another agent; only delegate_task shows the work as a child thread.
+const DISPATCH_RULE =
+  "派活一律调用 delegate_task 工具，派出去的任务会在 VibeBoss 里显示成子会话，用户能看到谁在做什么。不要在命令行里直接运行 claude、codex、agy 等智能体，哪怕别的规则写了命令行用法。";
+
 const WORKER_RULES = "## 被派活时\n\n收到主控派来的任务时，只做这件事，不再往下派。";
 
 const DEFAULT_MEMBERS: ReadonlyArray<VibeBossMember> = [
@@ -361,6 +365,7 @@ export function renderRuleFile(
       ? [
           "## 主控规则",
           "只在你作为主控、直接和用户对话时适用。",
+          DISPATCH_RULE,
           expandMentions(config.leadRules.trim(), config.members, providers),
           team === "" ? "" : `### 成员\n\n${team}`,
         ]
