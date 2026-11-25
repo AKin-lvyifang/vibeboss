@@ -236,6 +236,8 @@ interface MessagesTimelineProps {
     sourceAnchor: AssistantCitationSourceAnchor,
   ) => boolean;
   onReplyToResponse?: TimelineRowSharedState["onReplyToResponse"];
+  /** Opens a side chat with the selection cited; absent where side chats are not offered. */
+  onSideChatAssistantText?: ((citation: AssistantCitation) => void) | undefined;
   isWorking: boolean;
   /** The thread is catching up from a cached copy, whose working state may be stale. */
   syncing?: boolean;
@@ -361,6 +363,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
   citationRequest = null,
   citationHistory = CITED_HISTORY_LOADING,
   onCiteAssistantText,
+  onSideChatAssistantText,
   onReplyToResponse,
   isWorking,
   syncing = false,
@@ -1476,6 +1479,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
                 viewport={timelineViewportElement}
                 threadRef={citationThreadRef}
                 onCite={onCiteAssistantText}
+                onSideChat={onSideChatAssistantText}
               />
             ) : null}
             <LegendList<MessagesTimelineRow>

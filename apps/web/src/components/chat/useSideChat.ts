@@ -56,7 +56,11 @@ export function useSideChat(input: {
     const error = squashAtomCommandFailure(failure);
     input.onError(thrownErrorMessage(error, m) ?? fallback);
   };
-  const start = async (threadRef: ScopedThreadRef, message: SideChatMessage | undefined) => {
+  const start = async (
+    threadRef: ScopedThreadRef,
+    message: SideChatMessage | undefined,
+    draftPrompt: string | undefined,
+  ) => {
     const { runtimeMode, modelSelection } = input.readSettings();
     const targetThreadId = newThreadId();
     const fork = await forkSideChat({
@@ -117,17 +121,20 @@ export function useSideChat(input: {
         discard();
         return false;
       }
-    } else if (modelSelection !== undefined) {
-      useComposerDraftStore.getState().setModelSelection(targetRef, modelSelection);
+    } else {
+      const drafts = useComposerDraftStore.getState();
+      if (modelSelection !== undefined) drafts.setModelSelection(targetRef, modelSelection);
+      if (draftPrompt) drafts.setPrompt(targetRef, draftPrompt);
     }
     useRightPanelStore.getState().openThread(threadRef, targetThreadId);
     return true;
   };
-  const open = async (message?: SideChatMessage) => {
+  /** `draftPrompt` fills an unsent side chat's composer; it is ignored when `message` is sent. */
+  const open = async (message?: SideChatMessage, draftPrompt?: string) => {
     const { threadRef } = input;
     if (!threadRef || pendingRef.current) return false;
     pendingRef.current = true;
-    return start(threadRef, message).finally(() => {
+    return start(threadRef, message, draftPrompt).finally(() => {
       pendingRef.current = false;
     });
   };

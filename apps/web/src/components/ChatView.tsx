@@ -162,7 +162,7 @@ import {
 import { AsyncResult } from "effect/reactivity";
 import { isElectron } from "../env";
 import { useActiveThreadRef } from "../hooks/useActiveThreadRef";
-import { composerRequiresModifier } from "../composer-logic";
+import { composerRequiresModifier, formatAssistantCitationForComposer } from "../composer-logic";
 import {
   derivePhase,
   deriveActiveWorkStartedAt,
@@ -3057,6 +3057,10 @@ export default function ChatView(props: ChatViewProps) {
                 ? gt("Available once the thread's worktree is set up.")
                 : null;
   const openSideChatStable = useStableCallback(() => void sideChat.open());
+  const sideChatAssistantTextStable = useStableCallback(
+    (citation: AssistantCitation) =>
+      void sideChat.open(undefined, formatAssistantCitationForComposer(citation)),
+  );
   const openSurfaceInMainView = useOpenSurfaceInMainView(activeThreadRef);
   const sendSideChatStable = useStableCallback(sideChat.open);
   const { onConfirmRevertStable, onForkFromRunStable, onRevertTimelineTurnStable } =
@@ -3664,6 +3668,11 @@ export default function ChatView(props: ChatViewProps) {
                   citationRequest={citationRequest}
                   citationHistory={citationHistory}
                   onCiteAssistantText={citeAssistantTextStable}
+                  onSideChatAssistantText={
+                    sideChat.available && sideChatDisabledReason === null
+                      ? sideChatAssistantTextStable
+                      : undefined
+                  }
                   onReplyToResponse={replyToResponseStable}
                   {...(activeProject && !runsOutsideHostCheckout
                     ? { onRunShellCommand: parentPanel?.runShellCommand ?? runShellCommandStable }

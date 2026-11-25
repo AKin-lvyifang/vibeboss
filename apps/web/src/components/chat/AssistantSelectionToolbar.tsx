@@ -19,16 +19,20 @@ import {
   type SelectionActionPoint,
 } from "~/lib/selectionActions";
 import { Button } from "../ui/button";
+import { Group } from "../ui/group";
 import { BackgroundThreadContext } from "./backgroundThread";
+import { VibeBossSelectionSideChatButton } from "./VibeBossSelectionSideChatButton";
 
 export function AssistantSelectionToolbar({
   viewport,
   threadRef,
   onCite,
+  onSideChat,
 }: {
   viewport: HTMLElement | null;
   threadRef: ScopedThreadRef;
   onCite: (citation: AssistantCitation, sourceAnchor: AssistantCitationSourceAnchor) => boolean;
+  onSideChat?: ((citation: AssistantCitation) => void) | undefined;
 }) {
   const [selection, setSelection] = useState<{
     citation: AssistantCitation;
@@ -36,13 +40,14 @@ export function AssistantSelectionToolbar({
     sourceAnchor: AssistantCitationSourceAnchor;
   } | null>(null);
   const toolbarRef = useRef<HTMLButtonElement>(null);
+  const actionsElementRef = useRef<HTMLDivElement>(null);
   const actionsRef = useRef<ReturnType<typeof observeSelectionActions> | null>(null);
   const backgroundThread = use(BackgroundThreadContext);
   const gt = useGT();
 
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- measures the toolbar DOM node and clamps its position inside the window before paint
   useLayoutEffect(() => {
-    const toolbar = toolbarRef.current;
+    const toolbar = actionsElementRef.current;
     if (!toolbar || !selection) return;
     const rect = toolbar.getBoundingClientRect();
     toolbar.style.left = `${Math.max(8, Math.min(selection.position.x, window.innerWidth - rect.width - 8))}px`;
@@ -141,7 +146,7 @@ export function AssistantSelectionToolbar({
     };
     const actions = observeSelectionActions({
       element: viewport,
-      getActionElement: () => toolbarRef.current,
+      getActionElement: () => actionsElementRef.current,
       restoreAfterScroll: true,
       immediateMultiClick: true,
       onSelection: update,
@@ -159,7 +164,7 @@ export function AssistantSelectionToolbar({
         event.isComposing ||
         event.defaultPrevented ||
         !toolbar ||
-        toolbar.contains(event.target as Node)
+        actionsElementRef.current?.contains(event.target as Node)
       ) {
         return;
       }
@@ -191,18 +196,17 @@ export function AssistantSelectionToolbar({
     dismiss();
     return true;
   };
+  const sideChat = () => {
+    onSideChat?.(selection.citation);
+    window.getSelection()?.removeAllRanges();
+    dismiss();
+  };
   return createPortal(
-    <Button
-      ref={toolbarRef}
-      type="button"
-      size="xs"
-      variant="glass"
-      disabled={tooLong}
-      aria-label={tooLong ? gt("Selection is too long to cite") : gt("Cite selection in composer")}
+    <Group
+      ref={actionsElementRef}
       className="fixed z-50 max-w-[calc(100vw-1rem)]"
       style={{ left: selection.position.x, top: selection.position.y }}
       onPointerDown={(event) => event.preventDefault()}
-      onClick={cite}
       onKeyDown={(event) => {
         event.stopPropagation();
         if (event.key === "Escape" && !event.nativeEvent.isComposing) {
@@ -211,11 +215,24 @@ export function AssistantSelectionToolbar({
         }
       }}
     >
-      <QuoteIcon aria-hidden="true" className="size-3.5" />
-      {tooLong
-        ? gt("Shorten selection")
-        : gt("Cite", { $context: "verb, button that quotes the selected text" })}
-    </Button>,
+      <Button
+        ref={toolbarRef}
+        type="button"
+        size="xs"
+        variant="glass"
+        disabled={tooLong}
+        aria-label={
+          tooLong ? gt("Selection is too long to cite") : gt("Cite selection in composer")
+        }
+        onClick={cite}
+      >
+        <QuoteIcon aria-hidden="true" className="size-3.5" />
+        {tooLong
+          ? gt("Shorten selection")
+          : gt("Cite", { $context: "verb, button that quotes the selected text" })}
+      </Button>
+      {onSideChat && !tooLong ? <VibeBossSelectionSideChatButton onClick={sideChat} /> : null}
+    </Group>,
     document.body,
   );
 }
