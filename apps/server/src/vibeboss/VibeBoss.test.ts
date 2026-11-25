@@ -44,6 +44,7 @@ it("writes lead rules only into the lead's file and keeps each agent's own rules
   assert.include(claude, "# 原来的 CLAUDE.md\n\n- 改全再说做完");
   assert.include(claude, "## 主控规则");
   assert.include(claude, "派活一律调用 delegate_task 工具");
+  assert.include(claude, "在普通终端里忽略这一节");
   assert.notInclude(codex, "## 主控规则");
   assert.include(codex, "收到主控派来的任务时");
   assert.notInclude(claude, "只给人看的备注");
@@ -64,6 +65,7 @@ it("writes shared rules once into every agent's file, ahead of that agent's own 
 it("expands @member to its current agent and delegate call, so swapping agents needs no edit", () => {
   const claude = renderRuleFile(config, "claude", true, providers);
   assert.include(claude, "@worker（派给 Codex）");
+  assert.include(claude, "title 写成“@worker：任务名”");
   assert.include(claude, '"providerInstanceId":"codex"');
   const swapped = renderRuleFile(
     { ...config, members: [{ ...config.members[0]!, providerInstanceId: "claudeAgent" }] },

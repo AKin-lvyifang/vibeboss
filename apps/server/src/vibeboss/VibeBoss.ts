@@ -328,7 +328,8 @@ function delegateCall(member: VibeBossMember, providers: ReadonlyArray<ServerPro
     target.options === undefined && member.effort.trim() !== ""
       ? `；档位 ${member.effort.trim()}，按 orchestrator_capabilities 里这个智能体的档位参数传`
       : "";
-  return `delegate_task，target = ${JSON.stringify(target)}${effort}`;
+  // The panel groups child threads by this title prefix.
+  return `delegate_task，target = ${JSON.stringify(target)}，title 写成“@${member.name}：任务名”${effort}`;
 }
 
 const MENTION = /@([\p{L}\p{N}_-]+)/gu;
@@ -364,7 +365,7 @@ export function renderRuleFile(
     isLead && config.leadRules.trim() !== ""
       ? [
           "## 主控规则",
-          "只在你作为主控、直接和用户对话时适用。",
+          "只在 VibeBoss 里（会话有 delegate_task 工具）、你作为主控直接和用户对话时适用；在普通终端里忽略这一节。",
           DISPATCH_RULE,
           expandMentions(config.leadRules.trim(), config.members, providers),
           team === "" ? "" : `### 成员\n\n${team}`,
