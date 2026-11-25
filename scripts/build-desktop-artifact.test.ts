@@ -5,6 +5,7 @@ import * as NodePath from "node:path";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { createPackageWithOptions, extractFile } from "@electron/asar";
 import { assert, it } from "@effect/vitest";
+import { vi } from "vite-plus/test";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Deferred from "effect/Deferred";
 import * as Fiber from "effect/Fiber";
@@ -519,7 +520,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
         "mac",
         "dmg",
         "0.0.33",
-        false,
+        true,
         false,
         undefined,
         undefined,
@@ -553,6 +554,45 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
       ),
     ),
   );
+
+  it.effect("VibeBoss: feeds local builds from our own Releases", () =>
+    Effect.gen(function* () {
+      const win = yield* createBuildConfig(
+        "win",
+        "nsis",
+        "0.1.14",
+        false,
+        false,
+        undefined,
+        undefined,
+      );
+      assert.deepStrictEqual(win.publish, [
+        { provider: "github", owner: "AKin-lvyifang", repo: "vibeboss", releaseType: "release" },
+      ]);
+      const mock = yield* createBuildConfig("win", "nsis", "0.1.14", false, true, 4321, undefined);
+      assert.deepStrictEqual(mock.publish, [{ provider: "generic", url: "http://localhost:4321" }]);
+    }).pipe(Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env: {} })))),
+  );
+
+  it.effect("VibeBoss: ad hoc signed mac builds ship without an update feed", () => {
+    vi.stubEnv("VIBEBOSS_MAC_SIGN_IDENTITY", "-");
+    return Effect.gen(function* () {
+      const adHoc = yield* createBuildConfig(
+        "mac",
+        "dmg",
+        "0.1.14",
+        false,
+        false,
+        undefined,
+        undefined,
+      );
+      assert.isNull(adHoc.publish);
+      assert.equal((adHoc.mac as Record<string, unknown>).identity, "-");
+    }).pipe(
+      Effect.ensuring(Effect.sync(() => vi.unstubAllEnvs())),
+      Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env: {} }))),
+    );
+  });
 
   it.effect("names the Electron window class in the Linux desktop entry", () =>
     Effect.gen(function* () {

@@ -20,6 +20,7 @@ import { fromYaml } from "@t3tools/shared/schemaYaml";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import { clerkFrontendApiHostnameFromPublishableKey } from "@t3tools/shared/relayAuth";
 import { resolveSpawnCommand } from "@t3tools/shared/shell";
+import { VIBEBOSS_RELEASE_REPOSITORY } from "@t3tools/shared/vibebossRelease";
 import rootPackageJson from "../package.json" with { type: "json" };
 import desktopPackageJson from "../apps/desktop/package.json" with { type: "json" };
 import gnomeCaptureBundle from "../apps/desktop/gnome-extension/bundle.json" with { type: "json" };
@@ -2750,7 +2751,8 @@ export const resolveGitHubPublishConfig = Effect.fn("resolveGitHubPublishConfig"
   const rawRepo = (
     Option.getOrUndefined(env.updateRepository)?.trim() ||
     Option.getOrUndefined(env.githubRepository)?.trim() ||
-    ""
+    // VibeBoss: local builds feed updates from our own Releases.
+    VIBEBOSS_RELEASE_REPOSITORY
   ).trim();
   if (!rawRepo) return undefined;
 
@@ -2880,21 +2882,33 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
   buildConfig.publish = null;
   if (!isDesktopPreviewVersion(version)) {
     const publishConfig = yield* resolveGitHubPublishConfig(updateChannel);
-    if (publishConfig) {
-      buildConfig.publish = [publishConfig];
-    } else if (mockUpdates) {
+    // VibeBoss: the GitHub feed always resolves (our repository by default), so mock wins.
+    if (mockUpdates) {
       buildConfig.publish = [
         {
           provider: "generic",
           url: resolveMockUpdateServerUrl(mockUpdateServerPort),
         },
       ];
+    } else if (publishConfig) {
+      buildConfig.publish = [publishConfig];
     }
   }
 
   if (platform === "mac") {
     const path = yield* Path.Path;
     const repoRoot = yield* RepoRoot;
+    const localIdentity = signed
+      ? undefined
+      : resolveLocalMacSigningIdentity(yield* HostProcess.Platform);
+    // VibeBoss: macOS installs an update only when it carries the running app's signature
+    // identity. Ad hoc signatures differ on every build, so such a build ships without a feed.
+    if (localIdentity === "-" && buildConfig.publish) {
+      buildConfig.publish = null;
+      yield* Effect.logWarning(
+        `[desktop-artifact] Ad hoc signed mac build: automatic updates are off. Install the "${LOCAL_MAC_SIGNING_IDENTITY}" certificate to enable them.`,
+      );
+    }
     buildConfig.mac = {
       target: target === "dmg" ? [target, "zip"] : [target],
       icon: "icon.icns",
@@ -2947,7 +2961,7 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
       ...(signed
         ? { sign: path.join(repoRoot, "scripts/sign-macos.ts") }
         : {
-            identity: resolveLocalMacSigningIdentity(yield* HostProcess.Platform),
+            identity: localIdentity,
             hardenedRuntime: false,
           }),
       ...(macPasskeySigning

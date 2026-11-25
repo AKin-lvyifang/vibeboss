@@ -224,12 +224,8 @@ function AboutVersionSection() {
 
     const action = updateState ? resolveDesktopUpdateButtonAction(updateState) : "none";
 
-    if (action === "download") {
-      void downloadLocalUpdate(bridge, { notifyDownloaded: false });
-      return;
-    }
-
-    if (action === "install") {
+    // VibeBoss: one click confirms once, downloads in the background, then installs and restarts.
+    if (action === "download" || action === "install") {
       if (isUpdateActionPending) return;
       setIsUpdateActionPending(true);
       let confirmed = false;
@@ -255,6 +251,13 @@ function AboutVersionSection() {
         return;
       }
       if (!confirmed) {
+        setIsUpdateActionPending(false);
+        return;
+      }
+      if (
+        action === "download" &&
+        !(await downloadLocalUpdate(bridge, { notifyDownloaded: false }))
+      ) {
         setIsUpdateActionPending(false);
         return;
       }
@@ -325,7 +328,8 @@ function AboutVersionSection() {
       ? !canCheckForUpdate(updateState)
       : isDesktopUpdateButtonDisabled(updateState);
 
-  const actionLabel: Record<string, string> = { download: gt("Download"), install: gt("Install") };
+  // VibeBoss: "download" also installs and restarts (one-click update).
+  const actionLabel: Record<string, string> = { download: gt("Install"), install: gt("Install") };
   const statusLabel: Record<string, string> = {
     checking: gt("Checking…"),
     downloading: gt("Downloading…"),
