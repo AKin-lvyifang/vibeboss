@@ -29,6 +29,7 @@ export function resolveChatCanvasLayout({
   maxHtmlPreviewWidth = maxChatWidth,
   minChatWidth = 640,
   composerHeight = 0,
+  center = container.width / 2,
   detailsCard = null,
   findBar = null,
 }: {
@@ -39,6 +40,8 @@ export function resolveChatCanvasLayout({
   maxHtmlPreviewWidth?: number;
   minChatWidth?: number;
   composerHeight?: number;
+  /** VibeBoss: where to center the chat; never right of the canvas center (insets only shrink the end). */
+  center?: number;
   detailsCard?: PreviewMiniPlayerObstacles["detailsCard"];
   findBar?: PreviewMiniPlayerObstacles["detailsCard"];
 }) {
@@ -47,7 +50,7 @@ export function resolveChatCanvasLayout({
     ? detailsCard.left - DETAILS_CARD_CLEARANCE
     : container.width - padding;
   const normalWidth = Math.max(0, Math.min(centeredWidth, laneRight - padding));
-  const canvasCenterLeft = (container.width - normalWidth) / 2;
+  const canvasCenterLeft = Math.min(center, container.width / 2) - normalWidth / 2;
   const normalLeft = Math.max(padding, Math.min(canvasCenterLeft, laneRight - normalWidth));
   let chat = {
     left: normalLeft,

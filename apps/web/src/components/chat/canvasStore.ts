@@ -21,6 +21,8 @@ export interface ChatCanvasMeasurements {
   readonly minChatWidth: number;
   readonly composerHeight: number;
   readonly timelineGutter: number;
+  /** VibeBoss: the window's horizontal center in canvas coordinates; the chat centers on it. */
+  readonly windowCenter?: number;
   /** The find bar's box in canvas coordinates while it is shown. */
   readonly findBar: CanvasEdges | null;
 }
@@ -58,6 +60,7 @@ const sameMeasurements = (a: ChatCanvasMeasurements, b: ChatCanvasMeasurements) 
   a.minChatWidth === b.minChatWidth &&
   a.composerHeight === b.composerHeight &&
   a.timelineGutter === b.timelineGutter &&
+  a.windowCenter === b.windowCenter &&
   sameEdges(a.findBar, b.findBar);
 
 /**
@@ -141,6 +144,7 @@ export function resolveChatCanvasModel({
     maxHtmlPreviewWidth: measurements.maxHtmlPreviewWidth,
     minChatWidth: measurements.minChatWidth,
     composerHeight: measurements.composerHeight,
+    ...(measurements.windowCenter === undefined ? {} : { center: measurements.windowCenter }),
     detailsCard,
     findBar,
   });

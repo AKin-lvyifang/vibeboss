@@ -121,6 +121,7 @@ export function ChatCanvas({
         maxHtmlPreviewWidth: Number.parseFloat(getComputedStyle(htmlPreviewProbe).width),
         minChatWidth: Number.parseFloat(styles.minWidth),
         composerHeight: composerOverlayElement?.getBoundingClientRect().height ?? 0,
+        windowCenter: document.documentElement.clientWidth / 2 - canvasBounds.left,
         timelineGutter: timelineElement
           ? (timelineElement.offsetWidth - timelineElement.clientWidth) / 2
           : 0,
