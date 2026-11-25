@@ -100,7 +100,10 @@
 
 ## 开始使用
 
-1. **安装**：Mac（苹果芯片）用 `.dmg`，Windows 用 `.exe`。
+1. **安装**：到 [Releases 下载页](https://github.com/AKin-lvyifang/vibeboss/releases/latest) 下载。Mac（苹果芯片）用 `.dmg`，Windows 用 `.exe`。
+   - 安装包没有做苹果和微软的签名，第一次打开会被拦一下：
+   - Mac 提示“已损坏”或“无法验证开发者”：把 VibeBoss 拖进“应用程序”后，在终端运行 `xattr -dr com.apple.quarantine /Applications/VibeBoss.app`，再打开。
+   - Windows 提示“Windows 已保护你的电脑”：点“更多信息”，再点“仍要运行”。
 2. **登录 Agent**：在设置里分别登录 Claude、Codex、Antigravity，用的都是你自己的账号。
 3. **设分工**：在“分工”页选好主控、加几位成员；在“规则”页写好公共规则和分工，点“同步”。
 4. **开始用**：新建会话，直接跟主控说你要做什么。
