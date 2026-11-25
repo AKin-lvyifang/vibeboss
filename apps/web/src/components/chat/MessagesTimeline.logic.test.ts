@@ -4937,6 +4937,19 @@ describe("live subagents after their parent turn settles", () => {
     },
   );
 
+  // VibeBoss: delegated work stays in the conversation after it finishes.
+  it("keeps a finished delegated child visible but folds a finished native one", () => {
+    expect(rowsFor([child("child", 3, "completed")]).map((row) => row.id)).toEqual([
+      "user",
+      `turn-fold:${runId}`,
+      "child",
+      "assistant",
+    ]);
+    expect(
+      rowsFor([child("child", 3, "completed", "provider_native")]).map((row) => row.id),
+    ).toEqual(["user", `turn-fold:${runId}`, "assistant"]);
+  });
+
   it("keeps a launch batch visible while any member is still running", () => {
     const rows = rowsFor([child("done", 3, "completed"), child("live", 4, "running")]);
     expect(rows.map((row) => row.id)).toEqual(["user", `turn-fold:${runId}`, "done", "assistant"]);

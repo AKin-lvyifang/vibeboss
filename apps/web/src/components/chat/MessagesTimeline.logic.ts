@@ -867,6 +867,7 @@ function deriveSupersededAttemptFolds(
       entry.kind === "mcp-app" ||
       entry.kind === "sent-message" ||
       timelineEntryIsPersistentResourceCard(entry) ||
+      timelineEntryIsDelegatedSubagent(entry) ||
       liveSubagentEntryIds.has(entry.id) ||
       (entry.kind === "work" && entry.entry.itemType === "system_notice")
     ) {
@@ -1070,6 +1071,15 @@ function itemizedFailedRunIds(
   );
 }
 
+// VibeBoss: work handed to a team member stays in the conversation, outside "Worked for".
+function timelineEntryIsDelegatedSubagent(entry: TimelineEntry): boolean {
+  return (
+    entry.kind === "event" &&
+    entry.projectedItem.item.type === "subagent" &&
+    entry.projectedItem.item.origin === "app_owned"
+  );
+}
+
 function deriveTurnFolds(input: {
   timelineEntries: ReadonlyArray<TimelineEntry>;
   terminalAssistantMessageIds: ReadonlySet<string>;
@@ -1210,6 +1220,7 @@ function deriveTurnFolds(input: {
       if (
         entry.id === visibleCompactionId ||
         timelineEntryIsPersistentResourceCard(entry) ||
+        timelineEntryIsDelegatedSubagent(entry) ||
         input.liveSubagentEntryIds.has(entry.id) ||
         input.retainedAssistantReplyEntryIds.has(entry.id)
       ) {
