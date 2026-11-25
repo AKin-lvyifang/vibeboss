@@ -25,6 +25,9 @@ export const THREAD_DETAILS_ITEMS = [
     defaultVisible: true,
   },
   { id: "sideChats", label: msg("Side chats"), defaultVisible: true },
+  // VibeBoss: delegated work grouped by team member, and the files people open.
+  { id: "team", label: msg("Team"), defaultVisible: true },
+  { id: "deliverables", label: msg("Deliverables"), defaultVisible: true },
   { id: "usage", label: msg("Usage limits"), defaultVisible: false },
   // VibeBoss: show context use by default.
   { id: "context", label: msg("Context window"), defaultVisible: true },

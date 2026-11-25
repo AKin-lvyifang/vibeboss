@@ -489,6 +489,8 @@ export function ThreadRelationshipsPanel(props: {
   readonly threadId: ThreadId;
   readonly showLineage: boolean;
   readonly showSideChats: boolean;
+  /** VibeBoss: the Team section lists delegated local children, so this panel leaves them out. */
+  readonly hideSubagents?: boolean;
 }) {
   const gt = useGT();
   const m = useMessages();
@@ -645,6 +647,8 @@ export function ThreadRelationshipsPanel(props: {
     if (!isParent && graph.nodes.get(threadId)?.thread?.lineage.sideChat === true)
       return "sideChats";
     if (edge.kind !== "subagent" || isParent) return "related";
+    if (props.hideSubagents && subagentsByThreadId.get(threadId)?.origin === "app_owned")
+      return "hidden";
     return isFinishedAgentStatus(edge.status) ? "previous" : "active";
   });
   const { remoteActive = [], remotePrevious = [] } = groupBy(

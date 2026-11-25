@@ -28,6 +28,7 @@ import { ThreadAutomationsPanel } from "./ThreadAutomationsPanel";
 import { ThreadRelationshipsPanel } from "./ThreadRelationshipsControl";
 import { ThreadRepositorySections } from "./ThreadRepositorySections";
 import { ThreadServersPanel } from "./ThreadServersPanel";
+import { ThreadDeliverablesSection, ThreadTeamSection } from "./VibeBossThreadTeam";
 import {
   ThreadDetailsContext,
   ThreadDetailsUsage,
@@ -317,12 +318,25 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
                 />
               ) : null}
 
+              {density === "full" && !props.draftId && visible.team ? (
+                <ThreadTeamSection environmentId={props.environmentId} threadId={props.threadId} />
+              ) : null}
+
+              {density === "full" && !props.draftId && visible.deliverables ? (
+                <ThreadDeliverablesSection
+                  environmentId={props.environmentId}
+                  threadId={props.threadId}
+                  cwd={props.gitCwd}
+                />
+              ) : null}
+
               {density === "full" && !props.draftId && (visible.lineage || visible.sideChats) ? (
                 <ThreadRelationshipsPanel
                   environmentId={props.environmentId}
                   threadId={props.threadId}
                   showLineage={visible.lineage}
                   showSideChats={visible.sideChats}
+                  hideSubagents={visible.team}
                 />
               ) : null}
 
