@@ -305,14 +305,8 @@ function SidebarUpdateControl() {
     if (!bridge || !state) return;
     setIsActionPending(true);
 
-    if (action === "download") {
-      void downloadLocalUpdate(bridge, { notifyDownloaded: true }).finally(() =>
-        setIsActionPending(false),
-      );
-      return;
-    }
-
-    if (action === "install") {
+    // VibeBoss: one click confirms once, downloads in the background, then installs and restarts.
+    if (action === "download" || action === "install") {
       let confirmed = false;
       try {
         confirmed = await ensureLocalApi().dialogs.confirm(
@@ -334,7 +328,13 @@ function SidebarUpdateControl() {
         setIsActionPending(false);
         return;
       }
-      void installLocalUpdate(bridge).finally(() => setIsActionPending(false));
+      void (async () => {
+        if (action === "download") {
+          const downloaded = await downloadLocalUpdate(bridge, { notifyDownloaded: true });
+          if (!downloaded) return;
+        }
+        await installLocalUpdate(bridge);
+      })().finally(() => setIsActionPending(false));
       return;
     }
 
