@@ -11,11 +11,14 @@ import * as Option from "effect/Option";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 import { FetchHttpClient, HttpClient, HttpClientRequest, HttpClientResponse } from "effect/http";
+import { ChildProcessSpawner } from "effect/process";
 
 import {
   makeUnavailableUsageLimits,
   makeUsageLimits,
 } from "@t3tools/provider-core/server/usageLimits";
+
+import { readMacKeychainSecret } from "./vibebossMacKeychain.ts";
 
 export function antigravityUserAgent(platform: NodeJS.Platform, architecture: NodeJS.Architecture) {
   return `antigravity/hub/2.24.0 (aidev_client; os_type=${platform}; arch=${architecture}; cl=963137146)`;
@@ -335,7 +338,16 @@ export const makeAntigravityUsageProbe = Effect.fn("makeAntigravityUsageProbe")(
     "antigravity-acp",
     "antigravity-oauth-token",
   );
-  const readKeyringSecret = input.readKeyringSecret ?? readCliKeyringSecret(platform, architecture);
+  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+  const readKeyringSecret =
+    input.readKeyringSecret ??
+    (platform === "darwin"
+      ? readMacKeychainSecret("gemini", "antigravity").pipe(
+          Effect.map((secret) => (secret ? decodeGoKeyringSecret(secret) : undefined)),
+          Effect.mapError((cause) => new AntigravityKeyringError({ cause })),
+          Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+        )
+      : readCliKeyringSecret(platform, architecture));
   let cached:
     | { fingerprint: string; account: string; accessToken: string; expiresAt: number }
     | undefined;
