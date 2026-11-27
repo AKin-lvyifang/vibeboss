@@ -43,6 +43,10 @@ const NativeToolFields = Schema.Struct({
   exitCode: Schema.optional(Schema.Int),
   exit_code: Schema.optional(Schema.Int),
   imagePath: Schema.optional(Schema.String),
+  TargetFile: Schema.optional(Schema.String),
+  target_file: Schema.optional(Schema.String),
+  CodeContent: Schema.optional(Schema.String),
+  code_content: Schema.optional(Schema.String),
 });
 const decodeNativeToolFields = Schema.decodeUnknownOption(NativeToolFields);
 const decodeSingleAnswer = Schema.decodeUnknownOption(
@@ -583,6 +587,35 @@ function withAntigravityEditPatches(
   });
 }
 
+/**
+ * VibeBoss: write_to_file sends the whole file as CodeContent; replace edits send TargetContent
+ * chunks. Antigravity reports neither as new, so a whole-file write is recorded as `write`, which
+ * the deliverables panel counts as a file the agent made.
+ */
+function antigravityWrittenFile(
+  input: typeof NativeToolFields.Type | undefined,
+  locations: unknown,
+): string | undefined {
+  if ((input?.CodeContent ?? input?.code_content) === undefined) return undefined;
+  const firstLocation = Array.isArray(locations) ? locations[0] : undefined;
+  const path =
+    input?.TargetFile ??
+    input?.target_file ??
+    (Predicate.isObject(firstLocation) && typeof firstLocation.path === "string"
+      ? firstLocation.path
+      : undefined);
+  return path?.trim() ? path.trim() : undefined;
+}
+
+function withWrittenFileChange(content: ReadonlyArray<unknown>, path: string) {
+  const index = content.findIndex((entry) => Predicate.isObject(entry) && entry.type === "diff");
+  return content.map((entry, entryIndex) =>
+    entryIndex === index && Predicate.isObject(entry)
+      ? { ...entry, changes: [{ operation: "write", path }] }
+      : entry,
+  );
+}
+
 export function normalizeAntigravityToolCall(
   toolCall: AcpToolCallState,
   readPreEditFile = readAntigravityPreEditFile,
@@ -621,13 +654,15 @@ export function normalizeAntigravityToolCall(
   if (kind === "edit") {
     const content = Array.isArray(data.content) ? data.content : [];
     // Full-access edits report only a path; without a hunk the checkpoint diff is the review.
-    data.content = content.some((entry) => Predicate.isObject(entry) && entry.type === "diff")
+    const edited = content.some((entry) => Predicate.isObject(entry) && entry.type === "diff")
       ? withAntigravityEditPatches(
           content,
           data,
           toolCall.status === "pending" ? readPreEditFile : undefined,
         )
       : [...content, { type: "diff", patch: { format: "omitted" } }];
+    const writtenFile = antigravityWrittenFile(input, data.locations);
+    data.content = writtenFile === undefined ? edited : withWrittenFileChange(edited, writtenFile);
   }
   if (kind === "execute") {
     data.item = {

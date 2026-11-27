@@ -5096,7 +5096,9 @@ export const makeAcpAdapterV2 = Effect.fn("makeAcpAdapterV2")(function* (
               type: "file_change",
               fileName: changes[0]!.path,
               changes,
-              ...(diffText === undefined ? {} : { diffStr: diffText }),
+              ...(diffText === undefined || acpToolCallDiffUnpreviewable(toolCall.data.content)
+                ? {}
+                : { diffStr: diffText }),
             };
           } else {
             switch (toolCall.kind) {

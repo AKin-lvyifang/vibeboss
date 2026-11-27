@@ -490,6 +490,33 @@ describe("Antigravity tool results", () => {
     }
   });
 
+  it("records a whole-file write as a written file and a replace edit as neither", () => {
+    const path = "/workspace/docs/demo.html";
+    const written = normalizeAntigravityToolCall({
+      toolCallId: "write-whole-file",
+      kind: "edit",
+      status: "completed",
+      data: { rawInput: { TargetFile: path, CodeContent: "<html></html>\n" } },
+    });
+    expect(written.data.content).toEqual([
+      { type: "diff", patch: { format: "omitted" }, changes: [{ operation: "write", path }] },
+    ]);
+    const fromLocation = normalizeAntigravityToolCall({
+      toolCallId: "write-snake-case",
+      kind: "edit",
+      status: "completed",
+      data: { rawInput: { code_content: "x" }, locations: [{ path }] },
+    });
+    expect(fromLocation.data.content).toMatchObject([{ changes: [{ operation: "write", path }] }]);
+    const replaced = normalizeAntigravityToolCall({
+      toolCallId: "replace-edit",
+      kind: "edit",
+      status: "completed",
+      data: { rawInput: { TargetFile: path, TargetContent: "a", ReplacementContent: "b" } },
+    });
+    expect(replaced.data.content).toEqual([{ type: "diff", patch: { format: "omitted" } }]);
+  });
+
   it.each([
     { CommandLine: "pwd", Cwd: "/one" },
     { CommandLine: "pwd", WorkingDirectory: "/one" },

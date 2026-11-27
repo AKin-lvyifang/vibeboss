@@ -16752,6 +16752,25 @@ describe("ClaudeAdapterV2 background wake turns", () => {
       },
       diffStr:
         "--- /workspace/src/math.ts\n+++ /workspace/src/math.ts\n@@ -1,3 +1,3 @@\n export function add(a: number, b: number) {\n-  return a - b;\n+  return a + b;\n }\n",
+      operation: "update",
+    },
+    {
+      case: "a Write that overwrites a file",
+      toolName: "Write",
+      toolInput: { file_path: "/workspace/notes.md", content: "# Notes\n" },
+      toolUseResult: {
+        type: "update",
+        filePath: "/workspace/notes.md",
+        content: "# Notes\n",
+        structuredPatch: [
+          { oldStart: 1, oldLines: 1, newStart: 1, newLines: 1, lines: ["-# Old", "+# Notes"] },
+        ],
+        originalFile: "# Old\n",
+        userModified: false,
+      },
+      diffStr:
+        "--- /workspace/notes.md\n+++ /workspace/notes.md\n@@ -1,1 +1,1 @@\n-# Old\n+# Notes\n",
+      operation: "update",
     },
     {
       case: "a Write that creates a file",
@@ -16766,6 +16785,7 @@ describe("ClaudeAdapterV2 background wake turns", () => {
         userModified: false,
       },
       diffStr: "--- /dev/null\n+++ /workspace/notes.md\n@@ -0,0 +1,3 @@\n+# Notes\n+\n+Ship it.\n",
+      operation: "add",
     },
     {
       case: "a Write that creates an empty file",
@@ -16780,6 +16800,7 @@ describe("ClaudeAdapterV2 background wake turns", () => {
         userModified: false,
       },
       diffStr: undefined,
+      operation: "add",
     },
   ])("stores the diff panel patch for $case", (testCase) =>
     Effect.gen(function* () {
@@ -16852,9 +16873,12 @@ describe("ClaudeAdapterV2 background wake turns", () => {
       );
       assert.deepEqual(
         fileChange?.type === "turn_item.updated" && fileChange.turnItem.type === "file_change"
-          ? { diffStr: fileChange.turnItem.diffStr }
+          ? { diffStr: fileChange.turnItem.diffStr, changes: fileChange.turnItem.changes }
           : undefined,
-        { diffStr: testCase.diffStr },
+        {
+          diffStr: testCase.diffStr,
+          changes: [{ operation: testCase.operation, path: testCase.toolUseResult.filePath }],
+        },
       );
     }).pipe(
       Effect.provide(

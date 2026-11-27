@@ -4293,11 +4293,22 @@ const decodeClaudeFileEditResult = Schema.decodeUnknownOption(
   }),
 );
 
+function claudeFileEditResult(output: ClaudeNativeToolOutput) {
+  return output.type === "structured_tool_use_result"
+    ? Option.getOrUndefined(decodeClaudeFileEditResult(output.value))
+    : undefined;
+}
+
+/** Write reports `create` for a new file; Edit and overwriting Writes change an existing one. */
+function claudeFileChanges(output: ClaudeNativeToolOutput) {
+  const result = claudeFileEditResult(output);
+  return result === undefined
+    ? undefined
+    : [{ operation: result.type === "create" ? "add" : "update", path: result.filePath }];
+}
+
 function claudeFileChangeText(output: ClaudeNativeToolOutput): string {
-  const result =
-    output.type === "structured_tool_use_result"
-      ? Option.getOrUndefined(decodeClaudeFileEditResult(output.value))
-      : undefined;
+  const result = claudeFileEditResult(output);
   if (result === undefined) return claudeNativeToolOutputText(output);
   const patch =
     result.structuredPatch.length === 0 && result.type === "create" && result.content !== undefined
@@ -7674,6 +7685,8 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
               : itemType === "file_change"
                 ? claudeFileChangeText(input.output)
                 : claudeNativeToolOutputText(input.output);
+          const fileChanges =
+            itemType === "file_change" ? claudeFileChanges(input.output) : undefined;
           const turnItem: OrchestrationV2TurnItem =
             itemType === "command_execution"
               ? {
@@ -7688,6 +7701,7 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
                     type: "file_change",
                     fileName: fileNameFromClaudeTool(input.toolName, input.toolInput),
                     ...(outputText.length === 0 ? {} : { diffStr: outputText }),
+                    ...(fileChanges === undefined ? {} : { changes: fileChanges }),
                   }
                 : itemType === "web_search"
                   ? {
