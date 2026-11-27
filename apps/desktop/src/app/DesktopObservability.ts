@@ -350,7 +350,8 @@ const readPersistedObservabilitySettings: Effect.Effect<
 });
 
 const resolveOtlpEndpoints = Effect.gen(function* () {
-  const otel = yield* OtelEnvironment.load;
+  // VibeBoss: OTLP export is removed; no setting or variable turns it back on.
+  const otel = { ...(yield* OtelEnvironment.load), disabled: true };
   if (otel.disabled) {
     return {
       traces: undefined,

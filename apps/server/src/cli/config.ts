@@ -497,9 +497,10 @@ export const resolveServerConfig = Effect.fn("config.resolveServerConfig")(funct
     traceBatchWindowMs: env.traceBatchWindowMs,
     traceMaxBytes: env.traceMaxBytes,
     traceMaxFiles: env.traceMaxFiles,
-    otlpTracesUrl: traces?.url,
-    otlpMetricsUrl: metrics?.url,
-    otlpLogsUrl: logs?.url,
+    // VibeBoss: OTLP export is removed; no setting or variable turns it back on.
+    otlpTracesUrl: undefined,
+    otlpMetricsUrl: undefined,
+    otlpLogsUrl: undefined,
     otlpTracesExport: traces?.export ?? signalExport,
     otlpMetricsExport: metrics?.export ?? signalExport,
     otlpLogsExport: logs?.export ?? signalExport,
