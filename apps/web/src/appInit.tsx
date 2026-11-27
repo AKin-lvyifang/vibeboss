@@ -55,6 +55,7 @@ import {
 } from "./lib/windowControlsOverlay";
 import { startProviderAuthDelivery } from "./providerAuthDelivery";
 import { getRouter, type AppRouter } from "./router";
+import { startVibeBossHud } from "./vibebossHud";
 import { appAtomRegistry } from "./rpc/atomRegistry";
 import { environmentProjects } from "./state/projects";
 import { primaryRelayTracingAllowedAtom, primaryServerConfigAtom } from "./state/server";
@@ -320,6 +321,7 @@ export function startAppServices(): AppRouter {
   startPermissionUpdateNotices(router);
   startThreadNotifications(appAtomRegistry, router);
   startGuideRunNotifications(appAtomRegistry, router);
+  startVibeBossHud(appAtomRegistry, router);
   if (isElectron) startDesktopUpdateLaunchNotice();
 
   return router;

@@ -122,6 +122,14 @@ contextBridge.exposeInMainWorld("desktopBridge", {
   restartAudioService: () => ipcRenderer.invoke(IpcChannels.RESTART_AUDIO_SERVICE_CHANNEL),
   setNotificationBadge: (badge) =>
     ipcRenderer.invoke(IpcChannels.SET_NOTIFICATION_BADGE_CHANNEL, badge),
+  setVibeBossHud: (snapshot) =>
+    ipcRenderer.invoke(IpcChannels.VIBEBOSS_HUD_SNAPSHOT_CHANNEL, snapshot),
+  onVibeBossHudAction: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, action: unknown) =>
+      listener(action as Parameters<typeof listener>[0]);
+    ipcRenderer.on(IpcChannels.VIBEBOSS_HUD_ACTION_CHANNEL, handler);
+    return () => ipcRenderer.removeListener(IpcChannels.VIBEBOSS_HUD_ACTION_CHANNEL, handler);
+  },
   onNotificationBadgeClear: (listener) => {
     const handler = () => listener();
     ipcRenderer.on(IpcChannels.SET_NOTIFICATION_BADGE_CHANNEL, handler);
