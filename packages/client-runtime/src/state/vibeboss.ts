@@ -28,6 +28,22 @@ export function createVibeBossEnvironmentAtoms<R, E>(
       label: "environment-command:vibeboss:review-rules",
       tag: WS_METHODS.vibebossReviewRules,
     }),
+    knowledge: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:vibeboss:knowledge",
+      tag: WS_METHODS.vibebossKnowledgeGetState,
+    }),
+    saveKnowledgeConfig: createEnvironmentRpcCommand(runtime, {
+      label: "environment-command:vibeboss:knowledge-save-config",
+      tag: WS_METHODS.vibebossKnowledgeSaveConfig,
+    }),
+    organizeKnowledge: createEnvironmentRpcCommand(runtime, {
+      label: "environment-command:vibeboss:knowledge-organize",
+      tag: WS_METHODS.vibebossKnowledgeOrganize,
+    }),
+    undoKnowledge: createEnvironmentRpcCommand(runtime, {
+      label: "environment-command:vibeboss:knowledge-undo",
+      tag: WS_METHODS.vibebossKnowledgeUndo,
+    }),
     resolveNativeTranscript: createEnvironmentRpcCommand(runtime, {
       label: "environment-command:vibeboss:resolve-native-transcript",
       tag: WS_METHODS.vibebossResolveNativeTranscript,

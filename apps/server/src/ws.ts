@@ -123,6 +123,8 @@ import * as CheckpointDiffQuery from "./checkpointing/CheckpointDiffQuery.ts";
 import * as NativeChildWorkQuery from "./orchestration-v2/NativeChildWorkQuery.ts";
 import * as ServerConfig from "./config.ts";
 import * as VibeBoss from "./vibeboss/VibeBoss.ts";
+import * as VibeBossKnowledge from "./vibeboss/Knowledge.ts";
+import * as VibeBossKnowledgeText from "./vibeboss/KnowledgeText.ts";
 import * as EnvironmentTheme from "./environmentTheme.ts";
 import * as Keybindings from "./keybindings.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
@@ -2756,6 +2758,45 @@ export const layerWsRpc = (
                             Effect.map((result) => result.transcription),
                             Effect.timeout("3 minutes"),
                           ),
+                ),
+              ),
+            ),
+          ),
+        [WS_METHODS.vibebossKnowledgeGetState]: () =>
+          withVibeBossServices(VibeBossKnowledge.getState()),
+        [WS_METHODS.vibebossKnowledgeSaveConfig]: (input) =>
+          withVibeBossServices(VibeBossKnowledge.saveConfig(input.config)),
+        [WS_METHODS.vibebossKnowledgeUndo]: (input) =>
+          withVibeBossServices(VibeBossKnowledge.undo(input.logId)),
+        // The organizer asks the model picked on the Knowledge page, else the text generation model.
+        [WS_METHODS.vibebossKnowledgeOrganize]: (input) =>
+          withVibeBossServices(
+            providerRegistry.getProviders.pipe(
+              Effect.flatMap((providers) =>
+                VibeBossKnowledge.organize(
+                  input.includeHeld === true,
+                  Option.isNone(vibeBossTextGeneration)
+                    ? null
+                    : (prompt, organizerModel) =>
+                        serverSettings.getSettings.pipe(
+                          Effect.flatMap((settings) =>
+                            vibeBossTextGeneration.value.generateTranscriptionPostProcessing({
+                              cwd: config.stateDir,
+                              prompt,
+                              modelSelection: VibeBoss.reviewModelSelection(
+                                organizerModel,
+                                providers,
+                                settings.textGenerationModelSelection,
+                              ),
+                            }),
+                          ),
+                          Effect.map((result) => result.transcription),
+                          Effect.timeout("3 minutes"),
+                        ),
+                  (file, extension) =>
+                    VibeBossKnowledgeText.extractExcerpt(file, extension).pipe(
+                      Effect.provideService(FileSystem.FileSystem, vibeBossFileSystem),
+                    ),
                 ),
               ),
             ),

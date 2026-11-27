@@ -27,6 +27,13 @@ import {
   VibeBossSyncResult,
 } from "./vibeboss.ts";
 import {
+  VibeBossKnowledgeOrganizeInput,
+  VibeBossKnowledgeOrganizeResult,
+  VibeBossKnowledgeSaveConfigInput,
+  VibeBossKnowledgeState,
+  VibeBossKnowledgeUndoInput,
+} from "./vibebossKnowledge.ts";
+import {
   PeerLink,
   PeerLinkClientPairingInput,
   PeerLinkLinkPairingInput,
@@ -536,6 +543,10 @@ export const WS_METHODS = {
   vibebossListCapabilities: "vibeboss.listCapabilities",
   vibebossResolveNativeTranscript: "vibeboss.resolveNativeTranscript",
   vibebossReviewRules: "vibeboss.reviewRules",
+  vibebossKnowledgeGetState: "vibeboss.knowledge.getState",
+  vibebossKnowledgeSaveConfig: "vibeboss.knowledge.saveConfig",
+  vibebossKnowledgeOrganize: "vibeboss.knowledge.organize",
+  vibebossKnowledgeUndo: "vibeboss.knowledge.undo",
 
   providerUploadFeedback: "provider.uploadFeedback",
   providerMcpSignInStart: "provider.mcpSignIn.start",
@@ -1861,6 +1872,30 @@ const WsVibeBossReviewRulesRpc = Rpc.make(WS_METHODS.vibebossReviewRules, {
   error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
 });
 
+const WsVibeBossKnowledgeGetStateRpc = Rpc.make(WS_METHODS.vibebossKnowledgeGetState, {
+  payload: Schema.Struct({}),
+  success: VibeBossKnowledgeState,
+  error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+});
+
+const WsVibeBossKnowledgeSaveConfigRpc = Rpc.make(WS_METHODS.vibebossKnowledgeSaveConfig, {
+  payload: VibeBossKnowledgeSaveConfigInput,
+  success: VibeBossKnowledgeState,
+  error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+});
+
+const WsVibeBossKnowledgeOrganizeRpc = Rpc.make(WS_METHODS.vibebossKnowledgeOrganize, {
+  payload: VibeBossKnowledgeOrganizeInput,
+  success: VibeBossKnowledgeOrganizeResult,
+  error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+});
+
+const WsVibeBossKnowledgeUndoRpc = Rpc.make(WS_METHODS.vibebossKnowledgeUndo, {
+  payload: VibeBossKnowledgeUndoInput,
+  success: VibeBossKnowledgeState,
+  error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+});
+
 const WsProviderUploadFeedbackRpc = Rpc.make(WS_METHODS.providerUploadFeedback, {
   payload: ProviderUploadFeedbackInput,
   success: ProviderUploadFeedbackResult,
@@ -2716,6 +2751,10 @@ export const WsRpcGroup = RpcGroup.make(
   WsVibeBossListCapabilitiesRpc,
   WsVibeBossResolveNativeTranscriptRpc,
   WsVibeBossReviewRulesRpc,
+  WsVibeBossKnowledgeGetStateRpc,
+  WsVibeBossKnowledgeSaveConfigRpc,
+  WsVibeBossKnowledgeOrganizeRpc,
+  WsVibeBossKnowledgeUndoRpc,
   WsProviderUploadFeedbackRpc,
   WsProviderMcpSignInStartRpc,
   WsProviderMcpSignInCompleteRpc,

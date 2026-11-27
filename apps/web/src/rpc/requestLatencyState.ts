@@ -35,6 +35,7 @@ const untrackedRpcAckMethods = new Set<string>([
   WS_METHODS.sourceControlSignInWait,
   // VibeBoss: the rules check waits on a model for about a minute and shows its own progress.
   WS_METHODS.vibebossReviewRules,
+  WS_METHODS.vibebossKnowledgeOrganize,
 ]);
 const longRunningRpcAckMethods = new Set<string>([
   WS_METHODS.serverUpdateProvider,
