@@ -177,6 +177,8 @@ describe("resolveProjectSettings", () => {
           providerInstances: {
             [codex]: { enabled: false },
             [ProviderInstanceId.make("claudeAgent")]: { enabled: false },
+            // VibeBoss: Antigravity is a default agent too.
+            [ProviderInstanceId.make("antigravity")]: { enabled: false },
           },
         },
       },
