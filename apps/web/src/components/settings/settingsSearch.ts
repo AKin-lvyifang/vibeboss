@@ -16,7 +16,7 @@ import { writeLocalStorageValue } from "../../hooks/useLocalStorage";
 import type { MessageResolver } from "../../i18n/messages";
 import { commandLabel } from "./KeybindingsSettings.logic";
 import type { ResolvedSettingsScope } from "./settingsScope";
-import { VIBEBOSS_HIDDEN_SETTINGS } from "../../vibeboss";
+import { VIBEBOSS_HIDDEN_SETTING_ROWS, VIBEBOSS_HIDDEN_SETTINGS } from "../../vibeboss";
 
 export type SettingsPath =
   | "/settings/projects"
@@ -1698,6 +1698,7 @@ export function filterAvailableSettingsSearchItems(
   return items.filter(
     (item) =>
       !VIBEBOSS_HIDDEN_SETTINGS.has(item.to) &&
+      !VIBEBOSS_HIDDEN_SETTING_ROWS.has(item.id) &&
       (!item.cloudOnly || availability.hasCloudPublicConfig) &&
       (!item.environmentOnly || availability.hasEnvironment) &&
       (!item.providerSettingsOnly || availability.hasProviderSettingsEnvironment) &&

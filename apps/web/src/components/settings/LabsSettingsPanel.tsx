@@ -10,6 +10,7 @@ import {
 import { T, useGT, useMessages } from "gt-react";
 
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
+import { VIBEBOSS_HIDDEN_SETTING_ROWS } from "~/vibeboss";
 import { useT3ConnectAuthPrompt } from "../clerk/useT3ConnectAuthPrompt";
 import { Button } from "../ui/button";
 import { NumberField, NumberFieldGroup, NumberFieldInput } from "../ui/number-field";
@@ -40,14 +41,18 @@ export function LabsSettingsPanel() {
       <SettingsSection id="beta" title={gt("Beta")}>
         <BoringSidebarRow />
         {/* Clerk is only mounted when this build has T3 Connect. */}
-        {hasCloudPublicConfig() ? <GuestLinksRowWithSignIn /> : <GuestLinksRow />}
+        {VIBEBOSS_HIDDEN_SETTING_ROWS.has("guest-links") ? null : hasCloudPublicConfig() ? (
+          <GuestLinksRowWithSignIn />
+        ) : (
+          <GuestLinksRow />
+        )}
         <LinkedEnvironmentsRow />
         <WorkflowsRow />
         <WorkflowSkippedRunsRow />
         <PromptSuggestionsRow />
-        <SimlockHostsRow />
+        {VIBEBOSS_HIDDEN_SETTING_ROWS.has("simlock-hosts") ? null : <SimlockHostsRow />}
         <FastWorktreeCheckoutRow />
-        <AgentFeedbackRow />
+        {VIBEBOSS_HIDDEN_SETTING_ROWS.has("agent-feedback") ? null : <AgentFeedbackRow />}
       </SettingsSection>
     </SettingsPageContainer>
   );
