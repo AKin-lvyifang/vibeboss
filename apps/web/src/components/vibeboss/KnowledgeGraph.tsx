@@ -195,7 +195,7 @@ function KnowledgeGraph(props: {
       node.x = (parent?.x ?? 0) + Math.cos(angle) * 12;
       node.y = (parent?.y ?? 0) + Math.sin(angle) * 12;
       node.born = now;
-      visible++;
+      visible += 1;
       alpha = Math.max(alpha, 0.7);
     };
 
