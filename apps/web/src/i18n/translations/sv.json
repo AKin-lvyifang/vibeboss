@@ -4718,7 +4718,15 @@
   "1b93a3ba959c7999": "Knowledge: loaded",
   "afa48ae288bc3fa4": "Knowledge: not loaded",
   "0066b68ba7ade0e4": "All knowledge",
+  "ca5e2c685509a22a": "All local",
+  "f1c3e6957f2dd770": "Local",
+  "62691c2a39f1c73e": "Cloud",
   "e48dbcde8b96383f": "Load knowledge in this conversation",
+  "88516c68e8bb86e0": "Local",
+  "914d0a2b0cfc73e9": "Cloud",
+  "1ef8335c4698cfc7": "Available with Claude only.",
+  "5d3a9db42ba88e3b": "Building",
+  "b078f0aabd84ae0c": "No documents",
   "09685f130ea3734c": "Project default",
   "92cf47e777fd26bd": "Set as project default",
   "7a4990730aa22034": "Manage knowledge",
@@ -12612,10 +12620,105 @@
   "2d5c91e8397cce93": "Versions differ",
   "b831a982dfced3b1": "Nothing here",
   "f40f2672a24f916d": "Versions differ",
+  "ed82cea1beba6a5c": "Searchable",
+  "b2c472821f31c75c": "Visible in Xiaobang",
+  "389002536ef21b4d": "Search cloud libraries",
+  "e3284b1fcd99e147": "Search name or description",
+  "4f9c1ce75bd798b2": "Add cloud libraries",
+  "692260621fac5e32": "Publish to the cloud",
+  "a35b5922ddff8b42": "Searchable",
+  "2bd822f3835f5b6c": "Open console",
+  "86eefb9030dbe4b6": "Xiaobang is not connected",
+  "9dc52428741e36b0": "Cloud libraries are reached through the Xiaobang MCP server in Claude. Sign in to it in Claude, then check again.",
+  "d12def31407c4d73": [
+    "Publishing the local knowledge base to ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " needs 1 manual step."
+  ],
+  "5c41b21c599419ea": "No cloud libraries",
+  "d65e8f7cd92684dc": "Private",
+  "4ed402eef07a4b77": "Public",
+  "301a7c4e994b7223": [
+    "The local knowledge base is published to ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    "."
+  ],
+  "db982fc0bf9ce6ea": "View steps",
+  "e15b4d0e700195e1": "Sync to Feishu",
+  "5f35cdb6701a255d": "Automatic",
+  "7d2a7e68d954e401": "Open folder",
+  "b9b5626a781bb644": "The local knowledge base is synced to one Feishu folder, \"VibeBoss 知识库\".",
+  "c05e510a4aef69ba": [
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " files are in the Feishu folder \"VibeBoss 知识库\"."
+  ],
+  "1048b449049cb8b8": "Add as a data source",
+  "3a48e3763487178c": "Manual, once",
+  "6d20379c56e42ba7": "Unmark",
+  "c237763b1075b047": "Mark as done",
+  "173fa098fa800975": "Added in the Xiaobang console.",
+  "8cd3cc32c3b2335f": [
+    "In the Xiaobang console, add that Feishu folder as a data source of",
+    " ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    "."
+  ],
+  "c94df086b0dab0df": "Cloud library update",
+  "0abf14f83419a56d": "Rebuild now",
+  "5a3aad5f1ac6307b": "The library updates on its own schedule and is searchable once done. To use it sooner, rebuild it in the console.",
+  "d2a30922297b94fc": "No library list yet",
+  "50b211b668b0043e": "Claude fetches the list from Xiaobang in a new conversation. Come back here when it finishes.",
+  "93a89be2749d67ae": "Fetch list",
+  "a65ad03dda72be9a": "All",
+  "ef7d0284fe250343": "Searchable only",
+  "9f79fd409ade56c0": [
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " in total, ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " match"
+  ],
+  "552f039e0a558c77": [
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " in total, first ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " shown"
+  ],
+  "508ab20655aa50bf": "No matching cloud libraries",
+  "297265ce83a4f687": "Refresh list",
   "95bdba82d82aa98c": "Unorganized",
   "8f94de5830f53b4b": "Knowledge graph",
-  "884dc1fa136a202b": "Back to knowledge",
-  "3045e75a54982584": "Knowledge graph",
   "0b76c0969dd38570": "On Feishu",
   "6de77d88a6b3a3b6": "Changed since the last sync",
   "f9e1dd1864b5876c": "{count, plural, one {{count} version} other {{count} versions}}",
@@ -12656,12 +12759,11 @@
   "374e9fef3862c21a": "Use default location",
   "23e7449cfd05fb45": "Choose folder",
   "d9bf21557789a4f2": "Use this folder",
-  "a65ad03dda72be9a": "All",
   "696ae8c0f32fe2ab": "Unorganized",
+  "3045e75a54982584": "Knowledge graph",
   "b0a6d02fc627d1b7": "Naming and filing new files…",
   "3a8b760ce9a46b4d": "Put files in the folder. VibeBoss names and files them.",
-  "7d2a7e68d954e401": "Open folder",
-  "e15b4d0e700195e1": "Sync to Feishu",
+  "6b11999da9c0a85c": "Add cloud libraries",
   "3fb5aa97b3de47a5": "Effort",
   "22d86168569bb964": "Edit note",
   "06e5f4fc01e279ae": "Model used by the rules check",

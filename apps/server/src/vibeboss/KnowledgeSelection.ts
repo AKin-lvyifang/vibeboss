@@ -19,6 +19,7 @@ import * as Schema from "effect/Schema";
 
 import * as ServerConfig from "../config.ts";
 import { readFolder } from "./Knowledge.ts";
+import { addedLibraries, cloudNote } from "./KnowledgeCloud.ts";
 import { DEFAULT_CATEGORIES, INDEX_FILE } from "./KnowledgeNaming.ts";
 
 const MAX_THREADS = 500;
@@ -49,6 +50,11 @@ const loadStore = Effect.fn("VibeBossKnowledgeSelection.loadStore")(function* ()
 
 function sameSelection(left: VibeBossKnowledgeSelection, right: VibeBossKnowledgeSelection) {
   if (left.enabled !== right.enabled) return false;
+  const leftCloud = left.cloud ?? [];
+  const rightCloud = right.cloud ?? [];
+  if (leftCloud.length !== rightCloud.length || !leftCloud.every((id) => rightCloud.includes(id))) {
+    return false;
+  }
   if (left.categories === null || right.categories === null) {
     return left.categories === right.categories;
   }
@@ -93,6 +99,7 @@ const buildState = Effect.fn("VibeBossKnowledgeSelection.buildState")(function* 
     selection,
     isProjectDefault: sameSelection(selection, projectDefault),
     categories: folder === null ? [] : yield* listCategories(folder),
+    cloudLibraries: yield* addedLibraries(),
   };
   return state;
 });
@@ -149,7 +156,7 @@ export function knowledgeNote(
     "<knowledge_base>",
     `用户为这个会话加载了知识库，位置：${folder}`,
     "需要查资料、找文件或引用已有材料时，用 knowledge_search 工具搜（它能读到 PPT、Word、Excel 的正文，并给出在第几页或哪一节），片段不够再用 knowledge_read 读全文。和当前问题无关时不用搜。",
-    "回答里用到知识库内容时，在那句话后面标出来源，照工具返回的 cite 写，例如（本地知识库 · 文件名 · 第 3 页）。",
+    "回答里用到知识库内容时，在那句话后面标出来源，照工具返回的 cite 写，例如（本地 · 文件名 · 第 3 页）。",
     `没有这两个工具时，改读索引 ${indexPath}，再按路径打开原文件。`,
     categories === null ? "" : `这次只用这些分类里的资料：${categories.join("、")}。`,
     "同一主题有多个版本时，用户没点名就用最新的一版，并说明用的是哪一版。",
@@ -165,10 +172,16 @@ export const promptNote = Effect.fn("VibeBossKnowledgeSelection.promptNote")(
     const path = yield* Path.Path;
     const { selection } = resolve(yield* loadStore(), input);
     if (!selection.enabled) return "";
-    if (selection.categories !== null && selection.categories.length === 0) return "";
+    const chosen = selection.cloud ?? [];
+    const cloud = cloudNote(
+      (yield* addedLibraries()).filter((library) => chosen.includes(library.id)),
+    );
     const folder = yield* readFolder();
-    if (folder === null) return "";
-    return knowledgeNote(folder, path.join(folder, INDEX_FILE), selection.categories);
+    const local =
+      folder === null || (selection.categories !== null && selection.categories.length === 0)
+        ? ""
+        : knowledgeNote(folder, path.join(folder, INDEX_FILE), selection.categories);
+    return [local, cloud].filter((part) => part !== "").join("\n\n");
   },
   Effect.orElseSucceed(() => ""),
 );

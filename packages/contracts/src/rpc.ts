@@ -27,6 +27,11 @@ import {
   VibeBossSyncResult,
 } from "./vibeboss.ts";
 import {
+  VibeBossKnowledgeCloudCatalogInput,
+  VibeBossKnowledgeCloudCatalogResult,
+  VibeBossKnowledgeCloudCatalogTask,
+  VibeBossKnowledgeCloudSaveInput,
+  VibeBossKnowledgeCloudState,
   VibeBossKnowledgeFeishuSyncTask,
   VibeBossKnowledgeOrganizeInput,
   VibeBossKnowledgeOrganizeResult,
@@ -554,6 +559,10 @@ export const WS_METHODS = {
   vibebossKnowledgeGetSelection: "vibeboss.knowledge.getSelection",
   vibebossKnowledgeSetSelection: "vibeboss.knowledge.setSelection",
   vibebossKnowledgePrepareFeishuSync: "vibeboss.knowledge.prepareFeishuSync",
+  vibebossKnowledgeCloudGetState: "vibeboss.knowledge.cloud.getState",
+  vibebossKnowledgeCloudSave: "vibeboss.knowledge.cloud.save",
+  vibebossKnowledgeCloudSearchCatalog: "vibeboss.knowledge.cloud.searchCatalog",
+  vibebossKnowledgeCloudPrepareCatalog: "vibeboss.knowledge.cloud.prepareCatalog",
 
   providerUploadFeedback: "provider.uploadFeedback",
   providerMcpSignInStart: "provider.mcpSignIn.start",
@@ -1924,6 +1933,38 @@ const WsVibeBossKnowledgePrepareFeishuSyncRpc = Rpc.make(
   },
 );
 
+const vibeBossKnowledgeError = Schema.Union([VibeBossError, EnvironmentAuthorizationError]);
+
+const WsVibeBossKnowledgeCloudGetStateRpc = Rpc.make(WS_METHODS.vibebossKnowledgeCloudGetState, {
+  payload: Schema.Struct({}),
+  success: VibeBossKnowledgeCloudState,
+  error: vibeBossKnowledgeError,
+});
+
+const WsVibeBossKnowledgeCloudSaveRpc = Rpc.make(WS_METHODS.vibebossKnowledgeCloudSave, {
+  payload: VibeBossKnowledgeCloudSaveInput,
+  success: VibeBossKnowledgeCloudState,
+  error: vibeBossKnowledgeError,
+});
+
+const WsVibeBossKnowledgeCloudSearchCatalogRpc = Rpc.make(
+  WS_METHODS.vibebossKnowledgeCloudSearchCatalog,
+  {
+    payload: VibeBossKnowledgeCloudCatalogInput,
+    success: VibeBossKnowledgeCloudCatalogResult,
+    error: vibeBossKnowledgeError,
+  },
+);
+
+const WsVibeBossKnowledgeCloudPrepareCatalogRpc = Rpc.make(
+  WS_METHODS.vibebossKnowledgeCloudPrepareCatalog,
+  {
+    payload: Schema.Struct({}),
+    success: VibeBossKnowledgeCloudCatalogTask,
+    error: vibeBossKnowledgeError,
+  },
+);
+
 const WsProviderUploadFeedbackRpc = Rpc.make(WS_METHODS.providerUploadFeedback, {
   payload: ProviderUploadFeedbackInput,
   success: ProviderUploadFeedbackResult,
@@ -2786,6 +2827,10 @@ export const WsRpcGroup = RpcGroup.make(
   WsVibeBossKnowledgeGetSelectionRpc,
   WsVibeBossKnowledgeSetSelectionRpc,
   WsVibeBossKnowledgePrepareFeishuSyncRpc,
+  WsVibeBossKnowledgeCloudGetStateRpc,
+  WsVibeBossKnowledgeCloudSaveRpc,
+  WsVibeBossKnowledgeCloudSearchCatalogRpc,
+  WsVibeBossKnowledgeCloudPrepareCatalogRpc,
   WsProviderUploadFeedbackRpc,
   WsProviderMcpSignInStartRpc,
   WsProviderMcpSignInCompleteRpc,

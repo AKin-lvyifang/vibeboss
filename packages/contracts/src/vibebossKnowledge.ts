@@ -97,10 +97,23 @@ export const VibeBossKnowledgeUndoInput = Schema.Struct({ logId: Schema.String }
 export type VibeBossKnowledgeUndoInput = typeof VibeBossKnowledgeUndoInput.Type;
 
 /** Whether a conversation's agent is told about the knowledge base, and which part of it. */
+/** A knowledge base hosted by the company's Xiaobang service, reached through an agent's MCP tools. */
+export const VibeBossKnowledgeCloudLibrary = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  description: Schema.String,
+  visibility: Schema.Literals(["public", "private"]),
+  /** "ready" can be searched; the others return nothing yet. */
+  status: Schema.Literals(["ready", "building", "empty"]),
+});
+export type VibeBossKnowledgeCloudLibrary = typeof VibeBossKnowledgeCloudLibrary.Type;
+
 export const VibeBossKnowledgeSelection = Schema.Struct({
   enabled: Schema.Boolean,
   /** Null loads every category. */
   categories: Schema.NullOr(Schema.Array(Schema.String)),
+  /** Ids of the cloud libraries this conversation also searches. */
+  cloud: Schema.optional(Schema.Array(Schema.String)),
 });
 export type VibeBossKnowledgeSelection = typeof VibeBossKnowledgeSelection.Type;
 
@@ -118,6 +131,8 @@ export const VibeBossKnowledgeSelectionState = Schema.Struct({
   /** The selection equals the project's default. */
   isProjectDefault: Schema.Boolean,
   categories: Schema.Array(Schema.String),
+  /** The cloud libraries the user added; a conversation picks among these. */
+  cloudLibraries: Schema.Array(VibeBossKnowledgeCloudLibrary),
 });
 export type VibeBossKnowledgeSelectionState = typeof VibeBossKnowledgeSelectionState.Type;
 
@@ -138,3 +153,49 @@ export const VibeBossKnowledgeFeishuSyncTask = Schema.Struct({
   prompt: Schema.String,
 });
 export type VibeBossKnowledgeFeishuSyncTask = typeof VibeBossKnowledgeFeishuSyncTask.Type;
+
+/** Publishing the local folder to the user's own cloud library goes through a Feishu folder. */
+export const VibeBossKnowledgeCloudPublish = Schema.Struct({
+  targetId: Schema.NullOr(Schema.String),
+  /** The user says they added the Feishu folder as the library's data source in the console. */
+  sourceLinked: Schema.Boolean,
+});
+export type VibeBossKnowledgeCloudPublish = typeof VibeBossKnowledgeCloudPublish.Type;
+
+export const VibeBossKnowledgeCloudState = Schema.Struct({
+  /** The Xiaobang MCP server is set up for Claude; signing in happens in Claude. */
+  configured: Schema.Boolean,
+  libraries: Schema.Array(VibeBossKnowledgeCloudLibrary),
+  publish: VibeBossKnowledgeCloudPublish,
+  /** The Feishu folder local files are synced to, once a sync has created it. */
+  feishuFolderUrl: Schema.NullOr(Schema.String),
+  /** How many libraries the last catalog fetch saw, and when; null until one has run. */
+  catalogTotal: Schema.Number,
+  catalogUpdatedAt: Schema.NullOr(Schema.String),
+});
+export type VibeBossKnowledgeCloudState = typeof VibeBossKnowledgeCloudState.Type;
+
+export const VibeBossKnowledgeCloudSaveInput = Schema.Struct({
+  libraries: Schema.Array(VibeBossKnowledgeCloudLibrary),
+  publish: VibeBossKnowledgeCloudPublish,
+});
+export type VibeBossKnowledgeCloudSaveInput = typeof VibeBossKnowledgeCloudSaveInput.Type;
+
+export const VibeBossKnowledgeCloudCatalogInput = Schema.Struct({
+  query: Schema.String,
+  visibility: Schema.Literals(["all", "public", "private"]),
+  onlyReady: Schema.Boolean,
+});
+export type VibeBossKnowledgeCloudCatalogInput = typeof VibeBossKnowledgeCloudCatalogInput.Type;
+
+export const VibeBossKnowledgeCloudCatalogResult = Schema.Struct({
+  total: Schema.Number,
+  matched: Schema.Number,
+  /** The first matches only; the user narrows the list by searching. */
+  items: Schema.Array(VibeBossKnowledgeCloudLibrary),
+});
+export type VibeBossKnowledgeCloudCatalogResult = typeof VibeBossKnowledgeCloudCatalogResult.Type;
+
+/** The first message of the conversation that fetches the catalog through the agent's MCP tools. */
+export const VibeBossKnowledgeCloudCatalogTask = Schema.Struct({ prompt: Schema.String });
+export type VibeBossKnowledgeCloudCatalogTask = typeof VibeBossKnowledgeCloudCatalogTask.Type;

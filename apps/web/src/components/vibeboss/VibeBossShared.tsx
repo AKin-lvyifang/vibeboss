@@ -1,5 +1,7 @@
 import type { ProviderDriverKind, ServerProvider, VibeBossAgentKind } from "@t3tools/contracts";
 import { useGT } from "gt-react";
+import { ArrowLeftIcon } from "lucide-react";
+import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import type { ReactNode } from "react";
 
 import { isElectron } from "../../env";
@@ -7,6 +9,7 @@ import { useEnvironmentProviders, usePrimaryEnvironmentId } from "../../state/en
 import { useEnvironmentQuery } from "../../state/query";
 import { vibeBossEnvironment } from "../../state/vibeboss";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
+import { Button } from "../ui/button";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { SidebarInset } from "../ui/sidebar";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
@@ -135,6 +138,46 @@ export function VibeBossPage({
         {overlay}
       </div>
     </SidebarInset>
+  );
+}
+
+/** A second-level page that slides in over a VibeBoss page; pass it as the page's `overlay`. */
+export function VibeBossSubPage(props: {
+  readonly open: boolean;
+  readonly title: string;
+  readonly actions?: ReactNode;
+  readonly onClose: () => void;
+  readonly children: ReactNode;
+}) {
+  const gt = useGT();
+  return (
+    <MotionConfig reducedMotion="user">
+      <AnimatePresence>
+        {props.open ? (
+          <motion.div
+            className="absolute inset-0 z-10 flex flex-col bg-background"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ duration: 0.26, ease: [0.32, 0.72, 0, 1] }}
+          >
+            <WorkspacePageHeader electron={isElectron} className="border-b">
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                aria-label={gt("Back")}
+                onClick={props.onClose}
+              >
+                <ArrowLeftIcon />
+              </Button>
+              <h1 className="flex-1 truncate font-medium text-sm">{props.title}</h1>
+              {props.actions}
+            </WorkspacePageHeader>
+            {props.children}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </MotionConfig>
   );
 }
 

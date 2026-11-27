@@ -10,7 +10,10 @@ import { vibeBossEnvironment } from "../../state/vibeboss";
 import {
   Menu,
   MenuCheckboxItem,
+  MenuGroup,
+  MenuGroupLabel,
   MenuItem,
+  MenuItemDetail,
   MenuPopup,
   MenuSeparator,
   MenuTrigger,
@@ -19,18 +22,40 @@ import { ComposerControl, ComposerControlIcon, type ComposerControlSize } from "
 import { useComposerMenuProps } from "./composerEventScope";
 import { useComposerMenuState } from "./useComposerMenuState";
 
-const LABEL_MAX_CHARS = 8;
-
-/** Short enough to sit beside the other composer chips: all, the names, or "first +N". */
-function knowledgeChipLabel(
-  selected: ReadonlyArray<string>,
-  all: ReadonlyArray<string>,
-  allLabel: string,
-): string {
-  if (selected.length === all.length) return allLabel;
-  const joined = selected.join("、");
-  if ([...joined].length <= LABEL_MAX_CHARS) return joined;
-  return `${selected[0]} +${selected.length - 1}`;
+/**
+ * Short enough to sit beside the other composer chips. Both sides read "source + count"; with
+ * cloud libraries added but none picked, "all local" keeps the label from implying they load.
+ */
+function knowledgeChipLabel(input: {
+  readonly local: ReadonlyArray<string>;
+  readonly allLocal: boolean;
+  readonly cloud: number;
+  readonly hasCloud: boolean;
+  readonly text: {
+    readonly everything: string;
+    readonly allLocal: string;
+    readonly local: string;
+    readonly cloud: string;
+  };
+}): string {
+  const { local, cloud, text } = input;
+  const first = local[0] ?? "";
+  if (cloud === 0) {
+    if (local.length === 0) return "";
+    if (input.allLocal) return input.hasCloud ? text.allLocal : text.everything;
+    if (local.length === 1) return first;
+    return [...first].length <= 5
+      ? `${first} +${local.length - 1}`
+      : `${text.local} ${local.length}`;
+  }
+  const cloudPart = `${text.cloud} ${cloud}`;
+  if (local.length === 0) return cloudPart;
+  const localPart = input.allLocal
+    ? text.local
+    : local.length === 1 && [...first].length <= 4
+      ? first
+      : `${text.local} ${local.length}`;
+  return `${localPart} · ${cloudPart}`;
 }
 
 export function VibeBossKnowledgeControl(props: {
@@ -39,6 +64,8 @@ export function VibeBossKnowledgeControl(props: {
   readonly projectId: ProjectId | null;
   readonly size: ComposerControlSize;
   readonly hidden: boolean;
+  /** Cloud libraries are reached through Claude's MCP server, so only Claude can search them. */
+  readonly cloudAvailable: boolean;
 }) {
   const gt = useGT();
   const navigate = useNavigate();
@@ -57,10 +84,15 @@ export function VibeBossKnowledgeControl(props: {
     selection.categories === null
       ? categories
       : categories.filter((category) => selection.categories!.includes(category));
-  const loading = selection.enabled && selected.length > 0;
+  const libraries = data.cloudLibraries;
+  const chosenCloud = libraries.filter(
+    (library) => library.status === "ready" && (selection.cloud ?? []).includes(library.id),
+  );
+  const activeCloud = props.cloudAvailable ? chosenCloud.length : 0;
+  const loading = selection.enabled && (selected.length > 0 || activeCloud > 0);
 
   const save = async (
-    next: { enabled: boolean; categories: ReadonlyArray<string> },
+    next: { enabled: boolean; categories: ReadonlyArray<string>; cloud?: ReadonlyArray<string> },
     asProjectDefault = false,
   ) => {
     await setSelection({
@@ -70,6 +102,7 @@ export function VibeBossKnowledgeControl(props: {
         selection: {
           enabled: next.enabled,
           categories: next.categories.length === categories.length ? null : [...next.categories],
+          cloud: [...(next.cloud ?? chosenCloud.map((library) => library.id))],
         },
         asProjectDefault,
       },
@@ -94,7 +127,18 @@ export function VibeBossKnowledgeControl(props: {
         />
         {loading ? (
           <span data-composer-control-label className="max-w-32 truncate">
-            {knowledgeChipLabel(selected, categories, gt("All knowledge"))}
+            {knowledgeChipLabel({
+              local: selected,
+              allLocal: selected.length === categories.length,
+              cloud: activeCloud,
+              hasCloud: libraries.length > 0,
+              text: {
+                everything: gt("All knowledge"),
+                allLocal: gt("All local"),
+                local: gt("Local", { $context: "knowledge kept on this computer" }),
+                cloud: gt("Cloud", { $context: "knowledge kept in the cloud" }),
+              },
+            })}
           </span>
         ) : null}
       </MenuTrigger>
@@ -109,22 +153,71 @@ export function VibeBossKnowledgeControl(props: {
         {selection.enabled ? (
           <>
             <MenuSeparator />
-            {categories.map((category) => (
-              <MenuCheckboxItem
-                key={category}
-                checked={selected.includes(category)}
-                onCheckedChange={(checked) =>
-                  void save({
-                    enabled: true,
-                    categories: categories.filter((item) =>
-                      item === category ? checked : selected.includes(item),
-                    ),
-                  })
-                }
-              >
-                {category}
-              </MenuCheckboxItem>
-            ))}
+            <MenuGroup>
+              {libraries.length > 0 ? (
+                <MenuGroupLabel>
+                  <T>Local</T>
+                </MenuGroupLabel>
+              ) : null}
+              {categories.map((category) => (
+                <MenuCheckboxItem
+                  key={category}
+                  checked={selected.includes(category)}
+                  onCheckedChange={(checked) =>
+                    void save({
+                      enabled: true,
+                      categories: categories.filter((item) =>
+                        item === category ? checked : selected.includes(item),
+                      ),
+                    })
+                  }
+                >
+                  {category}
+                </MenuCheckboxItem>
+              ))}
+            </MenuGroup>
+            {libraries.length > 0 ? (
+              <>
+                <MenuSeparator />
+                <MenuGroup>
+                  <MenuGroupLabel>
+                    <T>Cloud</T>
+                  </MenuGroupLabel>
+                  {props.cloudAvailable ? null : (
+                    <MenuItem disabled>
+                      <T>Available with Claude only.</T>
+                    </MenuItem>
+                  )}
+                  {libraries.map((library) => (
+                    <MenuCheckboxItem
+                      key={library.id}
+                      disabled={!props.cloudAvailable || library.status !== "ready"}
+                      checked={chosenCloud.some((item) => item.id === library.id)}
+                      onCheckedChange={(checked) =>
+                        void save({
+                          enabled: true,
+                          categories: selected,
+                          cloud: libraries
+                            .filter((item) =>
+                              item.id === library.id
+                                ? checked
+                                : chosenCloud.some((chosen) => chosen.id === item.id),
+                            )
+                            .map((item) => item.id),
+                        })
+                      }
+                    >
+                      <span className="min-w-0 flex-1 truncate">{library.name}</span>
+                      {library.status === "ready" ? null : (
+                        <MenuItemDetail>
+                          {library.status === "building" ? <T>Building</T> : <T>No documents</T>}
+                        </MenuItemDetail>
+                      )}
+                    </MenuCheckboxItem>
+                  ))}
+                </MenuGroup>
+              </>
+            ) : null}
           </>
         ) : null}
         <MenuSeparator />

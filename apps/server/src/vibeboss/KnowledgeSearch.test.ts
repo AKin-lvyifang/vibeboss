@@ -32,7 +32,7 @@ it.effect("searches files as they are in the folder and follows them when they c
 
     const [hit] = yield* run(searchPassages("续费失败重试几次", 3, null));
     assert.strictEqual(hit?.path, "续费口径.md");
-    assert.strictEqual(hit?.cite, "本地知识库 · 续费口径.md · 重试规则");
+    assert.strictEqual(hit?.cite, "本地 · 续费口径.md · 重试规则");
     assert.strictEqual(
       (yield* run(searchPassages("灰度放多少用户", 3, null)))[0]?.file,
       "演示.html",

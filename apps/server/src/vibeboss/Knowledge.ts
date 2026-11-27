@@ -580,7 +580,10 @@ function feishuSyncTask(
 }
 
 /** Writes the task file for the files not yet on Feishu and returns the message that starts the upload. */
-export const prepareFeishuSync = Effect.fn("VibeBossKnowledge.prepareFeishuSync")(function* () {
+export const prepareFeishuSync = Effect.fn("VibeBossKnowledge.prepareFeishuSync")(function* (
+  /** The Feishu folder feeds a cloud library, so the agent ends by saying when that updates. */
+  feedsCloudLibrary = false,
+) {
   const path = yield* Path.Path;
   const paths = yield* resolvePaths;
   const config = yield* loadConfig(paths.configPath);
@@ -605,6 +608,10 @@ export const prepareFeishuSync = Effect.fn("VibeBossKnowledge.prepareFeishuSync"
   );
   return {
     pending: pending.length,
-    prompt: `按 ${taskPath} 里的说明，把知识库里待同步的 ${pending.length} 个文件同步到飞书。`,
+    prompt: `按 ${taskPath} 里的说明，把知识库里待同步的 ${pending.length} 个文件同步到飞书。${
+      feedsCloudLibrary
+        ? "同步完最后告诉我一句：云端库会按它自己的周期自动更新，要立即生效可在程小帮控制台重建。"
+        : ""
+    }`,
   };
 });

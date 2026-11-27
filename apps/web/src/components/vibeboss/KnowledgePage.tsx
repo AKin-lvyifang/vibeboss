@@ -5,23 +5,23 @@ import type {
   VibeBossKnowledgeState,
   VibeBossReviewModel,
 } from "@t3tools/contracts";
-import { scopeProjectRef } from "@t3tools/client-runtime/environment";
-import { useRouter } from "@tanstack/react-router";
 import { T, useGT, Var } from "gt-react";
 import {
   ChevronDownIcon,
+  CloudIcon,
+  ExternalLinkIcon,
   FolderOpenIcon,
+  HardDriveIcon,
   LibraryIcon,
+  PlusIcon,
   RefreshCwIcon,
   WaypointsIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { isElectron } from "../../env";
-import { useNewThreadHandler } from "../../hooks/useHandleNewThread";
 import { useClientSettings } from "../../hooks/useSettings";
 import { readLocalApi } from "../../localApi";
-import { useProjects, useThreadShells } from "../../state/entities";
 import { usePrimaryEnvironmentId } from "../../state/environments";
 import { useEnvironmentQuery } from "../../state/query";
 import { shellEnvironment } from "../../state/shell";
@@ -29,7 +29,6 @@ import { useAtomCommand } from "../../state/use-atom-command";
 import { formatDateTimeTimestamp } from "../../timestampFormat";
 import { vibeBossEnvironment } from "../../state/vibeboss";
 import { setKnowledgePage, useKnowledgePageStore } from "../../vibebossKnowledgeStore";
-import { sortScopedProjectsForSidebar } from "../Sidebar.logic";
 import { Button } from "../ui/button";
 import {
   Empty,
@@ -44,10 +43,18 @@ import { Input } from "../ui/input";
 import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "../ui/popover";
 import { Spinner } from "../ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
+import {
+  type CloudPage,
+  KnowledgeCloudPages,
+  KnowledgeCloudTab,
+  withoutLibrary,
+  XIAOBANG_CONSOLE_URL,
+} from "./KnowledgeCloud";
 import { KnowledgeGraphPage } from "./KnowledgeGraph";
 import { KnowledgeList } from "./KnowledgeList";
 import { KnowledgeOverview } from "./KnowledgeOverview";
 import { ReviewModelFields } from "./ReviewModelFields";
+import { useKnowledgeConversation } from "./useKnowledgeConversation";
 import { VibeBossPage } from "./VibeBossShared";
 
 const ALL = "\0all";
@@ -317,10 +324,16 @@ export function KnowledgePage() {
   const organize = useAtomCommand(vibeBossEnvironment.organizeKnowledge);
   const undo = useAtomCommand(vibeBossEnvironment.undoKnowledge);
   const prepareFeishuSync = useAtomCommand(vibeBossEnvironment.prepareKnowledgeFeishuSync);
-  const router = useRouter();
-  const handleNewThread = useNewThreadHandler();
-  const projects = useProjects();
-  const threads = useThreadShells();
+  const prepareCatalog = useAtomCommand(vibeBossEnvironment.prepareKnowledgeCloudCatalog);
+  const saveCloud = useAtomCommand(vibeBossEnvironment.saveKnowledgeCloud);
+  const startConversation = useKnowledgeConversation(environmentId);
+  const cloud = useEnvironmentQuery(
+    environmentId === null
+      ? null
+      : vibeBossEnvironment.knowledgeCloud({ environmentId, input: {} }),
+  );
+  const [tab, setTab] = useState<"local" | "cloud">("local");
+  const [cloudPage, setCloudPage] = useState<CloudPage>(null);
   const reveal = useAtomCommand(shellEnvironment.openInEditor, { reportFailure: false });
   const organizing = useKnowledgePageStore((state) => state.organizing);
   const notice = useKnowledgePageStore((state) => state.notice);
@@ -380,21 +393,13 @@ export function KnowledgePage() {
     if (environmentId === null) return;
     const task = await prepareFeishuSync({ environmentId, input: {} });
     if (task._tag !== "Success") return;
-    // The upload works from absolute paths, so any project can host it; the latest one is at hand.
-    const project = sortScopedProjectsForSidebar(
-      projects.filter(
-        (candidate) => candidate.isScratch !== true && candidate.environmentId === environmentId,
-      ),
-      threads,
-      "updated_at",
-    )[0];
-    if (project === undefined) {
-      router.history.push(`/new?prompt=${encodeURIComponent(task.value.prompt)}`);
-      return;
-    }
-    await handleNewThread(scopeProjectRef(project.environmentId, project.id), {
-      prompt: task.value.prompt,
-    });
+    await startConversation(task.value.prompt);
+  };
+  // Claude lists the libraries with its Xiaobang tools and saves them where the picker reads.
+  const fetchCatalog = async () => {
+    if (environmentId === null) return;
+    const task = await prepareCatalog({ environmentId, input: {} });
+    if (task._tag === "Success") await startConversation(task.value.prompt);
   };
 
   const runUndo = async (entry: VibeBossKnowledgeLogEntry) => {
@@ -407,15 +412,55 @@ export function KnowledgePage() {
     <VibeBossPage
       title={gt("Knowledge")}
       overlay={
-        <KnowledgeGraphPage
-          open={graphOpen}
-          docs={data?.docs ?? []}
-          onOpen={openDoc}
-          onClose={() => setGraphOpen(false)}
-        />
+        <>
+          <KnowledgeGraphPage
+            open={graphOpen}
+            docs={data?.docs ?? []}
+            onOpen={openDoc}
+            onClose={() => setGraphOpen(false)}
+          />
+          <KnowledgeCloudPages
+            environmentId={environmentId}
+            page={cloudPage}
+            state={cloud.data}
+            synced={(data?.docs ?? []).filter((doc) => doc.feishu === "synced").length}
+            unsynced={unsynced.length}
+            onClose={() => setCloudPage(null)}
+            onSaved={() => cloud.refresh()}
+            onSync={() => void startFeishuSync()}
+            onFetchCatalog={() => void fetchCatalog()}
+          />
+        </>
       }
       actions={
-        environmentId !== null && data && folder !== null ? (
+        environmentId !== null && data && folder !== null && tab === "cloud" ? (
+          <>
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              aria-label={gt("Refresh")}
+              onClick={() => cloud.refresh()}
+            >
+              <RefreshCwIcon />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void readLocalApi()?.shell.openExternal(XIAOBANG_CONSOLE_URL)}
+            >
+              <ExternalLinkIcon />
+              <T>Open console</T>
+            </Button>
+            <Button
+              size="sm"
+              disabled={cloud.data?.configured !== true}
+              onClick={() => setCloudPage("picker")}
+            >
+              <PlusIcon />
+              <T>Add cloud libraries</T>
+            </Button>
+          </>
+        ) : environmentId !== null && data && folder !== null ? (
           <>
             <Button
               size="sm"
@@ -468,16 +513,48 @@ export function KnowledgePage() {
           onPick={(next) => void setFolder(next)}
         />
       ) : (
-        <KnowledgeBody
-          environmentId={environmentId}
-          state={data}
-          folder={folder}
-          notice={notice}
-          organizing={organizing}
-          onUndo={(entry) => void runUndo(entry)}
-          onOpenDoc={openDoc}
-          onOpenGraph={() => setGraphOpen(true)}
-        />
+        <>
+          <ToggleGroup
+            value={[tab]}
+            onValueChange={(value) => {
+              const next = value[0] as "local" | "cloud" | undefined;
+              if (next) setTab(next);
+            }}
+          >
+            <ToggleGroupItem value="local">
+              <HardDriveIcon />
+              <T>Local</T>
+              <span className="text-muted-foreground">{data.docs.length}</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="cloud">
+              <CloudIcon />
+              <T>Cloud</T>
+              <span className="text-muted-foreground">{cloud.data?.libraries.length ?? ""}</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
+          {tab === "local" ? (
+            <KnowledgeBody
+              environmentId={environmentId}
+              state={data}
+              folder={folder}
+              notice={notice}
+              organizing={organizing}
+              onUndo={(entry) => void runUndo(entry)}
+              onOpenDoc={openDoc}
+              onOpenGraph={() => setGraphOpen(true)}
+            />
+          ) : cloud.data ? (
+            <KnowledgeCloudTab
+              state={cloud.data}
+              onOpen={setCloudPage}
+              onRecheck={() => cloud.refresh()}
+              onRemove={(library) => {
+                const next = withoutLibrary(cloud.data!, library);
+                void saveCloud({ environmentId, input: next }).then(() => cloud.refresh());
+              }}
+            />
+          ) : null}
+        </>
       )}
     </VibeBossPage>
   );

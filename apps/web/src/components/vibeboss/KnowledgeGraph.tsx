@@ -1,16 +1,11 @@
 // VibeBoss: the knowledge base as a graph that grows outward one node at a time: the folder, its
 // categories, their groups, and the files, with versions of one topic hanging off that topic.
 import type { VibeBossKnowledgeDoc } from "@t3tools/contracts";
-import { T, useGT } from "gt-react";
-import { ArrowLeftIcon } from "lucide-react";
-import { AnimatePresence, motion, MotionConfig } from "motion/react";
+import { useGT } from "gt-react";
 import { useEffect, useRef } from "react";
 
-import { isElectron } from "../../env";
-
 import { observeResize } from "../../lib/observeResize";
-import { Button } from "../ui/button";
-import { WorkspacePageHeader } from "../WorkspacePageHeader";
+import { VibeBossSubPage } from "./VibeBossShared";
 
 const MAX_NODES = 600;
 const GROW_EVERY_MS = 45;
@@ -385,33 +380,8 @@ export function KnowledgeGraphPage(props: {
 }) {
   const gt = useGT();
   return (
-    <MotionConfig reducedMotion="user">
-      <AnimatePresence>
-        {props.open ? (
-          <motion.div
-            className="absolute inset-0 z-10 flex flex-col bg-background"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ duration: 0.26, ease: [0.32, 0.72, 0, 1] }}
-          >
-            <WorkspacePageHeader electron={isElectron} className="border-b">
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                aria-label={gt("Back to knowledge")}
-                onClick={props.onClose}
-              >
-                <ArrowLeftIcon />
-              </Button>
-              <h1 className="flex-1 truncate font-medium text-sm">
-                <T>Knowledge graph</T>
-              </h1>
-            </WorkspacePageHeader>
-            <KnowledgeGraph docs={props.docs} onOpen={props.onOpen} />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </MotionConfig>
+    <VibeBossSubPage open={props.open} title={gt("Knowledge graph")} onClose={props.onClose}>
+      <KnowledgeGraph docs={props.docs} onOpen={props.onOpen} />
+    </VibeBossSubPage>
   );
 }

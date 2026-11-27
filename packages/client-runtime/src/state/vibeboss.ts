@@ -56,6 +56,22 @@ export function createVibeBossEnvironmentAtoms<R, E>(
       label: "environment-command:vibeboss:knowledge-prepare-feishu-sync",
       tag: WS_METHODS.vibebossKnowledgePrepareFeishuSync,
     }),
+    knowledgeCloud: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:vibeboss:knowledge-cloud",
+      tag: WS_METHODS.vibebossKnowledgeCloudGetState,
+    }),
+    saveKnowledgeCloud: createEnvironmentRpcCommand(runtime, {
+      label: "environment-command:vibeboss:knowledge-cloud-save",
+      tag: WS_METHODS.vibebossKnowledgeCloudSave,
+    }),
+    knowledgeCloudCatalog: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:vibeboss:knowledge-cloud-catalog",
+      tag: WS_METHODS.vibebossKnowledgeCloudSearchCatalog,
+    }),
+    prepareKnowledgeCloudCatalog: createEnvironmentRpcCommand(runtime, {
+      label: "environment-command:vibeboss:knowledge-cloud-prepare-catalog",
+      tag: WS_METHODS.vibebossKnowledgeCloudPrepareCatalog,
+    }),
     resolveNativeTranscript: createEnvironmentRpcCommand(runtime, {
       label: "environment-command:vibeboss:resolve-native-transcript",
       tag: WS_METHODS.vibebossResolveNativeTranscript,

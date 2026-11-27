@@ -275,6 +275,7 @@ export function ComposerControlsBar(props: {
         projectId={props.knowledgeProjectId}
         size={controlSize}
         hidden={composerControlsHidden}
+        cloudAvailable={selectedProvider === "claudeAgent"}
       />
 
       <>

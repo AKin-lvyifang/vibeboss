@@ -124,6 +124,7 @@ import * as NativeChildWorkQuery from "./orchestration-v2/NativeChildWorkQuery.t
 import * as ServerConfig from "./config.ts";
 import * as VibeBoss from "./vibeboss/VibeBoss.ts";
 import * as VibeBossKnowledge from "./vibeboss/Knowledge.ts";
+import * as VibeBossKnowledgeCloud from "./vibeboss/KnowledgeCloud.ts";
 import * as VibeBossKnowledgeSearch from "./vibeboss/KnowledgeSearch.ts";
 import * as VibeBossKnowledgeSelection from "./vibeboss/KnowledgeSelection.ts";
 import * as VibeBossKnowledgeText from "./vibeboss/KnowledgeText.ts";
@@ -2775,7 +2776,23 @@ export const layerWsRpc = (
         [WS_METHODS.vibebossKnowledgeSetSelection]: (input) =>
           withVibeBossServices(VibeBossKnowledgeSelection.setSelection(input)),
         [WS_METHODS.vibebossKnowledgePrepareFeishuSync]: () =>
-          withVibeBossServices(VibeBossKnowledge.prepareFeishuSync()),
+          withVibeBossServices(
+            VibeBossKnowledgeCloud.getCloudState().pipe(
+              Effect.flatMap((cloud) =>
+                VibeBossKnowledge.prepareFeishuSync(
+                  cloud.publish.targetId !== null && cloud.publish.sourceLinked,
+                ),
+              ),
+            ),
+          ),
+        [WS_METHODS.vibebossKnowledgeCloudGetState]: () =>
+          withVibeBossServices(VibeBossKnowledgeCloud.getCloudState()),
+        [WS_METHODS.vibebossKnowledgeCloudSave]: (input) =>
+          withVibeBossServices(VibeBossKnowledgeCloud.saveCloud(input)),
+        [WS_METHODS.vibebossKnowledgeCloudSearchCatalog]: (input) =>
+          withVibeBossServices(VibeBossKnowledgeCloud.searchCatalog(input)),
+        [WS_METHODS.vibebossKnowledgeCloudPrepareCatalog]: () =>
+          withVibeBossServices(VibeBossKnowledgeCloud.prepareCatalog()),
         // The organizer asks the model picked on the Knowledge page, else the text generation model.
         [WS_METHODS.vibebossKnowledgeOrganize]: (input) =>
           withVibeBossServices(

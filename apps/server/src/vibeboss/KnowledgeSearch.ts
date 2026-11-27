@@ -24,9 +24,7 @@ export interface KnowledgeHit {
 }
 
 const cite = (name: string, location: string) =>
-  ["本地知识库", name, location === "概要" ? "" : location]
-    .filter((part) => part !== "")
-    .join(" · ");
+  ["本地", name, location === "概要" ? "" : location].filter((part) => part !== "").join(" · ");
 
 const withIndex = Effect.fn("VibeBossKnowledgeSearch.withIndex")(function* <A>(
   use: (index: KnowledgeIndex, folder: string) => A,
