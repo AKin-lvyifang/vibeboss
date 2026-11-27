@@ -424,6 +424,11 @@ const T3_MCP_TOOLS: Readonly<Record<string, T3McpToolDefinition>> = {
     "environment-update",
   ),
   t3_theme_read: tool(["Read", "Reading", "Read", "themes"], "theme-read"),
+  knowledge_search: tool(
+    ["Search", "Searching", "Searched", "the knowledge base"],
+    "thread-search",
+  ),
+  knowledge_read: tool(["Read", "Reading", "Read", "a knowledge file"], "thread-search"),
   t3_theme_set: tool(["Set", "Setting", "Set", "the theme"], "theme-set"),
   t3_thread_launch: tool(["Launch", "Launching", "Launched", "a project thread"], "thread-create"),
   t3_project_list: tool(["List", "Listing", "Listed", "projects"], "project-list"),

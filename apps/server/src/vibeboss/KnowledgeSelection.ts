@@ -130,6 +130,15 @@ export const setSelection = Effect.fn("VibeBossKnowledgeSelection.setSelection")
   return yield* buildState(store, input);
 });
 
+/** The categories a conversation limits itself to, or null when it uses the whole knowledge base. */
+export const selectedCategories = Effect.fn("VibeBossKnowledgeSelection.selectedCategories")(
+  function* (input: VibeBossKnowledgeSelectionInput) {
+    const { selection } = resolve(yield* loadStore(), input);
+    return selection.enabled ? selection.categories : null;
+  },
+  Effect.orElseSucceed((): ReadonlyArray<string> | null => null),
+);
+
 /** What a loaded conversation's agent is told; pure so the wording can be tested. */
 export function knowledgeNote(
   folder: string,
@@ -139,7 +148,9 @@ export function knowledgeNote(
   return [
     "<knowledge_base>",
     `用户为这个会话加载了知识库，位置：${folder}`,
-    `需要查资料、找文件或引用已有材料时，先读索引 ${indexPath}（每个文件一行，有路径和摘要），再按路径打开原文件。和当前问题无关时不用读。`,
+    "需要查资料、找文件或引用已有材料时，用 knowledge_search 工具搜（它能读到 PPT、Word、Excel 的正文，并给出在第几页或哪一节），片段不够再用 knowledge_read 读全文。和当前问题无关时不用搜。",
+    "回答里用到知识库内容时，在那句话后面标出来源，照工具返回的 cite 写，例如（本地知识库 · 文件名 · 第 3 页）。",
+    `没有这两个工具时，改读索引 ${indexPath}，再按路径打开原文件。`,
     categories === null ? "" : `这次只用这些分类里的资料：${categories.join("、")}。`,
     "同一主题有多个版本时，用户没点名就用最新的一版，并说明用的是哪一版。",
     "</knowledge_base>",

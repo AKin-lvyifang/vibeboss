@@ -10,7 +10,9 @@ import { getSelection, knowledgeNote, promptNote, setSelection } from "./Knowled
 
 it("tells the agent where the index is and which categories to use", () => {
   const note = knowledgeNote("/kb", "/kb/索引.md", ["业务知识"]);
-  assert.include(note, "先读索引 /kb/索引.md");
+  assert.include(note, "knowledge_search");
+  assert.include(note, "照工具返回的 cite 写");
+  assert.include(note, "改读索引 /kb/索引.md");
   assert.include(note, "这次只用这些分类里的资料：业务知识。");
   assert.notInclude(knowledgeNote("/kb", "/kb/索引.md", null), "这次只用");
 });

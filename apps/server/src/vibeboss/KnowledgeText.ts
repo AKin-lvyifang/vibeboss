@@ -10,6 +10,7 @@ import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 
+import { MAX_DOC_CHARS } from "./KnowledgeIndex.ts";
 import { EXCERPT_CHARS, htmlToText } from "./KnowledgeNaming.ts";
 
 const PLAIN = new Set(["md", "markdown", "txt", "csv", "json", "yaml", "yml"]);
@@ -18,15 +19,15 @@ const OFFICE = new Set(["docx", "xlsx", "pptx", "odt", "ods", "odp", "rtf", "epu
 const MAX_PLAIN_BYTES = 4 * 1024 * 1024;
 const MAX_OFFICE_BYTES = 16 * 1024 * 1024;
 
-/** The start of a file's text, or "" when it cannot be read; the organizer then goes by the name. */
-export const extractExcerpt = Effect.fn("VibeBossKnowledge.extractExcerpt")(
+/** A file's text, or "" when it cannot be read; slides, sheets and headings stay as `## ` lines. */
+export const extractText = Effect.fn("VibeBossKnowledge.extractText")(
   function* (file: string, extension: string) {
     const fs = yield* FileSystem.FileSystem;
     const size = Number((yield* fs.stat(file)).size);
     if (PLAIN.has(extension) || HTML.has(extension)) {
       if (size > MAX_PLAIN_BYTES) return "";
       const text = yield* fs.readFileString(file);
-      return (HTML.has(extension) ? htmlToText(text) : text).slice(0, EXCERPT_CHARS);
+      return (HTML.has(extension) ? htmlToText(text) : text).slice(0, MAX_DOC_CHARS);
     }
     if (!OFFICE.has(extension) || size > MAX_OFFICE_BYTES) return "";
     const executable = yield* HostProcess.ExecutablePath;
@@ -59,7 +60,11 @@ export const extractExcerpt = Effect.fn("VibeBossKnowledge.extractExcerpt")(
         }),
       catch: (cause) => new VibeBossError({ detail: "读取文档正文失败", cause }),
     });
-    return text.slice(0, EXCERPT_CHARS);
+    return text.slice(0, MAX_DOC_CHARS);
   },
   Effect.orElseSucceed(() => ""),
 );
+
+/** The start of a file's text; the organizer names the file from it. */
+export const extractExcerpt = (file: string, extension: string) =>
+  extractText(file, extension).pipe(Effect.map((text) => text.slice(0, EXCERPT_CHARS)));

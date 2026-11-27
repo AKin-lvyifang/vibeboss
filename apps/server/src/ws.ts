@@ -124,6 +124,7 @@ import * as NativeChildWorkQuery from "./orchestration-v2/NativeChildWorkQuery.t
 import * as ServerConfig from "./config.ts";
 import * as VibeBoss from "./vibeboss/VibeBoss.ts";
 import * as VibeBossKnowledge from "./vibeboss/Knowledge.ts";
+import * as VibeBossKnowledgeSearch from "./vibeboss/KnowledgeSearch.ts";
 import * as VibeBossKnowledgeSelection from "./vibeboss/KnowledgeSelection.ts";
 import * as VibeBossKnowledgeText from "./vibeboss/KnowledgeText.ts";
 import * as EnvironmentTheme from "./environmentTheme.ts";
@@ -2806,6 +2807,8 @@ export const layerWsRpc = (
                     ),
                 ),
               ),
+              // Newly filed documents are searchable before the next question asks for them.
+              Effect.tap(() => VibeBossKnowledgeSearch.syncIndex().pipe(Effect.ignore)),
             ),
           ),
         [WS_METHODS.mcpAppsReadResource]: (input) => mcpAppRequests.readResource(input),
