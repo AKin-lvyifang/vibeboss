@@ -137,6 +137,10 @@ it.effect("organizes new files into one topic, writes the index, and undoes the 
     );
     const index = yield* fs.readFileString(path.join(folder, INDEX_FILE));
     assert.include(index, "**产品季度汇报**（2 个版本）");
+    assert.include(
+      index,
+      `\`业务知识/汇报材料/产品季度汇报-早会版-${inputs[1]!.modifiedDate}.pptx\``,
+    );
 
     const undone = yield* run(Knowledge.undo(result.state.log[0]!.id));
     assert.deepStrictEqual(
@@ -147,6 +151,7 @@ it.effect("organizes new files into one topic, writes the index, and undoes the 
         .map((file): Array<string | boolean> => [file, false, true]),
     );
     assert.strictEqual(undone.log[0]!.undone, true);
+    assert.strictEqual(yield* fs.exists(path.join(folder, "业务知识")), false);
 
     const automatic = yield* run(
       Knowledge.organize(

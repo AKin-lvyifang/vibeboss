@@ -5,6 +5,12 @@ import type { VibeBossKnowledgeDoc, VibeBossKnowledgeDocType } from "@t3tools/co
 
 export const INDEX_FILE = "索引.md";
 export const DEFAULT_CATEGORIES: ReadonlyArray<string> = ["业务知识", "个人知识", "项目资料"];
+// Without a line saying what each category holds, the same file lands in a different one each run.
+const CATEGORY_SCOPE: Record<string, string> = {
+  业务知识: "公司业务、产品、规则口径、经营数据，以及面向团队或上级的汇报",
+  个人知识: "个人学习、读书笔记、随想和方法",
+  项目资料: "某一个具体项目自己的方案、排期、会议记录和交付物",
+};
 export const EXCERPT_CHARS = 2400;
 
 const TYPE_BY_EXTENSION: Record<string, VibeBossKnowledgeDocType> = {
@@ -112,7 +118,13 @@ export function organizePrompt(
     "- version（版本）：这一版给谁用或处在什么阶段，如“早会版”“技术评审版”“初稿”。看不出版本之分就写空字符串。",
     "- date（日期）：YYYY-MM-DD。正文里写明了成稿或汇报日期就用它，否则用该文件的修改日期。",
     "- audience（给谁）：这一版的读者或场合，一个短语；看不出就写空字符串。",
-    `- category（分类）：只能从这些里选一个：${context.categories.join("、")}。`,
+    `- category（分类）：只能从这些里选一个：${context.categories
+      .map((category) =>
+        CATEGORY_SCOPE[category] === undefined
+          ? category
+          : `${category}（${CATEGORY_SCOPE[category]}）`,
+      )
+      .join("；")}。`,
     "- group（分组）：分类下的小组，2–8 个字的名词。已有分组里合适的就沿用，没有合适的才新起。",
     "- summary（摘要）：一句话说清内容和它与其他版本的区别，不超过 60 字。",
     `已有主题：${context.topics.length === 0 ? "（暂无）" : context.topics.join("、")}`,
@@ -189,10 +201,6 @@ const TYPE_LABEL: Record<VibeBossKnowledgeDocType, string> = {
   other: "文件",
 };
 
-function encodeLink(path: string): string {
-  return path.split("/").map(encodeURIComponent).join("/");
-}
-
 /**
  * The file agents read first. One line per file keeps it small enough to read whole; versions of
  * one topic sit together, newest first, so "the latest one" and "the one for X" are both answerable.
@@ -203,7 +211,7 @@ export function renderIndex(docs: ReadonlyArray<VibeBossKnowledgeDoc>): string {
   const lines = [
     "# 知识库索引",
     "",
-    "由 VibeBoss 自动维护，别手改。找资料先看这里，再按路径打开原文件。文件名规则：主题-版本-日期。同一主题下有多个版本时，按日期从新到旧排，第一个是最新版。",
+    "由 VibeBoss 自动维护，别手改。找资料先看这里，再按路径打开原文件；路径相对本文件所在的文件夹。文件名规则：主题-版本-日期。同一主题下有多个版本时，按日期从新到旧排，第一个是最新版。",
   ];
   const categories = [...new Set(organized.map((doc) => doc.category))];
   for (const category of categories) {
@@ -226,14 +234,14 @@ export function renderIndex(docs: ReadonlyArray<VibeBossKnowledgeDoc>): string {
           ]
             .filter((part) => part !== "")
             .join("｜");
-          lines.push(`${many ? "  " : ""}- [${doc.name}](${encodeLink(doc.path)})：${detail}`);
+          lines.push(`${many ? "  " : ""}- \`${doc.path}\`：${detail}`);
         }
       }
     }
   }
   if (pending.length > 0) {
     lines.push("", "## 待整理");
-    for (const doc of pending) lines.push(`- [${doc.name}](${encodeLink(doc.path)})`);
+    for (const doc of pending) lines.push(`- \`${doc.path}\``);
   }
   return `${lines.join("\n")}\n`;
 }

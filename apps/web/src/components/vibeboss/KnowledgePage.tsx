@@ -22,11 +22,14 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 
 import { isElectron } from "../../env";
+import { useClientSettings } from "../../hooks/useSettings";
+import { cn } from "../../lib/utils";
 import { readLocalApi } from "../../localApi";
 import { usePrimaryEnvironmentId } from "../../state/environments";
 import { useEnvironmentQuery } from "../../state/query";
 import { shellEnvironment } from "../../state/shell";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { formatDateTimeTimestamp } from "../../timestampFormat";
 import { vibeBossEnvironment } from "../../state/vibeboss";
 import { setKnowledgePage, useKnowledgePageStore } from "../../vibebossKnowledgeStore";
 import { Badge } from "../ui/badge";
@@ -74,7 +77,10 @@ function DocRow(props: {
     <button
       type="button"
       onClick={props.onOpen}
-      className={`flex w-full items-center gap-3 border-b px-4 py-2.5 text-left last:border-b-0 hover:bg-accent/50 ${props.nested ? "pl-11" : ""}`}
+      className={cn(
+        "flex w-full items-center gap-3 border-b px-4 py-2.5 text-left outline-none last:border-b-0 hover:bg-accent/50 focus-visible:bg-accent/50",
+        props.nested && "pl-11",
+      )}
     >
       <span className="text-muted-foreground [&_svg]:size-4">{TYPE_ICON[doc.type]}</span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -162,6 +168,7 @@ function OrganizeLog(props: {
   readonly onUndo: (entry: VibeBossKnowledgeLogEntry) => void;
 }) {
   const gt = useGT();
+  const timestampFormat = useClientSettings((settings) => settings.timestampFormat);
   if (props.log.length === 0) return null;
   return (
     <section className="flex flex-col gap-2">
@@ -174,13 +181,8 @@ function OrganizeLog(props: {
             key={entry.id}
             className="flex items-start gap-3 border-b px-4 py-2.5 last:border-b-0"
           >
-            <span className="w-28 shrink-0 pt-0.5 text-muted-foreground text-xs tabular-nums">
-              {new Date(entry.at).toLocaleString(undefined, {
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+            <span className="w-36 shrink-0 pt-0.5 text-muted-foreground text-xs tabular-nums">
+              {formatDateTimeTimestamp(entry.at, timestampFormat)}
             </span>
             <ul className="flex min-w-0 flex-1 flex-col gap-0.5 text-xs">
               {entry.moves.map((move) => (

@@ -395,6 +395,22 @@ export const organize = Effect.fn("VibeBossKnowledge.organize")(function* (
   );
 });
 
+/** Removes `dir` and its parents up to the knowledge folder, stopping at the first that has anything in it. */
+const removeEmptyFolders = Effect.fn("VibeBossKnowledge.removeEmptyFolders")(function* (
+  folder: string,
+  dir: string,
+) {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  let current = dir;
+  while (current !== folder && current.startsWith(folder)) {
+    const names = yield* fs.readDirectory(current).pipe(Effect.orElseSucceed(() => [""]));
+    if (names.some((name) => name !== ".DS_Store")) return;
+    yield* fs.remove(current, { recursive: true }).pipe(Effect.ignore);
+    current = path.dirname(current);
+  }
+});
+
 /** Puts every file of one organizer run back where it was, under its old name. */
 export const undo = Effect.fn("VibeBossKnowledge.undo")(function* (logId: string) {
   const fs = yield* FileSystem.FileSystem;
@@ -423,8 +439,7 @@ export const undo = Effect.fn("VibeBossKnowledge.undo")(function* (logId: string
     if (!restored) continue;
     delete docs[move.to];
     held.add(move.from);
-    // Leaves no empty group folder behind; a folder that still has files refuses to go.
-    yield* fs.remove(path.dirname(absolute(move.to))).pipe(Effect.ignore);
+    yield* removeEmptyFolders(folder, path.dirname(absolute(move.to)));
   }
   const store: Store = {
     version: 1,
