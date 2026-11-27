@@ -47,6 +47,7 @@ import { Input } from "../ui/input";
 import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "../ui/popover";
 import { Spinner } from "../ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
+import { KnowledgeOverview } from "./KnowledgeOverview";
 import { ReviewModelFields } from "./ReviewModelFields";
 import { VibeBossPage } from "./VibeBossShared";
 
@@ -343,6 +344,7 @@ function KnowledgeBody(props: {
 
   return (
     <>
+      {docs.length > 0 ? <KnowledgeOverview docs={docs} /> : null}
       <div className="flex flex-wrap items-center gap-3">
         <ToggleGroup
           value={[filter]}
