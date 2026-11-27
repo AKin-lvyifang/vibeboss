@@ -1,7 +1,6 @@
 import type {
   EnvironmentId,
   VibeBossKnowledgeDoc,
-  VibeBossKnowledgeDocType,
   VibeBossKnowledgeLogEntry,
   VibeBossKnowledgeState,
   VibeBossReviewModel,
@@ -9,21 +8,15 @@ import type {
 import { T, useGT, Var } from "gt-react";
 import {
   ChevronDownIcon,
-  FileCodeIcon,
-  FileIcon,
-  FileSpreadsheetIcon,
-  FileTextIcon,
-  FileTypeIcon,
   FolderOpenIcon,
   LibraryIcon,
-  PresentationIcon,
   RefreshCwIcon,
+  WaypointsIcon,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 
 import { isElectron } from "../../env";
 import { useClientSettings } from "../../hooks/useSettings";
-import { cn } from "../../lib/utils";
 import { readLocalApi } from "../../localApi";
 import { usePrimaryEnvironmentId } from "../../state/environments";
 import { useEnvironmentQuery } from "../../state/query";
@@ -32,7 +25,6 @@ import { useAtomCommand } from "../../state/use-atom-command";
 import { formatDateTimeTimestamp } from "../../timestampFormat";
 import { vibeBossEnvironment } from "../../state/vibeboss";
 import { setKnowledgePage, useKnowledgePageStore } from "../../vibebossKnowledgeStore";
-import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import {
   Empty,
@@ -47,6 +39,8 @@ import { Input } from "../ui/input";
 import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "../ui/popover";
 import { Spinner } from "../ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
+import { KnowledgeGraph } from "./KnowledgeGraph";
+import { KnowledgeList } from "./KnowledgeList";
 import { KnowledgeOverview } from "./KnowledgeOverview";
 import { ReviewModelFields } from "./ReviewModelFields";
 import { VibeBossPage } from "./VibeBossShared";
@@ -54,113 +48,8 @@ import { VibeBossPage } from "./VibeBossShared";
 const ALL = "\0all";
 const UNORGANIZED = "\0unorganized";
 
-const TYPE_ICON: Record<VibeBossKnowledgeDocType, ReactNode> = {
-  md: <FileTextIcon />,
-  pptx: <PresentationIcon />,
-  docx: <FileTypeIcon />,
-  xlsx: <FileSpreadsheetIcon />,
-  html: <FileCodeIcon />,
-  pdf: <FileIcon />,
-  other: <FileIcon />,
-};
-
 function fileName(path: string): string {
   return path.slice(path.lastIndexOf("/") + 1);
-}
-
-function DocRow(props: {
-  readonly doc: VibeBossKnowledgeDoc;
-  readonly nested: boolean;
-  readonly onOpen: () => void;
-}) {
-  const { doc } = props;
-  return (
-    <button
-      type="button"
-      onClick={props.onOpen}
-      className={cn(
-        "flex w-full items-center gap-3 border-b px-4 py-2.5 text-left outline-none last:border-b-0 hover:bg-accent/50 focus-visible:bg-accent/50",
-        props.nested && "pl-11",
-      )}
-    >
-      <span className="text-muted-foreground [&_svg]:size-4">{TYPE_ICON[doc.type]}</span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate text-sm">{doc.name}</span>
-        {doc.summary !== "" ? (
-          <span className="truncate text-muted-foreground text-xs">{doc.summary}</span>
-        ) : null}
-      </span>
-      {doc.version !== "" ? <Badge variant="outline">{doc.version}</Badge> : null}
-      {doc.audience !== "" ? (
-        <span className="hidden max-w-40 truncate text-muted-foreground text-xs sm:inline">
-          {doc.audience}
-        </span>
-      ) : null}
-      <span className="w-20 text-right text-muted-foreground text-xs tabular-nums">
-        {doc.date !== "" ? doc.date : doc.modifiedAt.slice(0, 10)}
-      </span>
-    </button>
-  );
-}
-
-/** Versions of one topic sit together, newest first, under the topic's name. */
-function DocList(props: {
-  readonly docs: ReadonlyArray<VibeBossKnowledgeDoc>;
-  readonly onOpen: (doc: VibeBossKnowledgeDoc) => void;
-}) {
-  const gt = useGT();
-  const groups = new Map<string, Map<string, Array<VibeBossKnowledgeDoc>>>();
-  for (const doc of props.docs) {
-    const groupKey = doc.organized ? [doc.category, doc.group].filter(Boolean).join(" / ") : "";
-    const topics = groups.get(groupKey) ?? new Map<string, Array<VibeBossKnowledgeDoc>>();
-    const topicKey = doc.organized ? doc.topic : doc.path;
-    topics.set(topicKey, [...(topics.get(topicKey) ?? []), doc]);
-    groups.set(groupKey, topics);
-  }
-  return (
-    <>
-      {[...groups.entries()].map(([groupKey, topics]) => (
-        <section key={groupKey} className="flex flex-col gap-2">
-          {groupKey !== "" ? (
-            <h2 className="px-1 text-muted-foreground text-xs">{groupKey}</h2>
-          ) : null}
-          <div className="overflow-hidden rounded-xl border">
-            {[...topics.entries()].map(([topicKey, versions]) => {
-              const sorted = versions.toSorted((left, right) =>
-                right.date.localeCompare(left.date),
-              );
-              if (sorted.length === 1) {
-                const doc = sorted[0]!;
-                return (
-                  <DocRow
-                    key={doc.path}
-                    doc={doc}
-                    nested={false}
-                    onOpen={() => props.onOpen(doc)}
-                  />
-                );
-              }
-              return (
-                <div key={topicKey} className="border-b last:border-b-0">
-                  <div className="flex items-center gap-3 px-4 pt-2.5 pb-1">
-                    <span className="min-w-0 flex-1 truncate font-medium text-sm">{topicKey}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {gt("{count, plural, one {{count} version} other {{count} versions}}", {
-                        count: sorted.length,
-                      })}
-                    </span>
-                  </div>
-                  {sorted.map((doc) => (
-                    <DocRow key={doc.path} doc={doc} nested onOpen={() => props.onOpen(doc)} />
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      ))}
-    </>
-  );
 }
 
 function OrganizeLog(props: {
@@ -336,11 +225,17 @@ function KnowledgeBody(props: {
   const reveal = useAtomCommand(shellEnvironment.openInEditor, { reportFailure: false });
   const [filter, setFilter] = useState(ALL);
   const [search, setSearch] = useState("");
+  const [graphOpen, setGraphOpen] = useState(false);
   const { docs, categories } = props.state;
   const unorganized = docs.filter((doc) => !doc.organized).length;
   const query = search.trim().toLowerCase();
   const visible = docs.filter((doc) => matches(doc, filter, query));
   const absolute = (relative: string) => `${props.folder.replace(/[\\/]+$/, "")}/${relative}`;
+  const openDoc = (doc: VibeBossKnowledgeDoc) =>
+    void reveal({
+      environmentId: props.environmentId,
+      input: { cwd: absolute(doc.path), editor: "file-manager", reveal: true },
+    });
 
   return (
     <>
@@ -373,6 +268,15 @@ function KnowledgeBody(props: {
           ) : null}
         </ToggleGroup>
         <span className="flex-1" />
+        <Button
+          size="sm"
+          variant="outline"
+          aria-pressed={graphOpen}
+          onClick={() => setGraphOpen(!graphOpen)}
+        >
+          <WaypointsIcon />
+          <T>Knowledge graph</T>
+        </Button>
         <div className="w-56">
           <Input
             size="sm"
@@ -401,15 +305,10 @@ function KnowledgeBody(props: {
           )}
         </p>
       ) : (
-        <DocList
-          docs={visible}
-          onOpen={(doc) =>
-            void reveal({
-              environmentId: props.environmentId,
-              input: { cwd: absolute(doc.path), editor: "file-manager", reveal: true },
-            })
-          }
-        />
+        <>
+          {graphOpen ? <KnowledgeGraph docs={visible} onOpen={openDoc} /> : null}
+          <KnowledgeList docs={visible} onOpen={openDoc} />
+        </>
       )}
       {filter === ALL && query === "" ? (
         <OrganizeLog log={props.state.log} busy={props.organizing} onUndo={props.onUndo} />

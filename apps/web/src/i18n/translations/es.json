@@ -12599,13 +12599,23 @@
   "2d5c91e8397cce93": "Versions differ",
   "b831a982dfced3b1": "Nothing here",
   "f40f2672a24f916d": "Versions differ",
-  "b79a2872effb3e39": "Updated this week",
   "95bdba82d82aa98c": "Unorganized",
+  "8f94de5830f53b4b": "Knowledge graph",
+  "f9e1dd1864b5876c": "{count, plural, one {{count} version} other {{count} versions}}",
+  "55d474d360feab20": "New files",
+  "276a06f11cd0dbaa": [
+    "View all ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "b79a2872effb3e39": "Updated this week",
   "d3b01d9c4c23e69d": "Updates in the last 26 weeks",
   "2369f1d90f17ca92": "Updates, last 26 weeks",
   "1e0d899464ed8550": "Less",
   "191733cdbbea0571": "More",
-  "f9e1dd1864b5876c": "{count, plural, one {{count} version} other {{count} versions}}",
   "68736961fd86bc9d": "Undo this organizer run",
   "a9d7de8d5900aa7e": "Organizer model",
   "ed0f68363d6a650e": "Folder path",
@@ -12631,6 +12641,7 @@
   "d9bf21557789a4f2": "Use this folder",
   "a65ad03dda72be9a": "All",
   "696ae8c0f32fe2ab": "Unorganized",
+  "3045e75a54982584": "Knowledge graph",
   "b0a6d02fc627d1b7": "Naming and filing new files…",
   "3a8b760ce9a46b4d": "Put files in the folder. VibeBoss names and files them.",
   "7d2a7e68d954e401": "Open folder",
