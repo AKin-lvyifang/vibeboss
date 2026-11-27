@@ -31,7 +31,7 @@ const Hit = Schema.Struct({
 const KnowledgeSearchTool = Tool.make("knowledge_search", {
   ...shared,
   description:
-    "Search the user's local knowledge base (their own decks, documents, spreadsheets and notes) for passages that answer a question. Use it when the user asks for a file, a past version, a figure or a decision that may be in their materials. Returns matching passages with the file, the slide, sheet or section, and a `cite` string. When an answer uses a passage, name its `cite` beside the claim. Pass the question in the user's own words; `topK` defaults to 8.",
+    "Search the user's local knowledge base (their own decks, documents, spreadsheets and notes) for passages that answer a question. Use it when the user asks for a file, a past version, a figure or a decision that may be in their materials. Returns matching passages with the file, the slide, sheet or section, and a `cite` string. When an answer uses a passage, name its `cite` beside the claim. Passages that only brush the question are left out, so no results means the knowledge base does not cover it: say so, and do not fill the gap from memory. Pass the question in the user's own words; `topK` defaults to 8.",
   parameters: Schema.Struct({
     query: Schema.String,
     topK: Schema.optionalKey(Schema.Number),
