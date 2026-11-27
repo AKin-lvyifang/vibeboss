@@ -1,14 +1,21 @@
 // VibeBoss: the knowledge base as a graph that grows outward one node at a time: the folder, its
 // categories, their groups, and the files, with versions of one topic hanging off that topic.
 import type { VibeBossKnowledgeDoc } from "@t3tools/contracts";
-import { useGT } from "gt-react";
+import { T, useGT } from "gt-react";
+import { ArrowLeftIcon } from "lucide-react";
+import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { useEffect, useRef } from "react";
 
+import { isElectron } from "../../env";
+
 import { observeResize } from "../../lib/observeResize";
+import { Button } from "../ui/button";
+import { WorkspacePageHeader } from "../WorkspacePageHeader";
 
 const MAX_NODES = 600;
 const GROW_EVERY_MS = 45;
 const GOLDEN_ANGLE = 2.399963;
+const LABEL_FONT = "12px system-ui, sans-serif";
 /** Root, category, group, topic, file. */
 const RADIUS = [7, 5.5, 4.5, 3.5, 2.5] as const;
 const REST = [0, 110, 70, 46, 34] as const;
@@ -142,7 +149,7 @@ function step(nodes: ReadonlyArray<GraphNode>, visible: number, alpha: number) {
   }
 }
 
-export function KnowledgeGraph(props: {
+function KnowledgeGraph(props: {
   readonly docs: ReadonlyArray<VibeBossKnowledgeDoc>;
   readonly onOpen: (doc: VibeBossKnowledgeDoc) => void;
 }) {
@@ -172,6 +179,13 @@ export function KnowledgeGraph(props: {
       muted: style.getPropertyValue("--muted-foreground").trim() || "#888",
       primary: style.getPropertyValue("--primary").trim() || "#36f",
     };
+    const labelAll = nodes.length <= 40;
+    context.font = LABEL_FONT;
+    const labels = nodes.map((node) => {
+      const text =
+        [...node.label].length > 18 ? `${[...node.label].slice(0, 17).join("")}…` : node.label;
+      return { text, width: context.measureText(text).width };
+    });
     let visible = 0;
     let alpha = 1;
     let hovered = -1;
@@ -203,9 +217,13 @@ export function KnowledgeGraph(props: {
       }
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
-      // Labels sit to the right of their nodes, so that side keeps room for the longest ones.
+      // Labels sit to the right of their nodes, so that side keeps room for the longest one shown.
+      let widest = 0;
+      for (let i = 0; i < visible; i++) {
+        if (nodes[i]!.level <= 2 || labelAll) widest = Math.max(widest, labels[i]!.width);
+      }
       const left = 24;
-      const usable = Math.max(120, width - left - 150);
+      const usable = Math.max(120, width - left - Math.min(width * 0.45, widest + 28));
       const scale = Math.min(1.3, usable / (maxX - minX), (height - 64) / (maxY - minY));
       const target = {
         scale,
@@ -248,9 +266,8 @@ export function KnowledgeGraph(props: {
         context.lineTo(sx(node), sy(node));
         context.stroke();
       }
-      context.font = "12px system-ui, sans-serif";
+      context.font = LABEL_FONT;
       context.textBaseline = "middle";
-      const labelAll = nodes.length <= 40;
       for (let i = 0; i < visible; i++) {
         const node = nodes[i]!;
         const grown = still ? 1 : Math.min(1, (now - node.born) / 260);
@@ -267,7 +284,7 @@ export function KnowledgeGraph(props: {
         context.fill();
         if (node.level <= 2 || labelAll || i === hovered || nodes[i]!.parent === hovered) {
           context.fillStyle = node.level <= 1 ? colors.text : colors.muted;
-          context.fillText(node.label, sx(node) + radius + 5, sy(node));
+          context.fillText(labels[i]!.text, sx(node) + radius + 5, sy(node));
         }
       }
       context.globalAlpha = 1;
@@ -354,7 +371,47 @@ export function KnowledgeGraph(props: {
       ref={canvasRef}
       role="img"
       aria-label={gt("Knowledge graph")}
-      className="h-110 w-full rounded-xl border"
+      className="block min-h-0 w-full flex-1"
     />
+  );
+}
+
+/** The graph as a second-level page that slides in over the knowledge page. */
+export function KnowledgeGraphPage(props: {
+  readonly open: boolean;
+  readonly docs: ReadonlyArray<VibeBossKnowledgeDoc>;
+  readonly onOpen: (doc: VibeBossKnowledgeDoc) => void;
+  readonly onClose: () => void;
+}) {
+  const gt = useGT();
+  return (
+    <MotionConfig reducedMotion="user">
+      <AnimatePresence>
+        {props.open ? (
+          <motion.div
+            className="absolute inset-0 z-10 flex flex-col bg-background"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ duration: 0.26, ease: [0.32, 0.72, 0, 1] }}
+          >
+            <WorkspacePageHeader electron={isElectron} className="border-b">
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                aria-label={gt("Back to knowledge")}
+                onClick={props.onClose}
+              >
+                <ArrowLeftIcon />
+              </Button>
+              <h1 className="flex-1 truncate font-medium text-sm">
+                <T>Knowledge graph</T>
+              </h1>
+            </WorkspacePageHeader>
+            <KnowledgeGraph docs={props.docs} onOpen={props.onOpen} />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </MotionConfig>
   );
 }

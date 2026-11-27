@@ -39,7 +39,7 @@ import { Input } from "../ui/input";
 import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "../ui/popover";
 import { Spinner } from "../ui/spinner";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
-import { KnowledgeGraph } from "./KnowledgeGraph";
+import { KnowledgeGraphPage } from "./KnowledgeGraph";
 import { KnowledgeList } from "./KnowledgeList";
 import { KnowledgeOverview } from "./KnowledgeOverview";
 import { ReviewModelFields } from "./ReviewModelFields";
@@ -220,23 +220,16 @@ function KnowledgeBody(props: {
   readonly notice: string | null;
   readonly organizing: boolean;
   readonly onUndo: (entry: VibeBossKnowledgeLogEntry) => void;
+  readonly onOpenDoc: (doc: VibeBossKnowledgeDoc) => void;
+  readonly onOpenGraph: () => void;
 }) {
   const gt = useGT();
-  const reveal = useAtomCommand(shellEnvironment.openInEditor, { reportFailure: false });
   const [filter, setFilter] = useState(ALL);
   const [search, setSearch] = useState("");
-  const [graphOpen, setGraphOpen] = useState(false);
   const { docs, categories } = props.state;
   const unorganized = docs.filter((doc) => !doc.organized).length;
   const query = search.trim().toLowerCase();
   const visible = docs.filter((doc) => matches(doc, filter, query));
-  const absolute = (relative: string) => `${props.folder.replace(/[\\/]+$/, "")}/${relative}`;
-  const openDoc = (doc: VibeBossKnowledgeDoc) =>
-    void reveal({
-      environmentId: props.environmentId,
-      input: { cwd: absolute(doc.path), editor: "file-manager", reveal: true },
-    });
-
   return (
     <>
       {docs.length > 0 ? <KnowledgeOverview docs={docs} /> : null}
@@ -268,12 +261,7 @@ function KnowledgeBody(props: {
           ) : null}
         </ToggleGroup>
         <span className="flex-1" />
-        <Button
-          size="sm"
-          variant="outline"
-          aria-pressed={graphOpen}
-          onClick={() => setGraphOpen(!graphOpen)}
-        >
+        <Button size="sm" variant="outline" onClick={props.onOpenGraph}>
           <WaypointsIcon />
           <T>Knowledge graph</T>
         </Button>
@@ -305,10 +293,7 @@ function KnowledgeBody(props: {
           )}
         </p>
       ) : (
-        <>
-          {graphOpen ? <KnowledgeGraph docs={visible} onOpen={openDoc} /> : null}
-          <KnowledgeList docs={visible} onOpen={openDoc} />
-        </>
+        <KnowledgeList docs={visible} onOpen={props.onOpenDoc} />
       )}
       {filter === ALL && query === "" ? (
         <OrganizeLog log={props.state.log} busy={props.organizing} onUndo={props.onUndo} />
@@ -366,6 +351,19 @@ export function KnowledgePage() {
     refresh();
   };
 
+  const [graphOpen, setGraphOpen] = useState(false);
+  const openDoc = (doc: VibeBossKnowledgeDoc) => {
+    if (environmentId === null || folder === null) return;
+    void reveal({
+      environmentId,
+      input: {
+        cwd: `${folder.replace(/[\\/]+$/, "")}/${doc.path}`,
+        editor: "file-manager",
+        reveal: true,
+      },
+    });
+  };
+
   const runUndo = async (entry: VibeBossKnowledgeLogEntry) => {
     if (environmentId === null) return;
     await undo({ environmentId, input: { logId: entry.id } });
@@ -375,6 +373,14 @@ export function KnowledgePage() {
   return (
     <VibeBossPage
       title={gt("Knowledge")}
+      overlay={
+        <KnowledgeGraphPage
+          open={graphOpen}
+          docs={data?.docs ?? []}
+          onOpen={openDoc}
+          onClose={() => setGraphOpen(false)}
+        />
+      }
       actions={
         environmentId !== null && data && folder !== null ? (
           <>
@@ -425,6 +431,8 @@ export function KnowledgePage() {
           notice={notice}
           organizing={organizing}
           onUndo={(entry) => void runUndo(entry)}
+          onOpenDoc={openDoc}
+          onOpenGraph={() => setGraphOpen(true)}
         />
       )}
     </VibeBossPage>

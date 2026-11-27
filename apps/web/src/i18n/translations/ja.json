@@ -12556,6 +12556,8 @@
   "f40f2672a24f916d": "Versions differ",
   "95bdba82d82aa98c": "Unorganized",
   "8f94de5830f53b4b": "Knowledge graph",
+  "884dc1fa136a202b": "Back to knowledge",
+  "3045e75a54982584": "Knowledge graph",
   "f9e1dd1864b5876c": "{count, plural, one {{count} version} other {{count} versions}}",
   "55d474d360feab20": "New files",
   "276a06f11cd0dbaa": [
@@ -12596,7 +12598,6 @@
   "d9bf21557789a4f2": "Use this folder",
   "a65ad03dda72be9a": "All",
   "696ae8c0f32fe2ab": "Unorganized",
-  "3045e75a54982584": "Knowledge graph",
   "b0a6d02fc627d1b7": "Naming and filing new files…",
   "3a8b760ce9a46b4d": "Put files in the folder. VibeBoss names and files them.",
   "7d2a7e68d954e401": "Open folder",
