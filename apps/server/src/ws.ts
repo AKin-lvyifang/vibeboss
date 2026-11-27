@@ -2773,6 +2773,8 @@ export const layerWsRpc = (
           withVibeBossServices(VibeBossKnowledgeSelection.getSelection(input)),
         [WS_METHODS.vibebossKnowledgeSetSelection]: (input) =>
           withVibeBossServices(VibeBossKnowledgeSelection.setSelection(input)),
+        [WS_METHODS.vibebossKnowledgePrepareFeishuSync]: () =>
+          withVibeBossServices(VibeBossKnowledge.prepareFeishuSync()),
         // The organizer asks the model picked on the Knowledge page, else the text generation model.
         [WS_METHODS.vibebossKnowledgeOrganize]: (input) =>
           withVibeBossServices(

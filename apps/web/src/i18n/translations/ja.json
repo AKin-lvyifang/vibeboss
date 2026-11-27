@@ -12558,6 +12558,8 @@
   "8f94de5830f53b4b": "Knowledge graph",
   "884dc1fa136a202b": "Back to knowledge",
   "3045e75a54982584": "Knowledge graph",
+  "0b76c0969dd38570": "On Feishu",
+  "6de77d88a6b3a3b6": "Changed since the last sync",
   "f9e1dd1864b5876c": "{count, plural, one {{count} version} other {{count} versions}}",
   "55d474d360feab20": "New files",
   "276a06f11cd0dbaa": [
@@ -12601,6 +12603,7 @@
   "b0a6d02fc627d1b7": "Naming and filing new files…",
   "3a8b760ce9a46b4d": "Put files in the folder. VibeBoss names and files them.",
   "7d2a7e68d954e401": "Open folder",
+  "e15b4d0e700195e1": "Sync to Feishu",
   "3fb5aa97b3de47a5": "Effort",
   "22d86168569bb964": "Edit note",
   "06e5f4fc01e279ae": "Model used by the rules check",

@@ -52,6 +52,10 @@ export function createVibeBossEnvironmentAtoms<R, E>(
       label: "environment-command:vibeboss:knowledge-set-selection",
       tag: WS_METHODS.vibebossKnowledgeSetSelection,
     }),
+    prepareKnowledgeFeishuSync: createEnvironmentRpcCommand(runtime, {
+      label: "environment-command:vibeboss:knowledge-prepare-feishu-sync",
+      tag: WS_METHODS.vibebossKnowledgePrepareFeishuSync,
+    }),
     resolveNativeTranscript: createEnvironmentRpcCommand(runtime, {
       label: "environment-command:vibeboss:resolve-native-transcript",
       tag: WS_METHODS.vibebossResolveNativeTranscript,

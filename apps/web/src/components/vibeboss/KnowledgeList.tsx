@@ -2,6 +2,8 @@ import type { VibeBossKnowledgeDoc, VibeBossKnowledgeDocType } from "@t3tools/co
 import { T, useGT, Var } from "gt-react";
 import {
   ChevronRightIcon,
+  CloudCheckIcon,
+  CloudUploadIcon,
   FileCodeIcon,
   FileIcon,
   FileSpreadsheetIcon,
@@ -32,10 +34,22 @@ const ROW_ICON =
   "flex size-4 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-4";
 
 function DocRow(props: { readonly doc: VibeBossKnowledgeDoc; readonly onOpen: () => void }) {
+  const gt = useGT();
   return (
     <button type="button" onClick={props.onOpen} className={ROW}>
       <span className={ROW_ICON}>{TYPE_ICON[props.doc.type]}</span>
       <MiddleTruncate value={props.doc.name} showTitle={false} className="min-w-0 flex-1" />
+      {props.doc.feishu === "none" ? null : (
+        <span
+          role="img"
+          aria-label={
+            props.doc.feishu === "synced" ? gt("On Feishu") : gt("Changed since the last sync")
+          }
+          className={cn(ROW_ICON, props.doc.feishu === "changed" && "text-warning-foreground")}
+        >
+          {props.doc.feishu === "synced" ? <CloudCheckIcon /> : <CloudUploadIcon />}
+        </span>
+      )}
     </button>
   );
 }

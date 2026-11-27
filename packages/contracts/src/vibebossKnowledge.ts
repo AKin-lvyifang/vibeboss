@@ -37,6 +37,9 @@ export const VibeBossKnowledgeDoc = Schema.Struct({
   summary: Schema.String,
   /** The name the file arrived with. */
   originalName: Schema.String,
+  /** "changed" when the file was modified after its last upload to Feishu. */
+  feishu: Schema.Literals(["none", "synced", "changed"]),
+  feishuUrl: Schema.NullOr(Schema.String),
 });
 export type VibeBossKnowledgeDoc = typeof VibeBossKnowledgeDoc.Type;
 
@@ -126,3 +129,12 @@ export const VibeBossKnowledgeSetSelectionInput = Schema.Struct({
   asProjectDefault: Schema.optional(Schema.Boolean),
 });
 export type VibeBossKnowledgeSetSelectionInput = typeof VibeBossKnowledgeSetSelectionInput.Type;
+
+/** What the Feishu sync conversation is started with. */
+export const VibeBossKnowledgeFeishuSyncTask = Schema.Struct({
+  /** How many files are new or changed since their last upload. */
+  pending: Schema.Number,
+  /** The first message of the conversation that does the upload. */
+  prompt: Schema.String,
+});
+export type VibeBossKnowledgeFeishuSyncTask = typeof VibeBossKnowledgeFeishuSyncTask.Type;

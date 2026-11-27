@@ -27,6 +27,7 @@ import {
   VibeBossSyncResult,
 } from "./vibeboss.ts";
 import {
+  VibeBossKnowledgeFeishuSyncTask,
   VibeBossKnowledgeOrganizeInput,
   VibeBossKnowledgeOrganizeResult,
   VibeBossKnowledgeSaveConfigInput,
@@ -552,6 +553,7 @@ export const WS_METHODS = {
   vibebossKnowledgeUndo: "vibeboss.knowledge.undo",
   vibebossKnowledgeGetSelection: "vibeboss.knowledge.getSelection",
   vibebossKnowledgeSetSelection: "vibeboss.knowledge.setSelection",
+  vibebossKnowledgePrepareFeishuSync: "vibeboss.knowledge.prepareFeishuSync",
 
   providerUploadFeedback: "provider.uploadFeedback",
   providerMcpSignInStart: "provider.mcpSignIn.start",
@@ -1913,6 +1915,15 @@ const WsVibeBossKnowledgeSetSelectionRpc = Rpc.make(WS_METHODS.vibebossKnowledge
   error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
 });
 
+const WsVibeBossKnowledgePrepareFeishuSyncRpc = Rpc.make(
+  WS_METHODS.vibebossKnowledgePrepareFeishuSync,
+  {
+    payload: Schema.Struct({}),
+    success: VibeBossKnowledgeFeishuSyncTask,
+    error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+  },
+);
+
 const WsProviderUploadFeedbackRpc = Rpc.make(WS_METHODS.providerUploadFeedback, {
   payload: ProviderUploadFeedbackInput,
   success: ProviderUploadFeedbackResult,
@@ -2774,6 +2785,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsVibeBossKnowledgeUndoRpc,
   WsVibeBossKnowledgeGetSelectionRpc,
   WsVibeBossKnowledgeSetSelectionRpc,
+  WsVibeBossKnowledgePrepareFeishuSyncRpc,
   WsProviderUploadFeedbackRpc,
   WsProviderMcpSignInStartRpc,
   WsProviderMcpSignInCompleteRpc,

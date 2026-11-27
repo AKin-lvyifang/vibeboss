@@ -5,6 +5,8 @@ import type {
   VibeBossKnowledgeState,
   VibeBossReviewModel,
 } from "@t3tools/contracts";
+import { scopeProjectRef } from "@t3tools/client-runtime/environment";
+import { useRouter } from "@tanstack/react-router";
 import { T, useGT, Var } from "gt-react";
 import {
   ChevronDownIcon,
@@ -16,8 +18,10 @@ import {
 import { useEffect, useState } from "react";
 
 import { isElectron } from "../../env";
+import { useNewThreadHandler } from "../../hooks/useHandleNewThread";
 import { useClientSettings } from "../../hooks/useSettings";
 import { readLocalApi } from "../../localApi";
+import { useProjects, useThreadShells } from "../../state/entities";
 import { usePrimaryEnvironmentId } from "../../state/environments";
 import { useEnvironmentQuery } from "../../state/query";
 import { shellEnvironment } from "../../state/shell";
@@ -25,6 +29,7 @@ import { useAtomCommand } from "../../state/use-atom-command";
 import { formatDateTimeTimestamp } from "../../timestampFormat";
 import { vibeBossEnvironment } from "../../state/vibeboss";
 import { setKnowledgePage, useKnowledgePageStore } from "../../vibebossKnowledgeStore";
+import { sortScopedProjectsForSidebar } from "../Sidebar.logic";
 import { Button } from "../ui/button";
 import {
   Empty,
@@ -311,6 +316,11 @@ export function KnowledgePage() {
   const saveConfig = useAtomCommand(vibeBossEnvironment.saveKnowledgeConfig);
   const organize = useAtomCommand(vibeBossEnvironment.organizeKnowledge);
   const undo = useAtomCommand(vibeBossEnvironment.undoKnowledge);
+  const prepareFeishuSync = useAtomCommand(vibeBossEnvironment.prepareKnowledgeFeishuSync);
+  const router = useRouter();
+  const handleNewThread = useNewThreadHandler();
+  const projects = useProjects();
+  const threads = useThreadShells();
   const reveal = useAtomCommand(shellEnvironment.openInEditor, { reportFailure: false });
   const organizing = useKnowledgePageStore((state) => state.organizing);
   const notice = useKnowledgePageStore((state) => state.notice);
@@ -364,6 +374,29 @@ export function KnowledgePage() {
     });
   };
 
+  const unsynced = (data?.docs ?? []).filter((doc) => doc.organized && doc.feishu !== "synced");
+  // The upload runs as a conversation of its own, with an agent that has the Feishu tools.
+  const startFeishuSync = async () => {
+    if (environmentId === null) return;
+    const task = await prepareFeishuSync({ environmentId, input: {} });
+    if (task._tag !== "Success") return;
+    // The upload works from absolute paths, so any project can host it; the latest one is at hand.
+    const project = sortScopedProjectsForSidebar(
+      projects.filter(
+        (candidate) => candidate.isScratch !== true && candidate.environmentId === environmentId,
+      ),
+      threads,
+      "updated_at",
+    )[0];
+    if (project === undefined) {
+      router.history.push(`/new?prompt=${encodeURIComponent(task.value.prompt)}`);
+      return;
+    }
+    await handleNewThread(scopeProjectRef(project.environmentId, project.id), {
+      prompt: task.value.prompt,
+    });
+  };
+
   const runUndo = async (entry: VibeBossKnowledgeLogEntry) => {
     if (environmentId === null) return;
     await undo({ environmentId, input: { logId: entry.id } });
@@ -404,6 +437,17 @@ export function KnowledgePage() {
               onClick={() => refresh()}
             >
               <RefreshCwIcon />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={unsynced.length === 0}
+              onClick={() => void startFeishuSync()}
+            >
+              <T>Sync to Feishu</T>
+              {unsynced.length > 0 ? (
+                <span className="text-muted-foreground tabular-nums">{unsynced.length}</span>
+              ) : null}
             </Button>
             <OrganizeButton
               environmentId={environmentId}

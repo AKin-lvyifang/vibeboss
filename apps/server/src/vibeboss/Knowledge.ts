@@ -37,6 +37,8 @@ import {
 
 const STORE_DIR = ".vibeboss";
 const STORE_FILE = "knowledge.json";
+const FEISHU_LOG_FILE = "feishu-sync.jsonl";
+const FEISHU_TASK_FILE = "feishu-sync-task.md";
 const MAX_FILES = 2000;
 const MAX_DEPTH = 4;
 const BATCH = 6;
@@ -111,6 +113,25 @@ const loadStore = Effect.fn("VibeBossKnowledge.loadStore")(function* (folder: st
   return raw === null ? EMPTY_STORE : Option.getOrElse(decodeStore(raw), () => EMPTY_STORE);
 });
 
+// The agent doing the upload appends one line per file; lines it gets wrong are ignored.
+const FeishuRecord = Schema.Struct({ path: Schema.String, url: Schema.String, at: Schema.String });
+type FeishuRecord = typeof FeishuRecord.Type;
+const decodeFeishuRecord = Schema.decodeUnknownOption(Schema.fromJsonString(FeishuRecord));
+
+/** The latest upload of each file, by path. */
+const loadFeishuRecords = Effect.fn("VibeBossKnowledge.loadFeishuRecords")(function* (
+  folder: string,
+) {
+  const path = yield* Path.Path;
+  const raw = yield* readText(path.join(folder, STORE_DIR, FEISHU_LOG_FILE));
+  const records = new Map<string, FeishuRecord>();
+  for (const line of (raw ?? "").split("\n")) {
+    const record = line.trim() === "" ? Option.none() : decodeFeishuRecord(line);
+    if (Option.isSome(record)) records.set(record.value.path, record.value);
+  }
+  return records;
+});
+
 interface ScannedFile {
   readonly path: string;
   readonly size: number;
@@ -151,15 +172,28 @@ const scan = Effect.fn("VibeBossKnowledge.scan")(function* (folder: string) {
   return files;
 });
 
-function toDoc(file: ScannedFile, store: Store): VibeBossKnowledgeDoc {
+function toDoc(
+  file: ScannedFile,
+  store: Store,
+  uploads: ReadonlyMap<string, FeishuRecord>,
+): VibeBossKnowledgeDoc {
   const record = store.docs[file.path];
+  const upload = uploads.get(file.path);
   const name = file.path.slice(file.path.lastIndexOf("/") + 1);
+  const uploadedAt = upload === undefined ? Number.NaN : Date.parse(upload.at);
   const base = {
     path: file.path,
     name,
     type: docType(name),
     size: file.size,
     modifiedAt: file.modifiedAt,
+    feishu:
+      upload === undefined || Number.isNaN(uploadedAt)
+        ? ("none" as const)
+        : uploadedAt >= Date.parse(file.modifiedAt)
+          ? ("synced" as const)
+          : ("changed" as const),
+    feishuUrl: upload?.url ?? null,
   };
   if (record === undefined) {
     return {
@@ -219,7 +253,8 @@ const buildState = Effect.fn("VibeBossKnowledge.buildState")(function* (
   }
   const files = yield* scan(config.folder);
   const store = pruneStore(yield* loadStore(config.folder), files);
-  const docs = files.map((file) => toDoc(file, store));
+  const uploads = yield* loadFeishuRecords(config.folder);
+  const docs = files.map((file) => toDoc(file, store, uploads));
   const used = docs.filter((doc) => doc.organized).map((doc) => doc.category);
   const state: VibeBossKnowledgeState = {
     config,
@@ -458,4 +493,62 @@ export const undo = Effect.fn("VibeBossKnowledge.undo")(function* (logId: string
   const after = yield* buildState(config, paths.defaultFolder);
   yield* persist(folder, after.store, after.state.docs);
   return after.state;
+});
+
+/** What the conversation that uploads to Feishu is told, with the files it has to handle. */
+function feishuSyncTask(
+  folder: string,
+  logPath: string,
+  pending: ReadonlyArray<VibeBossKnowledgeDoc>,
+): string {
+  return [
+    "# 把知识库同步到飞书",
+    "",
+    `知识库文件夹：${folder}`,
+    "",
+    "用你手上的飞书工具，逐个处理下面“待同步”清单里的文件：",
+    "",
+    "- Markdown（.md）：建成飞书文档，标题用文件名（不带扩展名）。",
+    "- HTML（.html）：建一篇同名飞书文档，把这个 HTML 文件插入文档；工具做不到插入时，把它作为文件上传。",
+    "- 其他格式（PPT、Word、Excel、PDF 等）：作为文件上传到飞书云空间。",
+    "- 都放进飞书里名为“VibeBoss 知识库”的文件夹，按文件的“分类/分组”建子文件夹；没有就新建。",
+    "- 清单里标了“有更新”的文件上次传过：更新原来那一份，不另建。",
+    "- 这是单向同步：只把本地传到飞书，不改、不删本地文件。",
+    "",
+    `每传完一个，立刻往 ${logPath} 追加一行 JSON（不要改已有的行）：`,
+    "",
+    '`{"path":"清单里的相对路径，一字不差","url":"飞书链接","at":"当前时间，ISO 8601 格式"}`',
+    "",
+    "某个文件传不上去就跳过，接着传下一个，最后把没传成的列出来并说明原因。中途被打断也没关系，下次只会列出还没同步的。",
+    "没有可用的飞书工具时，直接告诉用户需要先装好飞书 MCP，不要用别的办法代替。",
+    "",
+    `## 待同步（${pending.length} 个）`,
+    "",
+    ...pending.map((doc) =>
+      doc.feishu === "changed"
+        ? `- \`${doc.path}\`（有更新，原链接：${doc.feishuUrl ?? "未知"}）`
+        : `- \`${doc.path}\``,
+    ),
+    "",
+  ].join("\n");
+}
+
+/** Writes the task file for the files not yet on Feishu and returns the message that starts the upload. */
+export const prepareFeishuSync = Effect.fn("VibeBossKnowledge.prepareFeishuSync")(function* () {
+  const path = yield* Path.Path;
+  const paths = yield* resolvePaths;
+  const config = yield* loadConfig(paths.configPath);
+  const folder = config.folder;
+  if (folder === null) return yield* new VibeBossError({ detail: "还没有设置知识库位置。" });
+  const { state } = yield* buildState(config, paths.defaultFolder);
+  const pending = state.docs.filter((doc) => doc.organized && doc.feishu !== "synced");
+  const taskPath = path.join(folder, STORE_DIR, FEISHU_TASK_FILE);
+  yield* writeText(
+    taskPath,
+    feishuSyncTask(folder, path.join(folder, STORE_DIR, FEISHU_LOG_FILE), pending),
+  );
+  return {
+    pending: pending.length,
+    prompt: `按 ${taskPath} 里的说明，把知识库里待同步的 ${pending.length} 个文件同步到飞书。`,
+  };
 });

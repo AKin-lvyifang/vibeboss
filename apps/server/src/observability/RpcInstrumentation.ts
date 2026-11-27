@@ -227,6 +227,7 @@ const RPC_AGGREGATES = {
   [WS_METHODS.vibebossKnowledgeUndo]: "server",
   [WS_METHODS.vibebossKnowledgeGetSelection]: "server",
   [WS_METHODS.vibebossKnowledgeSetSelection]: "server",
+  [WS_METHODS.vibebossKnowledgePrepareFeishuSync]: "server",
   [WS_METHODS.mcpAppsToolInfo]: "provider",
   [WS_METHODS.mcpAppsUpdateModelContext]: "provider",
   [WS_METHODS.mcpAppsReadResource]: "provider",

@@ -142,6 +142,21 @@ it.effect("organizes new files into one topic, writes the index, and undoes the 
       `\`业务知识/汇报材料/产品季度汇报-早会版-${inputs[1]!.modifiedDate}.pptx\``,
     );
 
+    const uploaded = result.state.docs[0]!;
+    yield* fs.writeFileString(
+      path.join(folder, ".vibeboss", "feishu-sync.jsonl"),
+      `不是 JSON\n${JSON.stringify({ path: uploaded.path, url: "https://feishu.example/doc", at: "2999-01-01T00:00:00.000Z" })}\n`,
+    );
+    const synced = yield* run(Knowledge.getState());
+    assert.deepStrictEqual(synced.docs.map((doc) => doc.feishu).toSorted(), ["none", "synced"]);
+    const task = yield* run(Knowledge.prepareFeishuSync());
+    assert.strictEqual(task.pending, 1);
+    const taskFile = yield* fs.readFileString(
+      path.join(folder, ".vibeboss", "feishu-sync-task.md"),
+    );
+    assert.notInclude(taskFile, `\`${uploaded.path}\``);
+    assert.include(taskFile, "## 待同步（1 个）");
+
     const undone = yield* run(Knowledge.undo(result.state.log[0]!.id));
     assert.deepStrictEqual(
       undone.docs.map((doc) => [doc.path, doc.organized, doc.held]),
