@@ -6,6 +6,7 @@ import { useGT, useMessages } from "gt-react";
 import { CircleAlertIcon } from "lucide-react";
 import { CompactComposerControlsMenu } from "./CompactComposerControlsMenu";
 import { ComposerControl } from "./ComposerControl";
+import { VibeBossKnowledgeControl } from "./VibeBossKnowledgeControl";
 import {
   ComposerFooterModeControls,
   ComposerModelPicker,
@@ -87,6 +88,8 @@ export function ComposerControlsBar(props: {
   onModelPickerOpenChange: (open: boolean) => void;
   modelPickerIconClassName: string | undefined;
   getModelDisabledReason: ChatComposerProps["getModelDisabledReason"];
+  /** VibeBoss: the project whose knowledge default applies to this conversation. */
+  knowledgeProjectId: ChatComposerProps["activeProjectId"];
 }) {
   const {
     environmentId,
@@ -266,6 +269,13 @@ export function ComposerControlsBar(props: {
   ) : (
     <>
       {composerModelPicker}
+      <VibeBossKnowledgeControl
+        environmentId={environmentId}
+        threadId={routeThreadRef.threadId}
+        projectId={props.knowledgeProjectId}
+        size={controlSize}
+        hidden={composerControlsHidden}
+      />
 
       <>
         {restingBlockDefs.map((def, index) => {

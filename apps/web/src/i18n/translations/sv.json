@@ -4715,6 +4715,13 @@
     }
   ],
   "0832a03c4dc5eac4": "Skapade tråd",
+  "1b93a3ba959c7999": "Knowledge: loaded",
+  "afa48ae288bc3fa4": "Knowledge: not loaded",
+  "0066b68ba7ade0e4": "All knowledge",
+  "e48dbcde8b96383f": "Load knowledge in this conversation",
+  "09685f130ea3734c": "Project default",
+  "92cf47e777fd26bd": "Set as project default",
+  "7a4990730aa22034": "Manage knowledge",
   "213aab13c9d66e3c": "Cite selection in a new side chat",
   "261ef4dd4b4d0788": "Team",
   "e197c4963bacc746": "{count} körs",

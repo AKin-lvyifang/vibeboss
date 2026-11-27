@@ -124,6 +124,7 @@ import * as NativeChildWorkQuery from "./orchestration-v2/NativeChildWorkQuery.t
 import * as ServerConfig from "./config.ts";
 import * as VibeBoss from "./vibeboss/VibeBoss.ts";
 import * as VibeBossKnowledge from "./vibeboss/Knowledge.ts";
+import * as VibeBossKnowledgeSelection from "./vibeboss/KnowledgeSelection.ts";
 import * as VibeBossKnowledgeText from "./vibeboss/KnowledgeText.ts";
 import * as EnvironmentTheme from "./environmentTheme.ts";
 import * as Keybindings from "./keybindings.ts";
@@ -2768,6 +2769,10 @@ export const layerWsRpc = (
           withVibeBossServices(VibeBossKnowledge.saveConfig(input.config)),
         [WS_METHODS.vibebossKnowledgeUndo]: (input) =>
           withVibeBossServices(VibeBossKnowledge.undo(input.logId)),
+        [WS_METHODS.vibebossKnowledgeGetSelection]: (input) =>
+          withVibeBossServices(VibeBossKnowledgeSelection.getSelection(input)),
+        [WS_METHODS.vibebossKnowledgeSetSelection]: (input) =>
+          withVibeBossServices(VibeBossKnowledgeSelection.setSelection(input)),
         // The organizer asks the model picked on the Knowledge page, else the text generation model.
         [WS_METHODS.vibebossKnowledgeOrganize]: (input) =>
           withVibeBossServices(

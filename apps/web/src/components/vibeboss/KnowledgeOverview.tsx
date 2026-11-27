@@ -25,9 +25,9 @@ function level(count: number): number {
 
 function Stat(props: { readonly label: string; readonly value: number }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-muted-foreground text-xs">{props.label}</dt>
-      <dd className="font-medium text-base tabular-nums">{props.value}</dd>
+    <div className="flex flex-col gap-1">
+      <dt className="text-muted-foreground text-sm">{props.label}</dt>
+      <dd className="font-semibold text-3xl text-foreground tabular-nums">{props.value}</dd>
     </div>
   );
 }
@@ -50,8 +50,8 @@ export function KnowledgeOverview(props: { readonly docs: ReadonlyArray<VibeBoss
   );
 
   return (
-    <section className="flex flex-wrap items-end gap-x-12 gap-y-4">
-      <dl className="flex gap-8">
+    <section className="flex flex-wrap items-end justify-between gap-x-12 gap-y-6">
+      <dl className="flex gap-12">
         <Stat label={gt("Files")} value={props.docs.length} />
         <Stat label={gt("Updated this week")} value={thisWeek} />
         <Stat label={gt("Unorganized")} value={props.docs.filter((doc) => !doc.organized).length} />

@@ -92,3 +92,37 @@ export type VibeBossKnowledgeOrganizeInput = typeof VibeBossKnowledgeOrganizeInp
 
 export const VibeBossKnowledgeUndoInput = Schema.Struct({ logId: Schema.String });
 export type VibeBossKnowledgeUndoInput = typeof VibeBossKnowledgeUndoInput.Type;
+
+/** Whether a conversation's agent is told about the knowledge base, and which part of it. */
+export const VibeBossKnowledgeSelection = Schema.Struct({
+  enabled: Schema.Boolean,
+  /** Null loads every category. */
+  categories: Schema.NullOr(Schema.Array(Schema.String)),
+});
+export type VibeBossKnowledgeSelection = typeof VibeBossKnowledgeSelection.Type;
+
+export const VibeBossKnowledgeSelectionInput = Schema.Struct({
+  threadId: Schema.String,
+  /** The thread's project, which supplies the default for its new conversations. */
+  projectId: Schema.NullOr(Schema.String),
+});
+export type VibeBossKnowledgeSelectionInput = typeof VibeBossKnowledgeSelectionInput.Type;
+
+export const VibeBossKnowledgeSelectionState = Schema.Struct({
+  /** False until a knowledge folder is set; the composer then offers nothing to load. */
+  available: Schema.Boolean,
+  selection: VibeBossKnowledgeSelection,
+  /** The selection equals the project's default. */
+  isProjectDefault: Schema.Boolean,
+  categories: Schema.Array(Schema.String),
+});
+export type VibeBossKnowledgeSelectionState = typeof VibeBossKnowledgeSelectionState.Type;
+
+export const VibeBossKnowledgeSetSelectionInput = Schema.Struct({
+  threadId: Schema.String,
+  projectId: Schema.NullOr(Schema.String),
+  selection: VibeBossKnowledgeSelection,
+  /** Also make this the default for the project's new conversations. */
+  asProjectDefault: Schema.optional(Schema.Boolean),
+});
+export type VibeBossKnowledgeSetSelectionInput = typeof VibeBossKnowledgeSetSelectionInput.Type;

@@ -44,6 +44,14 @@ export function createVibeBossEnvironmentAtoms<R, E>(
       label: "environment-command:vibeboss:knowledge-undo",
       tag: WS_METHODS.vibebossKnowledgeUndo,
     }),
+    knowledgeSelection: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:vibeboss:knowledge-selection",
+      tag: WS_METHODS.vibebossKnowledgeGetSelection,
+    }),
+    setKnowledgeSelection: createEnvironmentRpcCommand(runtime, {
+      label: "environment-command:vibeboss:knowledge-set-selection",
+      tag: WS_METHODS.vibebossKnowledgeSetSelection,
+    }),
     resolveNativeTranscript: createEnvironmentRpcCommand(runtime, {
       label: "environment-command:vibeboss:resolve-native-transcript",
       tag: WS_METHODS.vibebossResolveNativeTranscript,

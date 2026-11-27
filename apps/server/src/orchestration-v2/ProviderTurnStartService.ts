@@ -35,6 +35,7 @@ import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 
 import * as ServerConfig from "../config.ts";
+import * as VibeBossKnowledgeSelection from "../vibeboss/KnowledgeSelection.ts";
 import {
   CLAUDE_PROVIDER,
   CLAUDE_QUERY_ENDED_BEFORE_TURN_DETAIL,
@@ -314,6 +315,7 @@ export const layer: Layer.Layer<
     const idAllocator = yield* IdAllocator.IdAllocatorV2;
     const fileSystem = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
+    const vibeBossServerConfig = yield* ServerConfig.ServerConfig;
     const projects = yield* ProjectService.ProjectService;
     const setupScripts = yield* ProjectSetupScriptRunner.ProjectSetupScriptRunner;
     const providerAuth = yield* ProviderAuthService.ProviderAuthService;
@@ -2203,7 +2205,19 @@ export const layer: Layer.Layer<
             ),
             ...(sideChatContext === "" || sideChatHandoff === undefined ? [] : [sideChatHandoff]),
           ];
-          const context = [delivery.context, sideChatContext, restartNote]
+          // VibeBoss: a conversation that loads the knowledge base is told where its index is.
+          const knowledgeNote =
+            compact || slashCommand || turnInput.resume
+              ? ""
+              : yield* VibeBossKnowledgeSelection.promptNote({
+                  threadId: projection.thread.id,
+                  projectId: projection.thread.projectId,
+                }).pipe(
+                  Effect.provideService(FileSystem.FileSystem, fileSystem),
+                  Effect.provideService(Path.Path, path),
+                  Effect.provideService(ServerConfig.ServerConfig, vibeBossServerConfig),
+                );
+          const context = [delivery.context, sideChatContext, restartNote, knowledgeNote]
             .filter((part) => part !== "")
             .join("\n\n");
           const { restartContinuationOfRunId: _resumedRunId, ...promptedInput } = turnInput;

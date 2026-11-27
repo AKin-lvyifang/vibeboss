@@ -243,6 +243,12 @@ const persist = Effect.fn("VibeBossKnowledge.persist")(function* (
   yield* writeText(path.join(folder, INDEX_FILE), renderIndex(docs));
 });
 
+/** The knowledge folder, or null until one is set. */
+export const readFolder = Effect.fn("VibeBossKnowledge.readFolder")(function* () {
+  const paths = yield* resolvePaths;
+  return (yield* loadConfig(paths.configPath)).folder;
+});
+
 export const getState = Effect.fn("VibeBossKnowledge.getState")(function* () {
   const paths = yield* resolvePaths;
   const config = yield* loadConfig(paths.configPath);
