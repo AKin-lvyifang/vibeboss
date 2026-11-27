@@ -39,6 +39,7 @@ const STORE_DIR = ".vibeboss";
 const STORE_FILE = "knowledge.json";
 const FEISHU_LOG_FILE = "feishu-sync.jsonl";
 const FEISHU_TASK_FILE = "feishu-sync-task.md";
+const FEISHU_ROOT_FILE = "feishu-root.json";
 const MAX_FILES = 2000;
 const MAX_DEPTH = 4;
 const BATCH = 6;
@@ -114,7 +115,13 @@ const loadStore = Effect.fn("VibeBossKnowledge.loadStore")(function* (folder: st
 });
 
 // The agent doing the upload appends one line per file; lines it gets wrong are ignored.
-const FeishuRecord = Schema.Struct({ path: Schema.String, url: Schema.String, at: Schema.String });
+const FeishuRecord = Schema.Struct({
+  path: Schema.String,
+  url: Schema.String,
+  at: Schema.String,
+  /** Feishu's own id of the uploaded copy, so the next sync updates it instead of adding another. */
+  token: Schema.optional(Schema.String),
+});
 type FeishuRecord = typeof FeishuRecord.Type;
 const decodeFeishuRecord = Schema.decodeUnknownOption(Schema.fromJsonString(FeishuRecord));
 
@@ -130,6 +137,29 @@ const loadFeishuRecords = Effect.fn("VibeBossKnowledge.loadFeishuRecords")(funct
     if (Option.isSome(record)) records.set(record.value.path, record.value);
   }
   return records;
+});
+
+/**
+ * A file the organizer moved keeps its Feishu copy: the record is repeated under the new path.
+ * Lines are only ever appended, like the agent's own.
+ */
+const carryFeishuRecords = Effect.fn("VibeBossKnowledge.carryFeishuRecords")(function* (
+  folder: string,
+  moves: ReadonlyArray<{ readonly from: string; readonly to: string }>,
+) {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const records = yield* loadFeishuRecords(folder);
+  const lines = moves.flatMap((move) => {
+    const record = records.get(move.from);
+    return record === undefined ? [] : [JSON.stringify({ ...record, path: move.to })];
+  });
+  if (lines.length === 0) return;
+  const file = path.join(folder, STORE_DIR, FEISHU_LOG_FILE);
+  const before = (yield* readText(file)) ?? "";
+  yield* fs
+    .writeFileString(file, `${before.replace(/\n*$/, "\n")}${lines.join("\n")}\n`)
+    .pipe(Effect.ignore);
 });
 
 interface ScannedFile {
@@ -422,6 +452,7 @@ export const organize = Effect.fn("VibeBossKnowledge.organize")(function* (
   };
   const json = yield* encodeStore(store).pipe(Effect.mapError(fail("保存整理记录失败")));
   yield* writeText(path.join(folder, STORE_DIR, STORE_FILE), `${json}\n`);
+  yield* carryFeishuRecords(folder, moves);
   const after = yield* buildState(config, paths.defaultFolder);
   yield* persist(folder, after.store, after.state.docs);
   const left = pending.length - moves.length;
@@ -465,6 +496,7 @@ export const undo = Effect.fn("VibeBossKnowledge.undo")(function* (logId: string
   const absolute = (relative: string) => path.join(folder, ...relative.split("/"));
   const docs = { ...before.store.docs };
   const held = new Set(before.store.held);
+  const restoredMoves: Array<{ from: string; to: string }> = [];
   for (const move of entry.moves.toReversed()) {
     const record = docs[move.to];
     if (record === undefined) continue;
@@ -480,6 +512,7 @@ export const undo = Effect.fn("VibeBossKnowledge.undo")(function* (logId: string
     if (!restored) continue;
     delete docs[move.to];
     held.add(move.from);
+    restoredMoves.push({ from: move.to, to: move.from });
     yield* removeEmptyFolders(folder, path.dirname(absolute(move.to)));
   }
   const store: Store = {
@@ -490,6 +523,7 @@ export const undo = Effect.fn("VibeBossKnowledge.undo")(function* (logId: string
   };
   const json = yield* encodeStore(store).pipe(Effect.mapError(fail("保存整理记录失败")));
   yield* writeText(path.join(folder, STORE_DIR, STORE_FILE), `${json}\n`);
+  yield* carryFeishuRecords(folder, restoredMoves);
   const after = yield* buildState(config, paths.defaultFolder);
   yield* persist(folder, after.store, after.state.docs);
   return after.state;
@@ -499,7 +533,9 @@ export const undo = Effect.fn("VibeBossKnowledge.undo")(function* (logId: string
 function feishuSyncTask(
   folder: string,
   logPath: string,
+  rootPath: string,
   pending: ReadonlyArray<VibeBossKnowledgeDoc>,
+  tokens: ReadonlyMap<string, string>,
 ): string {
   return [
     "# 把知识库同步到飞书",
@@ -511,13 +547,23 @@ function feishuSyncTask(
     "- Markdown（.md）：建成飞书文档，标题用文件名（不带扩展名）。",
     "- HTML（.html）：建一篇同名飞书文档，把这个 HTML 文件插入文档；工具做不到插入时，把它作为文件上传。",
     "- 其他格式（PPT、Word、Excel、PDF 等）：作为文件上传到飞书云空间。",
-    "- 都放进飞书里名为“VibeBoss 知识库”的文件夹，按文件的“分类/分组”建子文件夹；没有就新建。",
-    "- 清单里标了“有更新”的文件上次传过：更新原来那一份，不另建。",
-    "- 这是单向同步：只把本地传到飞书，不改、不删本地文件。",
+    "- 清单里标了“有更新”的文件上次传过：按它的 token 更新原来那一份，不另建；找不到原件才新建。",
+    "- 新文件上传前，先看目标子文件夹里有没有同名文件：有就更新它，不要传出第二份。",
+    "- 这是单向同步：本地是唯一的原件，只把本地传到飞书，不改、不删本地文件，也不把飞书上的改动拿回来。",
+    "",
+    "## 放在哪",
+    "",
+    `只在一个飞书文件夹里操作，它的链接记在 ${rootPath}：`,
+    "",
+    "- 这个文件存在：就用里面记的文件夹，不另找、不另建。",
+    '- 这个文件不存在：在用户“我的空间”根目录下新建文件夹“VibeBoss 知识库”（已有同名的就用它），权限保持默认的仅自己可见，不要分享给别人；然后把它写进这个文件，内容是一行 JSON：`{"url":"文件夹链接","token":"文件夹 token"}`。',
+    "- 在这个文件夹里按文件的“分类/分组”建子文件夹，没有就新建。不要动这个文件夹以外的任何飞书内容。",
+    "",
+    "## 记录",
     "",
     `每传完一个，立刻往 ${logPath} 追加一行 JSON（不要改已有的行）：`,
     "",
-    '`{"path":"清单里的相对路径，一字不差","url":"飞书链接","at":"当前时间，ISO 8601 格式"}`',
+    '`{"path":"清单里的相对路径，一字不差","url":"飞书链接","token":"飞书里这份文件或文档的 token","at":"当前时间，ISO 8601 格式"}`',
     "",
     "某个文件传不上去就跳过，接着传下一个，最后把没传成的列出来并说明原因。中途被打断也没关系，下次只会列出还没同步的。",
     "没有可用的飞书工具时，直接告诉用户需要先装好飞书 MCP，不要用别的办法代替。",
@@ -526,7 +572,7 @@ function feishuSyncTask(
     "",
     ...pending.map((doc) =>
       doc.feishu === "changed"
-        ? `- \`${doc.path}\`（有更新，原链接：${doc.feishuUrl ?? "未知"}）`
+        ? `- \`${doc.path}\`（有更新，原链接：${doc.feishuUrl ?? "未知"}，token：${tokens.get(doc.path) ?? "未知"}）`
         : `- \`${doc.path}\``,
     ),
     "",
@@ -545,7 +591,17 @@ export const prepareFeishuSync = Effect.fn("VibeBossKnowledge.prepareFeishuSync"
   const taskPath = path.join(folder, STORE_DIR, FEISHU_TASK_FILE);
   yield* writeText(
     taskPath,
-    feishuSyncTask(folder, path.join(folder, STORE_DIR, FEISHU_LOG_FILE), pending),
+    feishuSyncTask(
+      folder,
+      path.join(folder, STORE_DIR, FEISHU_LOG_FILE),
+      path.join(folder, STORE_DIR, FEISHU_ROOT_FILE),
+      pending,
+      new Map(
+        [...(yield* loadFeishuRecords(folder)).values()].flatMap((record) =>
+          record.token === undefined ? [] : [[record.path, record.token] as const],
+        ),
+      ),
+    ),
   );
   return {
     pending: pending.length,

@@ -156,6 +156,7 @@ it.effect("organizes new files into one topic, writes the index, and undoes the 
     );
     assert.notInclude(taskFile, `\`${uploaded.path}\``);
     assert.include(taskFile, "## 待同步（1 个）");
+    assert.include(taskFile, path.join(folder, ".vibeboss", "feishu-root.json"));
 
     const undone = yield* run(Knowledge.undo(result.state.log[0]!.id));
     assert.deepStrictEqual(
@@ -166,6 +167,8 @@ it.effect("organizes new files into one topic, writes the index, and undoes the 
         .map((file): Array<string | boolean> => [file, false, true]),
     );
     assert.strictEqual(undone.log[0]!.undone, true);
+    const restored = undone.docs.find((doc) => doc.feishu === "synced");
+    assert.strictEqual(restored?.feishuUrl, "https://feishu.example/doc");
     assert.strictEqual(yield* fs.exists(path.join(folder, "业务知识")), false);
 
     const automatic = yield* run(
