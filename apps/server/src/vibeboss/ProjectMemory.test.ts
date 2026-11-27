@@ -94,7 +94,13 @@ it.effect("creates, writes, archives and undoes, keeping later edits safe", () =
 
     // The first main conversation creates the memory and copies the old one in.
     const note = yield* run(
-      ProjectMemory.promptNote({ root, role: "main", full: true, source: "会话“开工”" }),
+      ProjectMemory.promptNote({
+        root,
+        role: "main",
+        full: true,
+        source: "会话“开工”",
+        threadId: "t1",
+      }),
     );
     assert.include(note, "旧现状");
     assert.strictEqual(yield* fs.readFileString(path.join(folder, "current.md")), "旧现状");
@@ -155,6 +161,7 @@ it.effect("leaves a project without memory alone for a member", () =>
       role: "member",
       full: true,
       source: "",
+      threadId: "t1",
     }).pipe(
       Effect.provideService(ServerConfig.ServerConfig, {
         stateDir,

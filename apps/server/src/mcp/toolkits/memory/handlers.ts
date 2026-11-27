@@ -29,7 +29,11 @@ const mainCaller = Effect.gen(function* () {
   }
   const project = yield* projects.getById(shell.projectId).pipe(Effect.orElseSucceed(Option.none));
   if (Option.isNone(project)) return yield* refuse("找不到这个会话的项目");
-  return { root: project.value.workspaceRoot, source: `会话“${shell.title}”` };
+  return {
+    root: project.value.workspaceRoot,
+    source: `会话“${shell.title}”`,
+    threadId: scope.thread.threadId,
+  };
 });
 
 const asFailure = (error: { readonly detail?: string; readonly message: string }) =>
@@ -42,7 +46,7 @@ export const layer = McpToolAccess.toLayer(ProjectMemoryToolkit, {
       const result = yield* ProjectMemory.writeFile(
         caller.root,
         { path, content },
-        { author: "agent", source: caller.source },
+        { author: "agent", source: caller.source, threadId: caller.threadId },
       ).pipe(Effect.mapError(asFailure));
       return { path: result.path };
     }),
@@ -53,6 +57,7 @@ export const layer = McpToolAccess.toLayer(ProjectMemoryToolkit, {
       return yield* ProjectMemory.archiveTask(caller.root, path, {
         author: "agent",
         source: caller.source,
+        threadId: caller.threadId,
       }).pipe(Effect.mapError(asFailure));
     }),
   ),

@@ -1985,6 +1985,7 @@ export const layer: Layer.Layer<
                   role: isDelegatedAppThread(projection.thread) ? "member" : "main",
                   full: (providerThread.firstRunOrdinal ?? run.ordinal) === run.ordinal,
                   source: `会话“${projection.thread.title}”`,
+                  threadId: projection.thread.id,
                 }),
               ),
             ),

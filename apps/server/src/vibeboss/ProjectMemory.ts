@@ -30,6 +30,8 @@ const KEEP_DAYS = 90;
 const RECENT = 5;
 /** How much of current.md the first prompt of a conversation carries. */
 const CURRENT_IN_PROMPT = 4000;
+/** Prompts a main conversation may send without writing memory before it is reminded. */
+const REMIND_AFTER = 8;
 
 const fail = (detail: string, cause?: unknown) =>
   new VibeBossError({ detail, ...(cause === undefined ? {} : { cause }) });
@@ -84,6 +86,13 @@ function describePath(path: string, kind: VibeBossMemoryKind): string {
 /** Decisions are only added to: an agent's new text must keep every earlier line in order. */
 export function keepsEarlierText(before: string, after: string): boolean {
   return after.trimEnd().startsWith(before.trimEnd());
+}
+
+export interface MemoryWriter {
+  readonly author: VibeBossMemoryAuthor;
+  readonly source: string;
+  /** The conversation that wrote, so its quiet-prompt count starts over. */
+  readonly threadId?: string;
 }
 
 const SKELETON: ReadonlyArray<readonly [string, string]> = [
@@ -154,11 +163,76 @@ const publicEntry = (entry: LogEntry): VibeBossMemoryLogEntry => ({
   undone: entry.undone,
 });
 
-const folderOf = Effect.fn("VibeBossMemory.folderOf")(function* (root: string) {
+/**
+ * Bookkeeping beside the log: when the memory was last tidied, how many main conversations have
+ * started since, and how many prompts each conversation has sent since it last wrote memory.
+ */
+const Meta = Schema.Struct({
+  root: Schema.String,
+  lastTidyAt: Schema.String,
+  sessions: Schema.Number,
+  quiet: Schema.Record(Schema.String, Schema.Number),
+});
+export type MemoryMeta = typeof Meta.Type;
+const decodeMeta = Schema.decodeUnknownOption(Schema.fromJsonString(Meta));
+const encodeMeta = Schema.encodeSync(Schema.fromJsonString(Meta));
+const KEEP_QUIET_THREADS = 200;
+
+const metaFile = Effect.fn("VibeBossMemory.metaFile")(function* (root: string) {
+  return (yield* logFile(root)).replace(/\.jsonl$/, ".meta.json");
+});
+
+export const readMeta = Effect.fn("VibeBossMemory.readMeta")(function* (root: string) {
+  const fs = yield* FileSystem.FileSystem;
+  const raw = yield* fs.readFileString(yield* metaFile(root)).pipe(Effect.option);
+  const meta = Option.isNone(raw) ? Option.none() : decodeMeta(raw.value);
+  if (Option.isSome(meta)) return meta.value;
+  return {
+    root,
+    lastTidyAt: DateTime.formatIso(yield* DateTime.now),
+    sessions: 0,
+    quiet: {},
+  } satisfies MemoryMeta;
+});
+
+export const writeMeta = Effect.fn("VibeBossMemory.writeMeta")(function* (meta: MemoryMeta) {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const file = yield* metaFile(meta.root);
+  const quiet = Object.fromEntries(Object.entries(meta.quiet).slice(-KEEP_QUIET_THREADS));
+  yield* fs.makeDirectory(path.dirname(file), { recursive: true });
+  yield* fs.writeFileString(file, encodeMeta({ ...meta, quiet }));
+});
+
+/** Every project whose memory has bookkeeping, for the tidy worker to check. */
+export const listMetas = Effect.fn("VibeBossMemory.listMetas")(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const dir = path.dirname(yield* logFile(""));
+  const metas: Array<MemoryMeta> = [];
+  for (const name of yield* fs.readDirectory(dir).pipe(Effect.orElseSucceed(() => []))) {
+    if (!name.endsWith(".meta.json")) continue;
+    const raw = yield* fs.readFileString(path.join(dir, name)).pipe(Effect.option);
+    const meta = Option.isNone(raw) ? Option.none() : decodeMeta(raw.value);
+    if (Option.isSome(meta)) metas.push(meta.value);
+  }
+  return metas;
+});
+
+const markWritten = Effect.fn("VibeBossMemory.markWritten")(function* (
+  root: string,
+  threadId: string | undefined,
+) {
+  if (threadId === undefined) return;
+  const meta = yield* readMeta(root);
+  yield* writeMeta({ ...meta, quiet: { ...meta.quiet, [threadId]: 0 } });
+});
+
+export const folderOf = Effect.fn("VibeBossMemory.folderOf")(function* (root: string) {
   return (yield* Path.Path).join(root, MEMORY_FOLDER);
 });
 
-const readOptional = Effect.fn("VibeBossMemory.readOptional")(function* (file: string) {
+export const readOptional = Effect.fn("VibeBossMemory.readOptional")(function* (file: string) {
   const fs = yield* FileSystem.FileSystem;
   return Option.getOrNull(yield* fs.readFileString(file).pipe(Effect.option));
 });
@@ -194,7 +268,7 @@ const listMarkdown = Effect.fn("VibeBossMemory.listMarkdown")(function* (base: s
   return found.toSorted((a, b) => a.path.localeCompare(b.path));
 });
 
-const listFiles = Effect.fn("VibeBossMemory.listFiles")(function* (folder: string) {
+export const listFiles = Effect.fn("VibeBossMemory.listFiles")(function* (folder: string) {
   const files: Array<VibeBossMemoryFile> = [];
   for (const entry of yield* listMarkdown(folder)) {
     const known = classifyPath(entry.path);
@@ -205,7 +279,7 @@ const listFiles = Effect.fn("VibeBossMemory.listFiles")(function* (folder: strin
 });
 
 /** Writes or deletes files and logs the change with what each held before. */
-const applyChange = Effect.fn("VibeBossMemory.applyChange")(function* (
+export const applyChange = Effect.fn("VibeBossMemory.applyChange")(function* (
   root: string,
   change: {
     readonly author: VibeBossMemoryAuthor;
@@ -331,6 +405,12 @@ export const ensure = Effect.fn("VibeBossMemory.ensure")(function* (
   const files = new Map<string, string>(SKELETON);
   for (const file of legacy) files.set(file.path, file.content);
   yield* (yield* FileSystem.FileSystem).makeDirectory(folder, { recursive: true });
+  yield* writeMeta({
+    root,
+    lastTidyAt: DateTime.formatIso(yield* DateTime.now),
+    sessions: 0,
+    quiet: {},
+  });
   yield* applyChange(root, {
     author,
     summary: legacy.length > 0 ? "建立项目记忆，照搬 Codex 旧记忆" : "建立项目记忆",
@@ -354,7 +434,7 @@ export const readFile = Effect.fn("VibeBossMemory.readFile")(function* (
 export const writeFile = Effect.fn("VibeBossMemory.writeFile")(function* (
   root: string,
   input: { readonly path: string; readonly content: string },
-  by: { readonly author: VibeBossMemoryAuthor; readonly source: string },
+  by: MemoryWriter,
 ) {
   const known = classifyPath(input.path);
   if (typeof known === "string") return yield* fail(known);
@@ -374,10 +454,12 @@ export const writeFile = Effect.fn("VibeBossMemory.writeFile")(function* (
   }
   const created = before === null && known.kind !== "current" && known.kind !== "decisions";
   const entry = yield* applyChange(root, {
-    ...by,
+    author: by.author,
+    source: by.source,
     summary: `${created ? "新建" : ""}${describePath(known.path, known.kind)}`,
     files: [{ path: known.path, content: input.content }],
   });
+  yield* markWritten(root, by.threadId);
   return { path: known.path, logId: entry?.id ?? null };
 }, failsAs("保存项目记忆失败"));
 
@@ -385,7 +467,7 @@ export const writeFile = Effect.fn("VibeBossMemory.writeFile")(function* (
 export const archiveTask = Effect.fn("VibeBossMemory.archiveTask")(function* (
   root: string,
   input: string,
-  by: { readonly author: VibeBossMemoryAuthor; readonly source: string },
+  by: MemoryWriter,
 ) {
   const known = classifyPath(input);
   if (typeof known === "string") return yield* fail(known);
@@ -400,13 +482,15 @@ export const archiveTask = Effect.fn("VibeBossMemory.archiveTask")(function* (
     target = `archive/${name}-${n}.md`;
   }
   yield* applyChange(root, {
-    ...by,
+    author: by.author,
+    source: by.source,
     summary: `归档任务“${name}”`,
     files: [
       { path: target, content },
       { path: known.path, content: null },
     ],
   });
+  yield* markWritten(root, by.threadId);
   return { path: target };
 }, failsAs("归档任务失败"));
 
@@ -458,6 +542,8 @@ export function memoryNote(input: {
   readonly files: ReadonlyArray<string>;
   readonly current: string | null;
   readonly justCreated: boolean;
+  /** The main agent has gone a while without writing memory in this conversation. */
+  readonly remind?: boolean;
 }): string {
   const layout =
     "current.md（现状）、decisions.md（决策）、spec/（项目规范，可分文件夹）、tasks/（进行中的任务）、archive/（归档）";
@@ -502,6 +588,11 @@ export function memoryNote(input: {
         : "你是主控：进度、用户确认的决定、长期规则或任务有变化时，用 project_memory_write 更新项目记忆。",
     );
   }
+  if (input.remind === true && input.role === "main") {
+    lines.push(
+      `这个会话已经 ${REMIND_AFTER} 轮没更新项目记忆了：这期间如果定了事、进度变了或踩了坑，先补记再继续；没有就不用写。`,
+    );
+  }
   lines.push("</project_memory>");
   return lines.join("\n");
 }
@@ -516,6 +607,7 @@ export const promptNote = Effect.fn("VibeBossMemory.promptNote")(
     readonly role: MemoryRole;
     readonly full: boolean;
     readonly source: string;
+    readonly threadId: string;
   }) {
     // Without an absolute state folder (some tests) the update log would land in the cwd.
     const { stateDir } = yield* ServerConfig.ServerConfig;
@@ -528,6 +620,17 @@ export const promptNote = Effect.fn("VibeBossMemory.promptNote")(
       justCreated = yield* ensure(input.root, input.source, "system");
     }
     const full = input.full || justCreated;
+    let remind = false;
+    if (input.role === "main") {
+      const meta = yield* readMeta(input.root);
+      const quiet = (meta.quiet[input.threadId] ?? 0) + 1;
+      remind = quiet >= REMIND_AFTER;
+      yield* writeMeta({
+        ...meta,
+        sessions: meta.sessions + (input.full ? 1 : 0),
+        quiet: { ...meta.quiet, [input.threadId]: remind ? 0 : quiet },
+      });
+    }
     const files = full ? (yield* listFiles(folder)).map((file) => file.path) : [];
     const current = full
       ? yield* readOptional((yield* Path.Path).join(folder, "current.md"))
@@ -540,6 +643,7 @@ export const promptNote = Effect.fn("VibeBossMemory.promptNote")(
       files,
       current: emptyCurrent ? null : current,
       justCreated: justCreated && emptyCurrent,
+      remind,
     });
   },
   Effect.orElseSucceed(() => ""),

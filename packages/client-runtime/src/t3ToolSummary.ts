@@ -512,6 +512,23 @@ export function summarizeT3ToolCalls(
           );
       break;
     }
+    case "project-memory": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Updated project memory {count} time} other {Updated project memory {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to update project memory {count} time} other {Tried to update project memory {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
     case "project-delete": {
       const count = countEntities(projectIds);
       label = done

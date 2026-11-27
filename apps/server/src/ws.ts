@@ -131,6 +131,8 @@ import * as VibeBossKnowledgeSearch from "./vibeboss/KnowledgeSearch.ts";
 import * as VibeBossKnowledgeSelection from "./vibeboss/KnowledgeSelection.ts";
 import * as VibeBossKnowledgeText from "./vibeboss/KnowledgeText.ts";
 import * as VibeBossMemory from "./vibeboss/ProjectMemory.ts";
+import * as VibeBossMemoryTidy from "./vibeboss/ProjectMemoryTidy.ts";
+import { smallModelAsk } from "./vibeboss/ProjectMemoryTidyWorker.ts";
 import * as EnvironmentTheme from "./environmentTheme.ts";
 import * as Keybindings from "./keybindings.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
@@ -2844,6 +2846,22 @@ export const layerWsRpc = (
         [WS_METHODS.vibebossMemoryUndo]: (input) =>
           withMemoryRoot(input.projectId, (root) =>
             VibeBossMemory.undo(root, input.logId).pipe(Effect.andThen(memoryState(root))),
+          ),
+        [WS_METHODS.vibebossMemoryTidy]: (input) =>
+          withMemoryRoot(input.projectId, (root) =>
+            Effect.gen(function* () {
+              if (Option.isNone(vibeBossTextGeneration)) {
+                return yield* new VibeBossError({ detail: "这台机器没有可用的小模型" });
+              }
+              const ask = smallModelAsk({
+                textGeneration: vibeBossTextGeneration.value,
+                settings: serverSettings,
+                providers: providerRegistry,
+                cwd: config.stateDir,
+              });
+              yield* VibeBossMemoryTidy.tidy(root, ask, "手动整理");
+              return yield* memoryState(root);
+            }),
           ),
         [WS_METHODS.vibebossMemoryGetLog]: (input) =>
           withVibeBossServices(

@@ -579,6 +579,7 @@ export const WS_METHODS = {
   vibebossMemoryArchive: "vibeboss.memory.archive",
   vibebossMemoryUndo: "vibeboss.memory.undo",
   vibebossMemoryGetLog: "vibeboss.memory.getLog",
+  vibebossMemoryTidy: "vibeboss.memory.tidy",
 
   providerUploadFeedback: "provider.uploadFeedback",
   providerMcpSignInStart: "provider.mcpSignIn.start",
@@ -1981,6 +1982,11 @@ const WsVibeBossMemoryUndoRpc = Rpc.make(WS_METHODS.vibebossMemoryUndo, {
   success: VibeBossMemoryState,
   error: vibeBossKnowledgeError,
 });
+const WsVibeBossMemoryTidyRpc = Rpc.make(WS_METHODS.vibebossMemoryTidy, {
+  payload: VibeBossMemoryProjectInput,
+  success: VibeBossMemoryState,
+  error: vibeBossKnowledgeError,
+});
 const WsVibeBossMemoryGetLogRpc = Rpc.make(WS_METHODS.vibebossMemoryGetLog, {
   payload: VibeBossMemoryProjectInput,
   success: VibeBossMemoryLog,
@@ -2890,6 +2896,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsVibeBossMemoryArchiveRpc,
   WsVibeBossMemoryUndoRpc,
   WsVibeBossMemoryGetLogRpc,
+  WsVibeBossMemoryTidyRpc,
   WsProviderUploadFeedbackRpc,
   WsProviderMcpSignInStartRpc,
   WsProviderMcpSignInCompleteRpc,

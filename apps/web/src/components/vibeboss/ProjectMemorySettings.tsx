@@ -17,6 +17,7 @@ import {
   PencilIcon,
   PlusIcon,
   RulerIcon,
+  BrushCleaningIcon,
 } from "lucide-react";
 import { T, useGT } from "gt-react";
 import { useState } from "react";
@@ -428,6 +429,8 @@ export function ProjectMemorySettings(props: MemoryTarget & { onOpenLog: () => v
   const [openFolders, setOpenFolders] = useState<ReadonlySet<string>>(new Set());
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const tidyMemory = useAtomCommand(vibeBossEnvironment.tidyMemory);
+  const [tidying, setTidying] = useState(false);
 
   if (memory == null || !memory.available) return null;
 
@@ -435,6 +438,12 @@ export function ProjectMemorySettings(props: MemoryTarget & { onOpenLog: () => v
     setCreating(true);
     await create({ environmentId: props.environmentId, input: { projectId: props.projectId } });
     setCreating(false);
+    refresh();
+  };
+  const tidy = async () => {
+    setTidying(true);
+    await tidyMemory({ environmentId: props.environmentId, input: { projectId: props.projectId } });
+    setTidying(false);
     refresh();
   };
   const createFile = async (path: string) => {
@@ -482,19 +491,25 @@ export function ProjectMemorySettings(props: MemoryTarget & { onOpenLog: () => v
       id={PROJECT_MEMORY_SECTION_ID}
       title={gt("Project memory")}
       headerAction={
-        <Button
-          size="xs"
-          variant="ghost"
-          onClick={() =>
-            void reveal({
-              environmentId: props.environmentId,
-              input: { cwd: memory.folder, editor: "file-manager", reveal: false },
-            })
-          }
-        >
-          <FolderOpenIcon aria-hidden />
-          <T>Open folder</T>
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button size="xs" variant="ghost" disabled={tidying} onClick={() => void tidy()}>
+            <BrushCleaningIcon aria-hidden />
+            {tidying ? gt("Tidying…") : gt("Tidy", { $context: "verb, tidies project memory" })}
+          </Button>
+          <Button
+            size="xs"
+            variant="ghost"
+            onClick={() =>
+              void reveal({
+                environmentId: props.environmentId,
+                input: { cwd: memory.folder, editor: "file-manager", reveal: false },
+              })
+            }
+          >
+            <FolderOpenIcon aria-hidden />
+            <T>Open folder</T>
+          </Button>
+        </div>
       }
     >
       <div className="[&>*:first-child]:border-t-0">

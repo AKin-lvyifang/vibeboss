@@ -1,4 +1,5 @@
 import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
+import { isProjectMemoryTool, ProjectMemoryEntryLink } from "../vibeboss/ProjectMemoryEntryLink";
 import { WorkLogDetails, WorkLogRow } from "./WorkLog";
 import {
   getQuestionAnswerPreview,
@@ -637,6 +638,11 @@ function WorkEntryLogRow(props: WorkEntryRowProps) {
               </span>
             ) : null}
             {mcpSignIn}
+            {threadRef &&
+            workEntry.structuredPayload?.type === "dynamic_tool" &&
+            isProjectMemoryTool(workEntry.structuredPayload.toolName) ? (
+              <ProjectMemoryEntryLink threadRef={threadRef} />
+            ) : null}
           </p>
         </div>
       }

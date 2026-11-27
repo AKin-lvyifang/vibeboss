@@ -100,6 +100,10 @@ export function createVibeBossEnvironmentAtoms<R, E>(
       label: "environment-command:vibeboss:memory-undo",
       tag: WS_METHODS.vibebossMemoryUndo,
     }),
+    tidyMemory: createEnvironmentRpcCommand(runtime, {
+      label: "environment-command:vibeboss:memory-tidy",
+      tag: WS_METHODS.vibebossMemoryTidy,
+    }),
     resolveNativeTranscript: createEnvironmentRpcCommand(runtime, {
       label: "environment-command:vibeboss:resolve-native-transcript",
       tag: WS_METHODS.vibebossResolveNativeTranscript,

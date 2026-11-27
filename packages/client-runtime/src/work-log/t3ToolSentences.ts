@@ -16,6 +16,22 @@ export function t3ToolSentence(labels: ReadonlyArray<string>): T3ToolSentence | 
 
 const T3_TOOL_SENTENCES: ReadonlyMap<string, T3ToolSentence> = new Map<string, T3ToolSentence>([
   [
+    "Update\nUpdating\nUpdated\nproject memory",
+    {
+      detail: msg(
+        "{status, select, inProgress {Updating project memory} completed {Updated project memory} failed {Failed to update project memory} declined {Declined to update project memory} stopped {Stopped updating project memory} other {Updating project memory}}",
+      ),
+    },
+  ],
+  [
+    "Archive\nArchiving\nArchived\na project memory task",
+    {
+      detail: msg(
+        "{status, select, inProgress {Archiving a project memory task} completed {Archived a project memory task} failed {Failed to archive a project memory task} declined {Declined to archive a project memory task} stopped {Stopped archiving a project memory task} other {Archiving a project memory task}}",
+      ),
+    },
+  ],
+  [
     "Link\nLinking\nLinked\na pull request",
     {
       detail: msg(

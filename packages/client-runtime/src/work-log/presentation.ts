@@ -703,6 +703,7 @@ function summaryActionPriority(action: ToolGroupAction | T3McpToolSummaryAction)
     case "worktree-handoff":
     case "project-create":
     case "project-update":
+    case "project-memory":
     case "project-delete":
     case "project-clone":
     case "environment-update":
