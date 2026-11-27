@@ -2,12 +2,10 @@ import type { EnvironmentId, VibeBossReviewModel } from "@t3tools/contracts";
 import { T, useGT } from "gt-react";
 import { ChevronDownIcon } from "lucide-react";
 
-import { useEnvironmentSettings } from "../../hooks/useSettings";
 import { Button } from "../ui/button";
 import { Group, GroupSeparator } from "../ui/group";
 import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "../ui/popover";
-import { EffortSelect, ModelSelect, effortLevels, memberModel } from "./MemberFields";
-import { ProviderSelect, useEnabledProviders } from "./VibeBossShared";
+import { ReviewModelFields } from "./ReviewModelFields";
 
 /** "Check rules", with the model the check asks one click away. */
 export function RuleCheckButton(props: {
@@ -19,19 +17,6 @@ export function RuleCheckButton(props: {
   readonly onReviewModelChange: (reviewModel: VibeBossReviewModel) => void;
 }) {
   const gt = useGT();
-  const providers = useEnabledProviders();
-  const fallback = useEnvironmentSettings(
-    props.environmentId,
-    (settings) => settings.textGenerationModelSelection,
-  );
-  // Unset follows the text generation model; the server runs it at low effort.
-  const pick = props.reviewModel ?? {
-    providerInstanceId: fallback.instanceId,
-    model: fallback.model,
-    effort: "",
-  };
-  const provider = providers.find((item) => item.instanceId === pick.providerInstanceId);
-  const model = memberModel(provider, pick.model);
 
   return (
     <Group>
@@ -56,31 +41,10 @@ export function RuleCheckButton(props: {
             <PopoverTitle>
               <T>Model used by the rules check</T>
             </PopoverTitle>
-            <ProviderSelect
-              value={pick.providerInstanceId}
-              providers={providers}
-              onChange={(providerInstanceId) =>
-                props.onReviewModelChange({ providerInstanceId, model: "", effort: "" })
-              }
-            />
-            <ModelSelect
-              provider={provider}
-              value={pick.model}
-              onChange={(next) => {
-                const keep = effortLevels(memberModel(provider, next)).some(
-                  (level) => level.id === pick.effort,
-                );
-                props.onReviewModelChange({
-                  ...pick,
-                  model: next,
-                  effort: keep ? pick.effort : "",
-                });
-              }}
-            />
-            <EffortSelect
-              model={model}
-              value={pick.effort}
-              onChange={(effort) => props.onReviewModelChange({ ...pick, effort })}
+            <ReviewModelFields
+              environmentId={props.environmentId}
+              value={props.reviewModel}
+              onChange={props.onReviewModelChange}
             />
           </div>
         </PopoverPopup>

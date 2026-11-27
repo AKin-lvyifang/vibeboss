@@ -45,6 +45,7 @@ import { BotIcon } from "../animate-ui/icons/bot";
 import { CalendarClockIcon } from "../animate-ui/icons/calendar-clock";
 import { ChartNoAxesColumnIcon } from "../animate-ui/icons/chart-no-axes-column";
 import { CircleAlertIcon } from "../animate-ui/icons/circle-alert";
+import { LibraryIcon } from "../animate-ui/icons/library";
 import { RouteIcon } from "../animate-ui/icons/route";
 import { ScrollIcon } from "../animate-ui/icons/scroll";
 import { SettingsIcon } from "../animate-ui/icons/settings";
@@ -246,7 +247,8 @@ type VibeBossNavTarget =
   | "/usage"
   | "/agents"
   | "/rules"
-  | "/capabilities";
+  | "/capabilities"
+  | "/knowledge";
 
 /** VibeBoss destinations as labelled rows under the search box, like a desktop app's nav. */
 export const SidebarVibeBossNav = memo(function SidebarVibeBossNav() {
@@ -259,6 +261,7 @@ export const SidebarVibeBossNav = memo(function SidebarVibeBossNav() {
     { to: "/agents", label: gt("Roles"), icon: <BotIcon /> },
     { to: "/rules", label: gt("Rules"), icon: <ScrollIcon /> },
     { to: "/capabilities", label: gt("Skills, MCP & plugins"), icon: <BlocksIcon /> },
+    { to: "/knowledge", label: gt("Knowledge"), icon: <LibraryIcon /> },
   ];
   return (
     <SidebarMenu className="mt-1">

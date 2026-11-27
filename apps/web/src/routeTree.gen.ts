@@ -24,6 +24,7 @@ import { Route as ChatSettingsRouteImport } from './routes/_chat.settings'
 import { Route as ChatRulesRouteImport } from './routes/_chat.rules'
 import { Route as ChatPullRequestsRouteImport } from './routes/_chat.pull-requests'
 import { Route as ChatNewRouteImport } from './routes/_chat.new'
+import { Route as ChatKnowledgeRouteImport } from './routes/_chat.knowledge'
 import { Route as ChatIssuesRouteImport } from './routes/_chat.issues'
 import { Route as ChatCapabilitiesRouteImport } from './routes/_chat.capabilities'
 import { Route as ChatAgentsRouteImport } from './routes/_chat.agents'
@@ -131,6 +132,11 @@ const ChatPullRequestsRoute = ChatPullRequestsRouteImport.update({
 const ChatNewRoute = ChatNewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => ChatRoute,
+} as any)
+const ChatKnowledgeRoute = ChatKnowledgeRouteImport.update({
+  id: '/knowledge',
+  path: '/knowledge',
   getParentRoute: () => ChatRoute,
 } as any)
 const ChatIssuesRoute = ChatIssuesRouteImport.update({
@@ -324,6 +330,7 @@ export interface FileRoutesByFullPath {
   '/agents': typeof ChatAgentsRoute
   '/capabilities': typeof ChatCapabilitiesRoute
   '/issues': typeof ChatIssuesRoute
+  '/knowledge': typeof ChatKnowledgeRoute
   '/new': typeof ChatNewRoute
   '/pull-requests': typeof ChatPullRequestsRoute
   '/rules': typeof ChatRulesRoute
@@ -373,6 +380,7 @@ export interface FileRoutesByTo {
   '/agents': typeof ChatAgentsRoute
   '/capabilities': typeof ChatCapabilitiesRoute
   '/issues': typeof ChatIssuesRoute
+  '/knowledge': typeof ChatKnowledgeRoute
   '/new': typeof ChatNewRoute
   '/pull-requests': typeof ChatPullRequestsRoute
   '/rules': typeof ChatRulesRoute
@@ -425,6 +433,7 @@ export interface FileRoutesById {
   '/_chat/agents': typeof ChatAgentsRoute
   '/_chat/capabilities': typeof ChatCapabilitiesRoute
   '/_chat/issues': typeof ChatIssuesRoute
+  '/_chat/knowledge': typeof ChatKnowledgeRoute
   '/_chat/new': typeof ChatNewRoute
   '/_chat/pull-requests': typeof ChatPullRequestsRoute
   '/_chat/rules': typeof ChatRulesRoute
@@ -478,6 +487,7 @@ export interface FileRouteTypes {
     | '/agents'
     | '/capabilities'
     | '/issues'
+    | '/knowledge'
     | '/new'
     | '/pull-requests'
     | '/rules'
@@ -527,6 +537,7 @@ export interface FileRouteTypes {
     | '/agents'
     | '/capabilities'
     | '/issues'
+    | '/knowledge'
     | '/new'
     | '/pull-requests'
     | '/rules'
@@ -578,6 +589,7 @@ export interface FileRouteTypes {
     | '/_chat/agents'
     | '/_chat/capabilities'
     | '/_chat/issues'
+    | '/_chat/knowledge'
     | '/_chat/new'
     | '/_chat/pull-requests'
     | '/_chat/rules'
@@ -736,6 +748,13 @@ declare module '@tanstack/react-router' {
       path: '/new'
       fullPath: '/new'
       preLoaderRoute: typeof ChatNewRouteImport
+      parentRoute: typeof ChatRoute
+    }
+    '/_chat/knowledge': {
+      id: '/_chat/knowledge'
+      path: '/knowledge'
+      fullPath: '/knowledge'
+      preLoaderRoute: typeof ChatKnowledgeRouteImport
       parentRoute: typeof ChatRoute
     }
     '/_chat/issues': {
@@ -1047,6 +1066,7 @@ interface ChatRouteChildren {
   ChatAgentsRoute: typeof ChatAgentsRoute
   ChatCapabilitiesRoute: typeof ChatCapabilitiesRoute
   ChatIssuesRoute: typeof ChatIssuesRoute
+  ChatKnowledgeRoute: typeof ChatKnowledgeRoute
   ChatNewRoute: typeof ChatNewRoute
   ChatPullRequestsRoute: typeof ChatPullRequestsRoute
   ChatRulesRoute: typeof ChatRulesRoute
@@ -1063,6 +1083,7 @@ const ChatRouteChildren: ChatRouteChildren = {
   ChatAgentsRoute: ChatAgentsRoute,
   ChatCapabilitiesRoute: ChatCapabilitiesRoute,
   ChatIssuesRoute: ChatIssuesRoute,
+  ChatKnowledgeRoute: ChatKnowledgeRoute,
   ChatNewRoute: ChatNewRoute,
   ChatPullRequestsRoute: ChatPullRequestsRoute,
   ChatRulesRoute: ChatRulesRoute,
