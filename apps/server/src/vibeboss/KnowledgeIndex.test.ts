@@ -114,6 +114,25 @@ it("finds the right file, and the right place in it, for questions asked in plai
   assert.strictEqual(placeTop3, placeAsked);
 });
 
+// Things a person might ask that this knowledge base says nothing about. Each shares a common
+// word with some file; returning that file would invite a made-up answer.
+const UNANSWERABLE = [
+  "海外市场的定价策略",
+  "员工报销流程是什么",
+  "2025 年的年度预算",
+  "竞品分析的结论",
+  "安卓客户端的发版计划",
+  "服务器宕机的应急预案",
+];
+
+it("returns nothing when the knowledge base does not cover the question", () => {
+  const index = openKnowledgeIndex(":memory:");
+  for (const [path, summary, text] of CORPUS) index.put({ path, stamp: "1" }, summary, text);
+  const answered = UNANSWERABLE.filter((question) => index.search(question, 3, null).length > 0);
+  index.close();
+  assert.deepStrictEqual(answered, []);
+});
+
 it("searches only the categories it is given and forgets files that are gone", () => {
   const index = openKnowledgeIndex(":memory:");
   for (const [path, summary, text] of CORPUS) index.put({ path, stamp: "1" }, summary, text);
