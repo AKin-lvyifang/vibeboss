@@ -517,6 +517,9 @@ export const promptNote = Effect.fn("VibeBossMemory.promptNote")(
     readonly full: boolean;
     readonly source: string;
   }) {
+    // Without an absolute state folder (some tests) the update log would land in the cwd.
+    const { stateDir } = yield* ServerConfig.ServerConfig;
+    if (!(yield* Path.Path).isAbsolute(stateDir)) return "";
     if (input.root === undefined || !(yield* isDirectory(input.root))) return "";
     const folder = yield* folderOf(input.root);
     let justCreated = false;
