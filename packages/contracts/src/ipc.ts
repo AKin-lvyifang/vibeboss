@@ -17,6 +17,7 @@ import { type ClientSettings, type QuitConfirmationMode, SnapShotShortcut } from
 import type { EditorId } from "./editor.ts";
 import { KeybindingShortcut, type PreviewForwardedShortcut } from "./keybindings.ts";
 
+import type { VibeBossHudAction, VibeBossHudSnapshot } from "./vibebossHud.ts";
 import type {
   DesktopAppActivationRequest,
   DesktopAppActivationResponse,
@@ -1119,6 +1120,9 @@ export interface DesktopBridge {
   restartAudioService?: () => Promise<boolean>;
   setNotificationBadge: (badge: { count: number; image: string | null }) => Promise<void>;
   onNotificationBadgeClear: (listener: () => void) => () => void;
+  /** macOS only: what the menu-bar HUD shows. Other platforms ignore it. */
+  setVibeBossHud?: (snapshot: VibeBossHudSnapshot) => Promise<void>;
+  onVibeBossHudAction?: (listener: (action: VibeBossHudAction) => void) => () => void;
   onTrackpadScrollBegin: (listener: () => void) => () => void;
   onTrackpadScrollEnd: (listener: () => void) => () => void;
   /**

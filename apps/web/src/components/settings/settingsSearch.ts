@@ -378,6 +378,30 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: [msg("sidebar avatar top left corner")],
   },
   {
+    id: "vibeboss-hud",
+    title: msg("Menu bar strip"),
+    to: "/settings/appearance",
+    searchTerms: [msg("hud notch waiting approval progress usage")],
+    macOnly: true,
+    desktopOnly: true,
+  },
+  {
+    id: "vibeboss-hud-do-not-disturb",
+    title: msg("Do not disturb"),
+    to: "/settings/appearance",
+    searchTerms: [msg("hud notch screen sharing meeting privacy")],
+    macOnly: true,
+    desktopOnly: true,
+  },
+  {
+    id: "vibeboss-hud-avatar",
+    title: msg("Strip avatar"),
+    to: "/settings/appearance",
+    searchTerms: [msg("hud notch mascot image crop square circle")],
+    macOnly: true,
+    desktopOnly: true,
+  },
+  {
     // Prefixed because the slider control already owns the `glass-opacity` id.
     id: "setting-glass-opacity",
     title: msg("Glass opacity"),

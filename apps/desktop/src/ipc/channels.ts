@@ -137,6 +137,11 @@ export const PORT_FORWARD_SHARES_LOOPBACK_CHANNEL = "desktop:port-forward-shares
 
 export const MAC_PERMISSION_HELPER_CHANNEL = "desktop:mac-permission-helper";
 
+export const VIBEBOSS_HUD_SNAPSHOT_CHANNEL = "desktop:vibeboss-hud-snapshot";
+export const VIBEBOSS_HUD_ACTION_CHANNEL = "desktop:vibeboss-hud-action";
+/** Only the HUD window itself talks on this one. */
+export const VIBEBOSS_HUD_WINDOW_CHANNEL = "desktop:vibeboss-hud-window";
+
 export const CHECK_SYSTEM_PERMISSION_CHANNEL = "desktop:check-system-permission";
 export const APPLE_SPEECH_AVAILABLE_CHANNEL = "desktop:apple-speech-available";
 export const APPLE_SPEECH_PREPARE_CHANNEL = "desktop:apple-speech-prepare";
