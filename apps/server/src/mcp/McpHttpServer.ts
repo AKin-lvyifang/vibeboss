@@ -71,6 +71,8 @@ import * as EnvironmentHandlers from "./toolkits/environment/handlers.ts";
 import { ThemeToolkit } from "./toolkits/theme/tools.ts";
 import { KnowledgeToolkit } from "./toolkits/knowledge/tools.ts";
 import * as KnowledgeHandlers from "./toolkits/knowledge/handlers.ts";
+import { ProjectMemoryToolkit } from "./toolkits/memory/tools.ts";
+import * as ProjectMemoryHandlers from "./toolkits/memory/handlers.ts";
 import * as ThemeHandlers from "./toolkits/theme/handlers.ts";
 import { ProjectToolkit } from "./toolkits/project/tools.ts";
 import * as ProjectHandlers from "./toolkits/project/handlers.ts";
@@ -1441,6 +1443,11 @@ const layerThemeToolkit = toolkitRegistration(ThemeToolkit, ThemeHandlers.layer)
 
 // VibeBoss: search and read the user's knowledge folder.
 const layerKnowledgeToolkit = toolkitRegistration(KnowledgeToolkit, KnowledgeHandlers.layer);
+// VibeBoss: the main agent writes the project's memory.
+const layerProjectMemoryToolkit = toolkitRegistration(
+  ProjectMemoryToolkit,
+  ProjectMemoryHandlers.layer,
+);
 
 export const layerProjectRegistration = toolkitRegistration(ProjectToolkit, ProjectHandlers.layer);
 
@@ -1523,6 +1530,7 @@ export const layerTools = Layer.mergeAll(
   layerEnvironmentToolkit,
   layerThemeToolkit,
   layerKnowledgeToolkit,
+  layerProjectMemoryToolkit,
   layerPreviewControlsRegistration,
   layerWorktreeToolkitRegistration,
   layerPullRequestsToolkit,

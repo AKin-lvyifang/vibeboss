@@ -303,6 +303,7 @@ import {
   SidebarProjectFolderHeader,
   sidebarFolderRowId,
 } from "./sidebar/SidebarProjectFolderHeader";
+import { PROJECT_MEMORY_SECTION_ID } from "./vibeboss/ProjectMemorySettings";
 import {
   SidebarDragBoundary,
   SidebarSectionHeader,
@@ -1280,6 +1281,18 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     return count;
   });
 
+  // VibeBoss: the sidebar's brain button opens the project memory section of project settings.
+  const openProjectMemory = useStableCallback((projectGroup: SidebarProjectSnapshot) => {
+    if (isMobile) setOpenMobile(false);
+    void router.navigate({
+      to: "/settings/projects",
+      search: {
+        project: getSidebarProjectSettingsKey(projectGroup, projectGroupingSettings, projects),
+        machine: undefined,
+      },
+      hash: PROJECT_MEMORY_SECTION_ID,
+    });
+  });
   const openProjectSettings = useStableCallback(
     (projectGroup: SidebarProjectSnapshot, projectRef?: ScopedProjectRef) => {
       if (isMobile) {
@@ -3539,6 +3552,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                             hiddenThreads={folder.hiddenThreads}
                             onToggle={toggleProjectFolder}
                             onNewThread={startThreadInProjectFolder}
+                            onOpenMemory={openProjectMemory}
                             onContextMenu={handleProjectFolderContextMenu}
                           />,
                         );

@@ -429,6 +429,11 @@ const T3_MCP_TOOLS: Readonly<Record<string, T3McpToolDefinition>> = {
     "thread-search",
   ),
   knowledge_read: tool(["Read", "Reading", "Read", "a knowledge file"], "thread-search"),
+  project_memory_write: tool(["Update", "Updating", "Updated", "project memory"], "project-update"),
+  project_memory_archive: tool(
+    ["Archive", "Archiving", "Archived", "a project memory task"],
+    "project-update",
+  ),
   t3_theme_set: tool(["Set", "Setting", "Set", "the theme"], "theme-set"),
   t3_thread_launch: tool(["Launch", "Launching", "Launched", "a project thread"], "thread-create"),
   t3_project_list: tool(["List", "Listing", "Listed", "projects"], "project-list"),
@@ -494,7 +499,7 @@ function parseT3McpToolName(value: string): string | null {
     return namespaceMatch.groups.tool ?? null;
   }
 
-  // The rebrand renames the "T3 Code" label an agent may print, so both names count.
+  // The rebrand renames the "VibeBoss" label an agent may print, so both names count.
   const prefixed = /^(?:mcp[-_]{1,2})?(?:t3[-_ ]?code|vibeboss)(?:__|[-_.:/ ])(?<tool>.+)$/i.exec(
     label,
   );

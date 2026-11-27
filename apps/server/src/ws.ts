@@ -106,6 +106,8 @@ import {
   RpcClientId,
   EnvironmentAuthorizationError,
   ThreadId,
+  type ProjectId,
+  VibeBossError,
   type TerminalMetadataStreamEvent,
   type PullRequestRef,
   WS_METHODS,
@@ -128,6 +130,7 @@ import * as VibeBossKnowledgeCloud from "./vibeboss/KnowledgeCloud.ts";
 import * as VibeBossKnowledgeSearch from "./vibeboss/KnowledgeSearch.ts";
 import * as VibeBossKnowledgeSelection from "./vibeboss/KnowledgeSelection.ts";
 import * as VibeBossKnowledgeText from "./vibeboss/KnowledgeText.ts";
+import * as VibeBossMemory from "./vibeboss/ProjectMemory.ts";
 import * as EnvironmentTheme from "./environmentTheme.ts";
 import * as Keybindings from "./keybindings.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
@@ -1604,6 +1607,35 @@ export const layerWsRpc = (
           Effect.provideService(FileSystem.FileSystem, vibeBossFileSystem),
           Effect.provideService(Path.Path, vibeBossPath),
         );
+      // VibeBoss: project memory lives in the project folder itself, not in a worktree.
+      const memoryRoot = (projectId: ProjectId) =>
+        projectService.getById(projectId).pipe(
+          Effect.map((project) => Option.getOrUndefined(project)?.workspaceRoot),
+          Effect.orElseSucceed(() => undefined),
+        );
+      const withMemoryRoot = <A, E>(
+        projectId: ProjectId,
+        use: (
+          root: string,
+        ) => Effect.Effect<A, E, FileSystem.FileSystem | Path.Path | ServerConfig.ServerConfig>,
+      ) =>
+        withVibeBossServices(
+          memoryRoot(projectId).pipe(
+            Effect.flatMap(
+              (
+                root,
+              ): Effect.Effect<
+                A,
+                E | VibeBossError,
+                FileSystem.FileSystem | Path.Path | ServerConfig.ServerConfig
+              > =>
+                root === undefined
+                  ? Effect.fail(new VibeBossError({ detail: "找不到这个项目的文件夹" }))
+                  : use(root),
+            ),
+          ),
+        );
+      const memoryState = (root: string) => VibeBossMemory.getState(root);
       const lifecycleEvents = yield* ServerLifecycleEvents.ServerLifecycleEvents;
       const storageCleanup = yield* StorageCleanup.StorageCleanup;
       const databaseStorage = yield* DatabaseStorage.DatabaseStorage;
@@ -2784,6 +2816,38 @@ export const layerWsRpc = (
                 ),
               ),
             ),
+          ),
+        [WS_METHODS.vibebossMemoryGetState]: (input) =>
+          withVibeBossServices(
+            memoryRoot(input.projectId).pipe(Effect.flatMap(VibeBossMemory.getState)),
+          ),
+        [WS_METHODS.vibebossMemoryCreate]: (input) =>
+          withMemoryRoot(input.projectId, (root) =>
+            VibeBossMemory.ensure(root, "", "user").pipe(Effect.andThen(memoryState(root))),
+          ),
+        [WS_METHODS.vibebossMemoryRead]: (input) =>
+          withMemoryRoot(input.projectId, (root) => VibeBossMemory.readFile(root, input.path)),
+        [WS_METHODS.vibebossMemoryWrite]: (input) =>
+          withMemoryRoot(input.projectId, (root) =>
+            VibeBossMemory.writeFile(
+              root,
+              { path: input.path, content: input.content },
+              { author: "user", source: "" },
+            ).pipe(Effect.andThen(memoryState(root))),
+          ),
+        [WS_METHODS.vibebossMemoryArchive]: (input) =>
+          withMemoryRoot(input.projectId, (root) =>
+            VibeBossMemory.archiveTask(root, input.path, { author: "user", source: "" }).pipe(
+              Effect.andThen(memoryState(root)),
+            ),
+          ),
+        [WS_METHODS.vibebossMemoryUndo]: (input) =>
+          withMemoryRoot(input.projectId, (root) =>
+            VibeBossMemory.undo(root, input.logId).pipe(Effect.andThen(memoryState(root))),
+          ),
+        [WS_METHODS.vibebossMemoryGetLog]: (input) =>
+          withVibeBossServices(
+            memoryRoot(input.projectId).pipe(Effect.flatMap(VibeBossMemory.getLog)),
           ),
         [WS_METHODS.vibebossKnowledgeCloudGetState]: () =>
           withVibeBossServices(VibeBossKnowledgeCloud.getCloudState()),

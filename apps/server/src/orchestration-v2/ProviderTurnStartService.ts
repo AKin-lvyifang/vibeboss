@@ -16,6 +16,7 @@ import {
   type OrchestrationV2ThreadProjection,
   type OrchestrationV2TurnItem,
   isDeliveredProviderTurn,
+  isDelegatedAppThread,
   parseGoalCommand,
   RunId,
   RunAttemptId,
@@ -36,6 +37,7 @@ import * as Semaphore from "effect/Semaphore";
 
 import * as ServerConfig from "../config.ts";
 import * as VibeBossKnowledgeSelection from "../vibeboss/KnowledgeSelection.ts";
+import * as VibeBossProjectMemory from "../vibeboss/ProjectMemory.ts";
 import {
   CLAUDE_PROVIDER,
   CLAUDE_QUERY_ENDED_BEFORE_TURN_DETAIL,
@@ -1969,7 +1971,35 @@ export const layer: Layer.Layer<
         budget,
       } = handoffContext;
       const retryHandoff = resumedRetryHandoff ?? (yield* prepareRetryHandoff(handoffContext));
+      // VibeBoss: the project memory note, and the knowledge note when the conversation loads the
+      // knowledge base. Computed here so a turn with nothing else pending still carries them.
+      const vibeBossNote = slashCommand
+        ? ""
+        : yield* Effect.all([
+            projects.getById(projection.thread.projectId).pipe(
+              Effect.map((project) => Option.getOrUndefined(project)?.workspaceRoot),
+              Effect.orElseSucceed(() => undefined),
+              Effect.flatMap((root) =>
+                VibeBossProjectMemory.promptNote({
+                  root,
+                  role: isDelegatedAppThread(projection.thread) ? "member" : "main",
+                  full: (providerThread.firstRunOrdinal ?? run.ordinal) === run.ordinal,
+                  source: `会话“${projection.thread.title}”`,
+                }),
+              ),
+            ),
+            VibeBossKnowledgeSelection.promptNote({
+              threadId: projection.thread.id,
+              projectId: projection.thread.projectId,
+            }),
+          ]).pipe(
+            Effect.map((notes) => notes.filter((note) => note !== "").join("\n\n")),
+            Effect.provideService(FileSystem.FileSystem, fileSystem),
+            Effect.provideService(Path.Path, path),
+            Effect.provideService(ServerConfig.ServerConfig, vibeBossServerConfig),
+          );
       const carriesPendingContext =
+        vibeBossNote !== "" ||
         effectiveHandoffs.length > 0 ||
         retryHandoff.handoffs.length > 0 ||
         retryHandoff.attachments.length > 0 ||
@@ -2205,19 +2235,8 @@ export const layer: Layer.Layer<
             ),
             ...(sideChatContext === "" || sideChatHandoff === undefined ? [] : [sideChatHandoff]),
           ];
-          // VibeBoss: a conversation that loads the knowledge base is told where its index is.
-          const knowledgeNote =
-            compact || slashCommand || turnInput.resume
-              ? ""
-              : yield* VibeBossKnowledgeSelection.promptNote({
-                  threadId: projection.thread.id,
-                  projectId: projection.thread.projectId,
-                }).pipe(
-                  Effect.provideService(FileSystem.FileSystem, fileSystem),
-                  Effect.provideService(Path.Path, path),
-                  Effect.provideService(ServerConfig.ServerConfig, vibeBossServerConfig),
-                );
-          const context = [delivery.context, sideChatContext, restartNote, knowledgeNote]
+          const vibeBossNotes = compact || slashCommand || turnInput.resume ? "" : vibeBossNote;
+          const context = [delivery.context, sideChatContext, restartNote, vibeBossNotes]
             .filter((part) => part !== "")
             .join("\n\n");
           const { restartContinuationOfRunId: _resumedRunId, ...promptedInput } = turnInput;

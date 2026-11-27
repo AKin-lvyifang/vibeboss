@@ -61,6 +61,7 @@ export * from "./review.ts";
 export * from "./mcpApps.ts";
 export * from "./vibeboss.ts";
 export * from "./vibebossKnowledge.ts";
+export * from "./vibebossMemory.ts";
 export * from "./vibebossHud.ts";
 export * from "./browserImport.ts";
 export * from "./browserProfile.ts";

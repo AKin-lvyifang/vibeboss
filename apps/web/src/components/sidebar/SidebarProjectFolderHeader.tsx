@@ -3,7 +3,7 @@ import { scopedThreadKey, scopeThreadRef } from "@t3tools/client-runtime/environ
 import type { ContextMenuSource } from "@t3tools/contracts";
 import { ChevronDownIcon, SquarePenIcon } from "lucide-react";
 import { msg, T, useGT, useMessages, Var } from "gt-react";
-import { memo } from "react";
+import { memo, useState } from "react";
 
 import { cn } from "~/lib/utils";
 import { contextMenuSourceOf } from "../../contextMenuSource";
@@ -11,6 +11,7 @@ import type { SidebarProjectSnapshot } from "../../sidebarProjectGrouping";
 import { useUiStateStore } from "../../uiStateStore";
 import { resolveSidebarFolderDot, resolveThreadLastVisitedAt } from "../Sidebar.logic";
 import { ProjectFavicon } from "../ProjectFavicon";
+import { SidebarProjectMemoryButton } from "../vibeboss/SidebarProjectMemoryButton";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
@@ -44,6 +45,7 @@ export const SidebarProjectFolderHeader = memo(function SidebarProjectFolderHead
   hiddenThreads: readonly EnvironmentThreadShell[];
   onToggle: (group: SidebarProjectSnapshot) => void;
   onNewThread: (group: SidebarProjectSnapshot) => void;
+  onOpenMemory: (group: SidebarProjectSnapshot) => void;
   onContextMenu: (
     group: SidebarProjectSnapshot,
     position: { x: number; y: number },
@@ -54,6 +56,7 @@ export const SidebarProjectFolderHeader = memo(function SidebarProjectFolderHead
   const m = useMessages();
   const { group, collapsed, hiddenThreads } = props;
   const rowId = sidebarFolderRowId(group.projectKey);
+  const [touched, setTouched] = useState(false);
   const localLastVisitedAtById = useUiStateStore((state) => state.threadLastVisitedAtById);
   const dot = collapsed
     ? resolveSidebarFolderDot(
@@ -72,6 +75,8 @@ export const SidebarProjectFolderHeader = memo(function SidebarProjectFolderHead
     <li
       data-testid="sidebar-project-folder"
       className="group/project-folder relative mt-2 list-none first:mt-0"
+      onPointerEnter={() => setTouched(true)}
+      onFocus={() => setTouched(true)}
     >
       <button
         type="button"
@@ -112,6 +117,14 @@ export const SidebarProjectFolderHeader = memo(function SidebarProjectFolderHead
       </button>
       {/* Sits over the count, which hides on hover or focus, and left of the chevron. */}
       <span className="absolute inset-y-0 right-6 flex items-center opacity-0 focus-within:opacity-100 group-hover/project-folder:opacity-100 pointer-coarse:opacity-100">
+        <SidebarProjectMemoryButton
+          environmentId={group.environmentId}
+          projectId={group.id}
+          projectName={group.displayName}
+          rowId={rowId}
+          active={touched}
+          onOpen={() => props.onOpenMemory(group)}
+        />
         <Tooltip>
           <TooltipTrigger
             render={

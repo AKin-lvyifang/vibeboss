@@ -43,6 +43,15 @@ import {
   VibeBossKnowledgeUndoInput,
 } from "./vibebossKnowledge.ts";
 import {
+  VibeBossMemoryFileContent,
+  VibeBossMemoryFileInput,
+  VibeBossMemoryLog,
+  VibeBossMemoryProjectInput,
+  VibeBossMemoryState,
+  VibeBossMemoryUndoInput,
+  VibeBossMemoryWriteInput,
+} from "./vibebossMemory.ts";
+import {
   PeerLink,
   PeerLinkClientPairingInput,
   PeerLinkLinkPairingInput,
@@ -563,6 +572,13 @@ export const WS_METHODS = {
   vibebossKnowledgeCloudSave: "vibeboss.knowledge.cloud.save",
   vibebossKnowledgeCloudSearchCatalog: "vibeboss.knowledge.cloud.searchCatalog",
   vibebossKnowledgeCloudPrepareCatalog: "vibeboss.knowledge.cloud.prepareCatalog",
+  vibebossMemoryGetState: "vibeboss.memory.getState",
+  vibebossMemoryCreate: "vibeboss.memory.create",
+  vibebossMemoryRead: "vibeboss.memory.read",
+  vibebossMemoryWrite: "vibeboss.memory.write",
+  vibebossMemoryArchive: "vibeboss.memory.archive",
+  vibebossMemoryUndo: "vibeboss.memory.undo",
+  vibebossMemoryGetLog: "vibeboss.memory.getLog",
 
   providerUploadFeedback: "provider.uploadFeedback",
   providerMcpSignInStart: "provider.mcpSignIn.start",
@@ -1935,6 +1951,42 @@ const WsVibeBossKnowledgePrepareFeishuSyncRpc = Rpc.make(
 
 const vibeBossKnowledgeError = Schema.Union([VibeBossError, EnvironmentAuthorizationError]);
 
+const WsVibeBossMemoryGetStateRpc = Rpc.make(WS_METHODS.vibebossMemoryGetState, {
+  payload: VibeBossMemoryProjectInput,
+  success: VibeBossMemoryState,
+  error: vibeBossKnowledgeError,
+});
+const WsVibeBossMemoryCreateRpc = Rpc.make(WS_METHODS.vibebossMemoryCreate, {
+  payload: VibeBossMemoryProjectInput,
+  success: VibeBossMemoryState,
+  error: vibeBossKnowledgeError,
+});
+const WsVibeBossMemoryReadRpc = Rpc.make(WS_METHODS.vibebossMemoryRead, {
+  payload: VibeBossMemoryFileInput,
+  success: VibeBossMemoryFileContent,
+  error: vibeBossKnowledgeError,
+});
+const WsVibeBossMemoryWriteRpc = Rpc.make(WS_METHODS.vibebossMemoryWrite, {
+  payload: VibeBossMemoryWriteInput,
+  success: VibeBossMemoryState,
+  error: vibeBossKnowledgeError,
+});
+const WsVibeBossMemoryArchiveRpc = Rpc.make(WS_METHODS.vibebossMemoryArchive, {
+  payload: VibeBossMemoryFileInput,
+  success: VibeBossMemoryState,
+  error: vibeBossKnowledgeError,
+});
+const WsVibeBossMemoryUndoRpc = Rpc.make(WS_METHODS.vibebossMemoryUndo, {
+  payload: VibeBossMemoryUndoInput,
+  success: VibeBossMemoryState,
+  error: vibeBossKnowledgeError,
+});
+const WsVibeBossMemoryGetLogRpc = Rpc.make(WS_METHODS.vibebossMemoryGetLog, {
+  payload: VibeBossMemoryProjectInput,
+  success: VibeBossMemoryLog,
+  error: vibeBossKnowledgeError,
+});
+
 const WsVibeBossKnowledgeCloudGetStateRpc = Rpc.make(WS_METHODS.vibebossKnowledgeCloudGetState, {
   payload: Schema.Struct({}),
   success: VibeBossKnowledgeCloudState,
@@ -2831,6 +2883,13 @@ export const WsRpcGroup = RpcGroup.make(
   WsVibeBossKnowledgeCloudSaveRpc,
   WsVibeBossKnowledgeCloudSearchCatalogRpc,
   WsVibeBossKnowledgeCloudPrepareCatalogRpc,
+  WsVibeBossMemoryGetStateRpc,
+  WsVibeBossMemoryCreateRpc,
+  WsVibeBossMemoryReadRpc,
+  WsVibeBossMemoryWriteRpc,
+  WsVibeBossMemoryArchiveRpc,
+  WsVibeBossMemoryUndoRpc,
+  WsVibeBossMemoryGetLogRpc,
   WsProviderUploadFeedbackRpc,
   WsProviderMcpSignInStartRpc,
   WsProviderMcpSignInCompleteRpc,
