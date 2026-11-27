@@ -238,8 +238,6 @@ const SETTLED = 0.05;
 const BAR_RADIUS = 13;
 const PANEL_RADIUS = 20;
 const PANEL_WIDTH = 480;
-/** How close the pointer gets before the closed bar starts to swell toward it. */
-const REACH = 80;
 const LEAVE_MS = 200;
 
 interface Shape {
@@ -257,8 +255,6 @@ let bouncy = true;
 let expanded = false;
 let animationFrame = 0;
 let lastTick = 0;
-/** Relative to the top center of the screen, where the notch is. */
-let pointer: { x: number; y: number } | null = null;
 let lastMode = "";
 
 function paint() {
@@ -299,25 +295,9 @@ function tick(now: number) {
   animationFrame = moving ? requestAnimationFrame(tick) : 0;
 }
 
-/** Where the shape should be: its resting place, nudged by the pointer. */
 function aim() {
-  const next = { ...rest };
-  if (pointer && rest.width > 0 && rest.height > 0) {
-    if (expanded) {
-      const lean = Math.max(-1, Math.min(1, pointer.x / (PANEL_WIDTH / 2)));
-      next.left += lean * 5;
-      next.height += Math.max(0, Math.min(1, pointer.y / rest.height)) * 6;
-    } else {
-      const outsideX = Math.max(rest.left - pointer.x, pointer.x - (rest.left + rest.width), 0);
-      const outsideY = Math.max(pointer.y - rest.height, 0);
-      const near = Math.max(0, 1 - Math.hypot(outsideX, outsideY) / REACH) ** 2;
-      next.left -= near * 8;
-      next.width += near * 16;
-      next.height += near * 6;
-    }
-  }
-  bouncy = next.width * next.height >= target.width * target.height;
-  target = next;
+  bouncy = rest.width * rest.height >= target.width * target.height;
+  target = { ...rest };
   if (animationFrame === 0) {
     lastTick = performance.now();
     animationFrame = requestAnimationFrame(tick);
@@ -452,22 +432,17 @@ function setMouseInside(inside: boolean) {
 
 window.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("mousemove", (event) => {
-    pointer = { x: event.clientX - window.innerWidth / 2, y: event.clientY };
-    // Judged against the resting shape, so a bounce or a lean never flickers the hover.
+    const x = event.clientX - window.innerWidth / 2;
+    // Judged against the resting shape, so a bounce never flickers the hover.
     const margin = expanded ? 10 : 0;
     setMouseInside(
       rest.height > 0 &&
-        pointer.x >= rest.left - margin &&
-        pointer.x <= rest.left + rest.width + margin &&
-        pointer.y <= rest.height + margin,
+        x >= rest.left - margin &&
+        x <= rest.left + rest.width + margin &&
+        event.clientY <= rest.height + margin,
     );
-    aim();
   });
-  document.addEventListener("mouseleave", () => {
-    pointer = null;
-    setMouseInside(false);
-    aim();
-  });
+  document.addEventListener("mouseleave", () => setMouseInside(false));
   ipcRenderer.on(VIBEBOSS_HUD_WINDOW_CHANNEL, (_event, next: HudState) => receive(next));
   send({ kind: "ready" });
 });
