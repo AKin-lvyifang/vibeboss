@@ -239,19 +239,6 @@ export function RolesRulesPage() {
           </T>
         </p>
       ) : null}
-      {review !== null ? (
-        <RuleReviewPanel
-          review={review}
-          modelStartedAt={modelStartedAt}
-          lastModelMs={lastModelMs}
-          handled={new Set(handled)}
-          applied={applied}
-          labelOf={labelOf}
-          onAccept={accept}
-          onDismiss={(id) => setRulesPage({ handled: [...handled, id] })}
-          onClose={() => setRulesPage({ review: null })}
-        />
-      ) : null}
       {config === null ? null : (
         <section className="flex flex-col gap-3">
           <SectionHeading>
@@ -265,6 +252,19 @@ export function RolesRulesPage() {
           <T>Rules</T>
         </SectionHeading>
       )}
+      {review !== null ? (
+        <RuleReviewPanel
+          review={review}
+          modelStartedAt={modelStartedAt}
+          lastModelMs={lastModelMs}
+          handled={new Set(handled)}
+          applied={applied}
+          labelOf={labelOf}
+          onAccept={accept}
+          onDismiss={(id) => setRulesPage({ handled: [...handled, id] })}
+          onClose={() => setRulesPage({ review: null })}
+        />
+      ) : null}
       {config === null ? null : (
         <div className="grid gap-6 md:grid-cols-4">
           <nav className="flex flex-col gap-1">
