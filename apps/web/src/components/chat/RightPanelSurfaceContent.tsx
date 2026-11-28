@@ -37,6 +37,9 @@ const DevicePanel = lazy(() =>
   import("../device/DevicePanel").then((module) => ({ default: module.DevicePanel })),
 );
 const FilePreviewPanel = lazy(() => import("../files/FilePreviewPanel"));
+const DemoPanel = lazy(() =>
+  import("../vibeboss/DemoPanel").then((module) => ({ default: module.DemoPanel })),
+);
 
 type RightPanelTerminalProps = Omit<
   PersistentThreadTerminalPanelProps,
@@ -91,6 +94,16 @@ export function RightPanelSurfaceContent(props: {
   const gt = useGT();
   if (surface === null) return null;
   switch (surface.kind) {
+    case "demo":
+      return (
+        <Suspense fallback={null}>
+          <DemoPanel
+            threadRef={threadRef}
+            workspaceRoot={props.files.workspaceRoot}
+            visible={visible}
+          />
+        </Suspense>
+      );
     case "preview":
       return (
         <Suspense fallback={null}>
