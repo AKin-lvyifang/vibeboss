@@ -5,8 +5,13 @@ import { resolveT3McpToolId } from "@t3tools/shared/t3McpToolPresentation";
 import * as DateTime from "effect/DateTime";
 import { useEffect, useRef } from "react";
 
-import { useRightPanelStore } from "~/rightPanelStore";
-import { isFreshDemoPanelOpenCall, latestDemoPanelOpenCall } from "~/vibebossDemos";
+import { selectSelectedRightPanelSurface, useRightPanelStore } from "~/rightPanelStore";
+import {
+  isFreshDemoPanelOpenCall,
+  isOpenedDemoTab,
+  latestDemoPanelOpenCall,
+  VIBEBOSS_DEMO_BACK_ACTION,
+} from "~/vibebossDemos";
 
 const isDemoPanelOpenTool = (toolName: string | null) =>
   resolveT3McpToolId(toolName) === "demo_open";
@@ -47,4 +52,17 @@ export function useDemoPanelAutoOpen(
     opened.current.add(key);
     useRightPanelStore.getState().open(threadRef, "demo");
   }, [threadRef, latestId, latestCompletedAtMs]);
+
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- listens for Escape forwarded by the desktop app from a focused Demo page.
+  useEffect(() => {
+    if (threadRef === null) return;
+    return window.desktopBridge?.onMenuAction((action) => {
+      if (action !== VIBEBOSS_DEMO_BACK_ACTION) return;
+      const store = useRightPanelStore.getState();
+      const surface = selectSelectedRightPanelSurface(store.byThreadKey, threadRef);
+      if (surface?.kind !== "preview" || surface.resourceId === null) return;
+      if (!isOpenedDemoTab(surface.resourceId)) return;
+      store.open(threadRef, "demo");
+    });
+  }, [threadRef]);
 }

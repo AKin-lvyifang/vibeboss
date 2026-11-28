@@ -29,13 +29,11 @@ it("clamps progress and keeps a demo without progress loading", () => {
 it("names the agents VibeBoss runs", () => {
   expect(demoAgentKind("agy")).toBe("antigravity");
   expect(demoAgentKind("GPT-6.2 Sol")).toBe("codex");
-  expect(demoAgentKind("定稿")).toBe("final");
-  expect(demoAgentKind("final")).toBe("final");
 });
 
 it("is ready only once finished and not waiting", () => {
   const done = parseDemoStatus('{"agent":"claude","progress":100}');
-  const waiting = parseDemoStatus('{"agent":"final","progress":100,"waiting":true}');
+  const waiting = parseDemoStatus('{"agent":"claude","progress":100,"waiting":true}');
   if (!done || !waiting) throw new Error("status did not parse");
   expect(isDemoReady(done)).toBe(true);
   expect(isDemoReady(waiting)).toBe(false);

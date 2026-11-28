@@ -9,7 +9,7 @@ const VIBEBOSS_DEMO_DIR = ".vibeboss/demo";
 export const VIBEBOSS_DEMO_SLOTS = [1, 2, 3] as const;
 export type DemoSlot = (typeof VIBEBOSS_DEMO_SLOTS)[number];
 
-export type DemoAgentKind = "claude" | "codex" | "antigravity" | "final" | "other";
+export type DemoAgentKind = "claude" | "codex" | "antigravity" | "other";
 
 export interface DemoStatus {
   readonly agent: string;
@@ -32,7 +32,6 @@ export function demoAgentKind(agent: string): DemoAgentKind {
   if (name.includes("antigravity") || name.includes("agy") || name.includes("gemini")) {
     return "antigravity";
   }
-  if (name === "final" || name.includes("定稿")) return "final";
   return "other";
 }
 
@@ -57,6 +56,18 @@ export function parseDemoStatus(contents: string): DemoStatus | null {
     version: contents.trim(),
   };
 }
+
+/** Sent by the desktop app when Escape goes unhandled in a browser page. */
+export const VIBEBOSS_DEMO_BACK_ACTION = "vibeboss.demo.back";
+
+/** Browser tab each demo was last opened in, keyed `<threadKey>:<slot>`. */
+export const openedDemoTabs = new Map<
+  string,
+  { readonly tabId: string; readonly version: string }
+>();
+
+export const isOpenedDemoTab = (tabId: string) =>
+  [...openedDemoTabs.values()].some((entry) => entry.tabId === tabId);
 
 export const isDemoReady = (status: DemoStatus) => !status.waiting && status.progress >= 100;
 

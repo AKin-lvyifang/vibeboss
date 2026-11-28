@@ -224,7 +224,17 @@ window.addEventListener("keydown", reportHumanKeyInput, true);
 // listener call preventDefault before the host is told the key went unhandled.
 const reportUnhandledShortcut = (event: KeyboardEvent): void => {
   if (!event.isTrusted || event.repeat || event.isComposing) return;
-  if (!event.metaKey && !event.ctrlKey && !event.altKey && !/^F\d{1,2}$/u.test(event.key)) return;
+  // VibeBoss: a bare Escape outside annotation goes too, so a Demo page can return to its panel.
+  const bareEscape =
+    event.key === "Escape" && !event.metaKey && !event.ctrlKey && !event.altKey && !activeSession;
+  if (
+    !bareEscape &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !/^F\d{1,2}$/u.test(event.key)
+  )
+    return;
   setTimeout(() => {
     if (event.defaultPrevented) return;
     ipcRenderer.send(PAGE_UNHANDLED_SHORTCUT_CHANNEL, {

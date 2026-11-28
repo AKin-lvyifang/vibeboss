@@ -27,7 +27,7 @@ const Slot = Schema.Number.annotate({ description: "The slot number `demo_open` 
 const DemoOpenTool = Tool.make("demo_open", {
   ...shared,
   description:
-    "Open a slot in the Demo panel for one design demo, before you write it. The panel opens beside the conversation and shows this demo loading. Returns the slot number and the `page` path: write the demo there as a single HTML file. A round holds at most three demos; pass `newRound: true` to clear the previous round first. `agent` is who writes it: claude, codex, antigravity, or final for the merged demo. Pass `waiting: true` when this demo must wait for the others. A member writing one of the main agent's demos calls this itself; its slot joins the main agent's panel.",
+    "Open a slot in the Demo panel for one design demo, before you write it. The panel opens beside the conversation and shows this demo loading. Returns the slot number and the `page` path: write the demo there as a single HTML file. A round holds at most three demos; pass `newRound: true` to clear the previous round first. `agent` names who writes it, e.g. claude, codex or antigravity. Pass `waiting: true` when this demo must wait for the others. A member writing one of the main agent's demos calls this itself; its slot joins the main agent's panel.",
   parameters: Schema.Struct({
     agent: Schema.String,
     waiting: Schema.optionalKey(Schema.Boolean),

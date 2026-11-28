@@ -446,6 +446,9 @@ type OpenLinkListener = (event: DesktopPreviewOpenLinkEvent) => Effect.Effect<vo
 
 type FindResultListener = (event: DesktopPreviewFindResultEvent) => Effect.Effect<void>;
 
+/** Must match `VIBEBOSS_DEMO_BACK_ACTION` in the web app's `vibebossDemos.ts`. */
+const VIBEBOSS_DEMO_BACK_ACTION = "vibeboss.demo.back";
+
 const PAGE_FIRST_FORWARDED_COMMANDS: ReadonlySet<PreviewForwardedShortcut["command"]> = new Set([
   "preview.find",
   "preview.zoomIn",
@@ -1630,6 +1633,12 @@ const makeNativeOperations = Effect.fn("PreviewManager.makeOperations")(function
       if (!host || host.isDestroyed() || !holdsKeyboardFocus(wc)) return;
       const keys = decodePageShortcutKeys(rawKeys);
       if (Option.isNone(keys)) return;
+      const { key, metaKey, ctrlKey, altKey, shiftKey } = keys.value;
+      if (key === "Escape" && !metaKey && !ctrlKey && !altKey && !shiftKey) {
+        // VibeBoss: the web app returns to the Demo panel when this page is one of its demos.
+        host.send(MENU_ACTION_CHANNEL, VIBEBOSS_DEMO_BACK_ACTION);
+        return;
+      }
       const forwarded = findForwardedShortcut(keys.value);
       if (!forwarded || !PAGE_FIRST_FORWARDED_COMMANDS.has(forwarded.command)) return;
       host.send(MENU_ACTION_CHANNEL, forwarded.command);

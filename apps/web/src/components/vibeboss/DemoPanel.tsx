@@ -2,7 +2,7 @@ import { scopedThreadKey } from "@t3tools/client-runtime/environment";
 import { executeAtomQuery } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
 import { useGT } from "gt-react";
-import { BadgeCheck, Bot, LayoutGrid } from "lucide-react";
+import { Bot, LayoutGrid } from "lucide-react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 
 import { resolveAssetUrl } from "~/assets/assetUrls";
@@ -35,6 +35,7 @@ import {
   demoPollInterval,
   demoStatusPath,
   isDemoReady,
+  openedDemoTabs,
   parseDemoStatus,
   VIBEBOSS_DEMO_SLOTS,
 } from "~/vibebossDemos";
@@ -46,9 +47,6 @@ interface SlotStatus {
 
 /** Demos are laid out for a desktop browser; thumbnails scale this width down. */
 const DEMO_PAGE_WIDTH = 1280;
-
-/** Browser tab each demo was last opened in, so reopening one focuses it instead of adding tabs. */
-const openedDemoTabs = new Map<string, { readonly tabId: string; readonly version: string }>();
 
 function useDemoStatuses(
   environmentId: EnvironmentId,
@@ -111,8 +109,6 @@ function DemoAgentIcon({ status }: { readonly status: DemoStatus }) {
       return <OpenAI className={className} />;
     case "antigravity":
       return <AntigravityIcon className={className} />;
-    case "final":
-      return <BadgeCheck className={className} />;
     case "other":
       return <Bot className={className} />;
   }
@@ -127,8 +123,6 @@ function DemoAgentName({ status }: { readonly status: DemoStatus }) {
       return "Codex";
     case "antigravity":
       return "Antigravity";
-    case "final":
-      return gt("Final");
     case "other":
       return status.agent || gt("Agent");
   }
