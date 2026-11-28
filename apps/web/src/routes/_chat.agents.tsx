@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AgentsPage } from "../components/vibeboss/AgentsPage";
+import { RolesRulesPage } from "../components/vibeboss/RolesRulesPage";
 
 export const Route = createFileRoute("/_chat/agents")({
-  component: AgentsPage,
+  component: RolesRulesPage,
 });

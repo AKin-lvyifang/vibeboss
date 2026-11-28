@@ -1,7 +1,6 @@
 import type { ProviderDriverKind, ServerProvider, VibeBossAgentKind } from "@t3tools/contracts";
-import { useNavigate } from "@tanstack/react-router";
-import { T, useGT } from "gt-react";
-import { ArrowLeftIcon, BotIcon } from "lucide-react";
+import { useGT } from "gt-react";
+import { ArrowLeftIcon } from "lucide-react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import type { ReactNode } from "react";
 
@@ -9,12 +8,10 @@ import { isElectron } from "../../env";
 import { useEnvironmentProviders, usePrimaryEnvironmentId } from "../../state/environments";
 import { useEnvironmentQuery } from "../../state/query";
 import { vibeBossEnvironment } from "../../state/vibeboss";
-import { ScrollIcon } from "../animate-ui/icons/scroll";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { Button } from "../ui/button";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { SidebarInset } from "../ui/sidebar";
-import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
 
 export const AGENT_KINDS: ReadonlyArray<VibeBossAgentKind> = ["claude", "codex", "agy"];
@@ -141,29 +138,6 @@ export function VibeBossPage({
         {overlay}
       </div>
     </SidebarInset>
-  );
-}
-
-/** Roles and Rules share one sidebar entry; this switch at the top of each page moves between them. */
-export function RolesRulesSwitch({ current }: { current: "/agents" | "/rules" }) {
-  const navigate = useNavigate();
-  return (
-    <ToggleGroup
-      value={[current]}
-      onValueChange={(value) => {
-        const next = value[0] as "/agents" | "/rules" | undefined;
-        if (next && next !== current) void navigate({ to: next });
-      }}
-    >
-      <ToggleGroupItem value="/agents">
-        <BotIcon />
-        <T>Roles</T>
-      </ToggleGroupItem>
-      <ToggleGroupItem value="/rules">
-        <ScrollIcon />
-        <T>Rules</T>
-      </ToggleGroupItem>
-    </ToggleGroup>
   );
 }
 
