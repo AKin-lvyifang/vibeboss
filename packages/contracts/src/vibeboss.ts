@@ -1,5 +1,7 @@
 import * as Schema from "effect/Schema";
 
+import { ProviderInstanceId } from "./providerInstance.ts";
+
 /** Agents whose skills, MCP servers and plugins the capabilities page compares. */
 export const VibeBossAgentKind = Schema.Literals(["claude", "codex", "agy"]);
 export type VibeBossAgentKind = typeof VibeBossAgentKind.Type;
@@ -30,6 +32,13 @@ export const VibeBossReviewModel = Schema.Struct({
 });
 export type VibeBossReviewModel = typeof VibeBossReviewModel.Type;
 
+/** An API model from Settings > Text generators. */
+export const VibeBossMemoryApi = Schema.Struct({
+  generatorId: ProviderInstanceId,
+  model: Schema.String,
+});
+export type VibeBossMemoryApi = typeof VibeBossMemoryApi.Type;
+
 export const VibeBossConfig = Schema.Struct({
   version: Schema.Literal(2),
   /**
@@ -45,9 +54,12 @@ export const VibeBossConfig = Schema.Struct({
   members: Schema.Array(VibeBossMember),
   /** The model the Rules page's check asks; unset falls back to the text generation model. */
   reviewModel: Schema.optional(VibeBossReviewModel),
-  /** The model that builds and tidies personal memory; unset falls back to the text generation model. */
-  memoryModel: Schema.optional(VibeBossReviewModel),
-  /** Tidy personal memory once a day when there are new conversations; unset means on. */
+  /**
+   * The API model that builds and tidies personal memory. Only an API: an agent CLI also loads its
+   * own rule files, which then read as the user's habits. Unset turns both off.
+   */
+  memoryApi: Schema.optional(VibeBossMemoryApi),
+  /** Tidy personal memory once a day when there are new conversations; unset means off. */
   memoryAutoTidy: Schema.optional(Schema.Boolean),
 });
 export type VibeBossConfig = typeof VibeBossConfig.Type;

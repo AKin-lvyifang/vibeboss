@@ -1,9 +1,11 @@
-import type {
-  EnvironmentId,
-  VibeBossConfig,
-  VibeBossPersonalMemoryLogEntry,
-  VibeBossPersonalMemoryRunMode,
-  VibeBossReviewModel,
+import { useNavigate } from "@tanstack/react-router";
+import {
+  textGeneratorForSelection,
+  type EnvironmentId,
+  type VibeBossConfig,
+  type VibeBossMemoryApi,
+  type VibeBossPersonalMemoryLogEntry,
+  type VibeBossPersonalMemoryRunMode,
 } from "@t3tools/contracts";
 import { T, useGT, Var } from "gt-react";
 import {
@@ -13,12 +15,13 @@ import {
   MessagesSquareIcon,
   UserRoundIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
-import { useClientSettings } from "../../hooks/useSettings";
+import { useClientSettings, useEnvironmentSettings } from "../../hooks/useSettings";
 import { useEnvironmentQuery } from "../../state/query";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { vibeBossEnvironment } from "../../state/vibeboss";
+import { useTextGenerationTargets } from "../../textGenerators";
 import { formatDayAwareTimestamp } from "../../timestampFormat";
 import { Button } from "../ui/button";
 import { Group, GroupSeparator } from "../ui/group";
@@ -28,7 +31,8 @@ import { Sheet, SheetHeader, SheetPopup, SheetTitle } from "../ui/sheet";
 import { Spinner } from "../ui/spinner";
 import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
-import { ReviewModelFields } from "./ReviewModelFields";
+import { ModelSelect } from "./MemberFields";
+import { ProviderSelect } from "./VibeBossShared";
 
 const SOFT_LIMIT = 6000;
 const POLL_MS = 2000;
@@ -55,6 +59,15 @@ export function PersonalMemoryCard(props: {
   const running = state.data?.running ?? null;
   const isRunning = running !== null;
   const text = props.config.sharedRules ?? "";
+  const textGenerators = useEnvironmentSettings(
+    props.environmentId,
+    (settings) => settings.textGenerators,
+  );
+  const api = props.config.memoryApi;
+  const apiReady =
+    api !== undefined &&
+    api.model !== "" &&
+    textGeneratorForSelection({ textGenerators }, api.generatorId)?.enabled === true;
   const { refresh } = state;
   const { onChanged } = props;
 
@@ -96,10 +109,17 @@ export function PersonalMemoryCard(props: {
           <T>No personal memory yet</T>
         </h2>
         <div className="flex items-center gap-2">
-          <Button disabled={busy} onClick={() => start("generate")}>
+          <RunButton
+            environmentId={props.environmentId}
+            config={props.config}
+            ready={apiReady}
+            disabled={busy}
+            onRun={() => start("generate")}
+            onSettingsChange={props.onSettingsChange}
+          >
             <MessagesSquareIcon />
             <T>Build from past conversations</T>
-          </Button>
+          </RunButton>
           <Button variant="outline" onClick={() => props.onChange(`# ${gt("About me")}\n\n`)}>
             <T>Write it myself</T>
           </Button>
@@ -144,13 +164,18 @@ export function PersonalMemoryCard(props: {
           <HistoryIcon />
           <T>History</T>
         </Button>
-        <TidyButton
+        <RunButton
           environmentId={props.environmentId}
           config={props.config}
+          ready={apiReady}
           disabled={busy}
-          onTidy={() => start("tidy")}
+          size="sm"
+          onRun={() => start("tidy")}
           onSettingsChange={props.onSettingsChange}
-        />
+        >
+          <MoonIcon />
+          <T>Tidy</T>
+        </RunButton>
       </div>
       <div className="p-3">
         <Textarea
@@ -176,28 +201,39 @@ export function PersonalMemoryCard(props: {
   );
 }
 
-function TidyButton(props: {
+/** Runs generate or tidy. Without an API model it opens the picker instead. */
+function RunButton(props: {
   readonly environmentId: EnvironmentId;
   readonly config: VibeBossConfig;
+  readonly ready: boolean;
   readonly disabled: boolean;
-  readonly onTidy: () => void;
+  readonly size?: "sm";
+  readonly onRun: () => void;
   readonly onSettingsChange: (next: Partial<VibeBossConfig>) => void;
+  readonly children: ReactNode;
 }) {
   const gt = useGT();
+  const [open, setOpen] = useState(false);
+  const small = props.size === "sm";
+  const variant = small ? "outline" : "default";
   return (
     <Group>
-      <Button size="sm" variant="outline" disabled={props.disabled} onClick={props.onTidy}>
-        <MoonIcon />
-        <T>Tidy</T>
+      <Button
+        size={small ? "sm" : "default"}
+        variant={variant}
+        disabled={props.disabled}
+        onClick={() => (props.ready ? props.onRun() : setOpen(true))}
+      >
+        {props.children}
       </Button>
       <GroupSeparator />
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
             <Button
-              size="icon-sm"
-              variant="outline"
-              aria-label={gt("Model used for personal memory")}
+              size={small ? "icon-sm" : "icon"}
+              variant={variant}
+              aria-label={gt("API model for personal memory")}
             />
           }
         >
@@ -206,14 +242,12 @@ function TidyButton(props: {
         <PopoverPopup align="end" className="w-72">
           <div className="flex flex-col gap-2">
             <PopoverTitle>
-              <T>Model used for personal memory</T>
+              <T>API model for personal memory</T>
             </PopoverTitle>
-            <ReviewModelFields
+            <MemoryApiFields
               environmentId={props.environmentId}
-              value={props.config.memoryModel}
-              onChange={(memoryModel: VibeBossReviewModel) =>
-                props.onSettingsChange({ memoryModel })
-              }
+              value={props.config.memoryApi}
+              onChange={(memoryApi) => props.onSettingsChange({ memoryApi })}
             />
             <div className="mt-1 flex items-center justify-between gap-2 border-t pt-3">
               <Label htmlFor="personal-memory-auto-tidy">
@@ -221,7 +255,8 @@ function TidyButton(props: {
               </Label>
               <Switch
                 id="personal-memory-auto-tidy"
-                checked={props.config.memoryAutoTidy !== false}
+                disabled={!props.ready}
+                checked={props.ready && props.config.memoryAutoTidy === true}
                 onCheckedChange={(memoryAutoTidy) => props.onSettingsChange({ memoryAutoTidy })}
               />
             </div>
@@ -230,6 +265,68 @@ function TidyButton(props: {
       </Popover>
     </Group>
   );
+}
+
+/** The text generators from Settings and their models; agents are not offered. */
+function MemoryApiFields(props: {
+  readonly environmentId: EnvironmentId;
+  readonly value: VibeBossMemoryApi | undefined;
+  readonly onChange: (value: VibeBossMemoryApi) => void;
+}) {
+  const navigate = useNavigate();
+  const settings = useEnvironmentSettings(props.environmentId);
+  const { providers } = useTextGenerationTargets({
+    environmentId: props.environmentId,
+    settings,
+    providers: [],
+    projectId: null,
+    selections:
+      props.value === undefined
+        ? []
+        : [{ instanceId: props.value.generatorId, model: props.value.model }],
+  });
+  if (providers.length === 0) {
+    return (
+      <Button variant="outline" onClick={() => void navigate({ to: "/settings/providers" })}>
+        <T>Add an API in Settings</T>
+      </Button>
+    );
+  }
+  const generatorId = props.value?.generatorId ?? providers[0]!.instanceId;
+  const provider = providers.find((item) => item.instanceId === generatorId);
+  const firstModel = provider?.models[0]?.slug ?? "";
+  return (
+    <>
+      <PickFirstModel
+        pending={(props.value?.model ?? "") === "" && firstModel !== ""}
+        onPick={() => props.onChange({ generatorId, model: firstModel })}
+      />
+      <ProviderSelect
+        value={generatorId}
+        providers={providers}
+        onChange={(id) => {
+          const next = providers.find((item) => item.instanceId === id);
+          if (next)
+            props.onChange({ generatorId: next.instanceId, model: next.models[0]?.slug ?? "" });
+        }}
+      />
+      <ModelSelect
+        provider={provider}
+        value={props.value?.model ?? ""}
+        onChange={(model) => props.onChange({ generatorId, model })}
+      />
+    </>
+  );
+}
+
+/** Saves the first model once the list loads, so opening the picker is enough to start. */
+function PickFirstModel(props: { readonly pending: boolean; readonly onPick: () => void }) {
+  const { pending, onPick } = props;
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- the API's model list loads after the picker opens
+  useEffect(() => {
+    if (pending) onPick();
+  }, [pending, onPick]);
+  return null;
 }
 
 function HistoryList(props: { readonly entries: ReadonlyArray<VibeBossPersonalMemoryLogEntry> }) {

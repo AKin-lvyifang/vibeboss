@@ -662,7 +662,8 @@ export const start = Effect.fn("PersonalMemory.start")(function* (
 export const tidyDue = Effect.fn("PersonalMemory.tidyDue")(function* (sql: SqlClient.SqlClient) {
   if (running !== null) return false;
   const config = yield* VibeBoss.readConfig();
-  if (config.memoryAutoTidy === false || (config.sharedRules ?? "").trim() === "") return false;
+  if (config.memoryAutoTidy !== true || config.memoryApi === undefined) return false;
+  if ((config.sharedRules ?? "").trim() === "") return false;
   const meta = yield* readMeta();
   if (meta.lastTidyAt !== undefined) {
     const now = DateTime.toEpochMillis(yield* DateTime.now);
