@@ -33,6 +33,7 @@ const RIGHT_PANEL_KINDS = [
   "thread",
   "linked-thread",
   "memory",
+  "demo",
 ] as const;
 export type RightPanelKind = (typeof RIGHT_PANEL_KINDS)[number];
 
@@ -58,6 +59,7 @@ export type RightPanelSurface =
       splitDirection?: "horizontal" | "vertical";
     }
   | { id: "diff"; kind: "diff" }
+  | { id: "demo"; kind: "demo" }
   | {
       id: "files";
       kind: "files";
@@ -337,6 +339,8 @@ const singletonSurface = (
       return { id: "pull-requests", kind };
     case "device":
       return { id: "device", kind };
+    case "demo":
+      return { id: "demo", kind };
   }
 };
 

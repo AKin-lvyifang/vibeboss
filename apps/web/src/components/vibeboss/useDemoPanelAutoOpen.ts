@@ -1,0 +1,68 @@
+import { scopedThreadKey } from "@t3tools/client-runtime/environment";
+import type { ThreadStructureVisibleTurnItem } from "@t3tools/client-runtime/state/models";
+import type { ScopedThreadRef } from "@t3tools/contracts";
+import { resolveT3McpToolId } from "@t3tools/shared/t3McpToolPresentation";
+import * as DateTime from "effect/DateTime";
+import { useEffect, useRef } from "react";
+
+import { selectSelectedRightPanelSurface, useRightPanelStore } from "~/rightPanelStore";
+import {
+  isFreshDemoPanelOpenCall,
+  isOpenedDemoTab,
+  latestDemoPanelOpenCall,
+  VIBEBOSS_DEMO_BACK_ACTION,
+} from "~/vibebossDemos";
+
+const isDemoPanelOpenTool = (toolName: string | null) =>
+  resolveT3McpToolId(toolName) === "demo_open";
+
+/** Opens the Demo panel when an agent in this thread opens a Demo slot. */
+export function useDemoPanelAutoOpen(
+  threadRef: ScopedThreadRef | null,
+  items: ReadonlyArray<ThreadStructureVisibleTurnItem>,
+) {
+  const calls = items.flatMap(({ item }) =>
+    item.type === "dynamic_tool"
+      ? [
+          {
+            id: item.id,
+            toolName: item.toolName,
+            status: item.status,
+            completedAtMs: item.completedAt ? DateTime.toEpochMillis(item.completedAt) : null,
+          },
+        ]
+      : [],
+  );
+  const latest = latestDemoPanelOpenCall(calls, isDemoPanelOpenTool);
+  const latestId = latest?.id ?? null;
+  const latestCompletedAtMs = latest?.completedAtMs ?? null;
+  const opened = useRef(new Set<string>());
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- the call arrives in server-pushed thread items, with no user handler to open the panel from.
+  useEffect(() => {
+    if (threadRef === null || latestId === null) return;
+    const call = {
+      id: latestId,
+      toolName: null,
+      status: "completed",
+      completedAtMs: latestCompletedAtMs,
+    };
+    if (!isFreshDemoPanelOpenCall(call, Date.now())) return;
+    const key = `${scopedThreadKey(threadRef)}:${latestId}`;
+    if (opened.current.has(key)) return;
+    opened.current.add(key);
+    useRightPanelStore.getState().open(threadRef, "demo");
+  }, [threadRef, latestId, latestCompletedAtMs]);
+
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- listens for Escape forwarded by the desktop app from a focused Demo page.
+  useEffect(() => {
+    if (threadRef === null) return;
+    return window.desktopBridge?.onMenuAction((action) => {
+      if (action !== VIBEBOSS_DEMO_BACK_ACTION) return;
+      const store = useRightPanelStore.getState();
+      const surface = selectSelectedRightPanelSurface(store.byThreadKey, threadRef);
+      if (surface?.kind !== "preview" || surface.resourceId === null) return;
+      if (!isOpenedDemoTab(surface.resourceId)) return;
+      store.open(threadRef, "demo");
+    });
+  }, [threadRef]);
+}
