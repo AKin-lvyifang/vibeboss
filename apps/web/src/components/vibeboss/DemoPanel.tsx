@@ -45,6 +45,9 @@ interface SlotStatus {
   readonly status: DemoStatus;
 }
 
+/** Each progress report rolls the number and bar up over this, so a jump from 0 to 70 reads as counting. */
+const PROGRESS_ROLL = { type: "tween", duration: 1.4, ease: "easeOut" } as const;
+
 /** Demos are laid out for a desktop browser; thumbnails scale this width down. */
 const DEMO_PAGE_WIDTH = 1280;
 
@@ -160,8 +163,8 @@ function DemoLoading({ status }: { readonly status: DemoStatus }) {
         ) : (
           <div className="w-48 max-w-full rounded-xl bg-muted/85 px-4 py-3">
             <Progress value={status.progress}>
-              <ProgressValue size="display" />
-              <ProgressTrack />
+              <ProgressValue size="display" transition={PROGRESS_ROLL} />
+              <ProgressTrack indicatorTransition={PROGRESS_ROLL} />
             </Progress>
           </div>
         )}

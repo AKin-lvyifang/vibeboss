@@ -16,15 +16,23 @@ function Progress({ className, ...props }: React.ComponentProps<typeof ProgressP
 
 function ProgressTrack({
   className,
+  indicatorTransition,
   ...props
-}: React.ComponentProps<typeof ProgressPrimitive.Track>) {
+}: React.ComponentProps<typeof ProgressPrimitive.Track> & {
+  readonly indicatorTransition?: React.ComponentProps<
+    typeof ProgressPrimitive.Indicator
+  >["transition"];
+}) {
   return (
     <ProgressPrimitive.Track
       data-slot="progress-track"
       className={cn("relative h-2 w-full overflow-hidden rounded-full bg-primary/20", className)}
       {...props}
     >
-      <ProgressPrimitive.Indicator className="h-full w-full flex-1 rounded-full bg-primary" />
+      <ProgressPrimitive.Indicator
+        className="h-full w-full flex-1 rounded-full bg-primary"
+        {...(indicatorTransition === undefined ? {} : { transition: indicatorTransition })}
+      />
     </ProgressPrimitive.Track>
   );
 }
