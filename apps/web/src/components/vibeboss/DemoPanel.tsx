@@ -36,7 +36,6 @@ import {
   demoStatusPath,
   isDemoReady,
   parseDemoStatus,
-  VIBEBOSS_DEMO_DIR,
   VIBEBOSS_DEMO_SLOTS,
 } from "~/vibebossDemos";
 
@@ -53,6 +52,7 @@ const openedDemoTabs = new Map<string, { readonly tabId: string; readonly versio
 
 function useDemoStatuses(
   environmentId: EnvironmentId,
+  threadId: string,
   cwd: string | undefined,
   visible: boolean,
 ): ReadonlyArray<SlotStatus> | null {
@@ -69,7 +69,7 @@ function useDemoStatuses(
             appAtomRegistry,
             projectEnvironment.readFile({
               environmentId,
-              input: { cwd, relativePath: demoStatusPath(slot), allowMissing: true },
+              input: { cwd, relativePath: demoStatusPath(threadId, slot), allowMissing: true },
             }),
             { label: "Read demo status", reportFailure: false, refresh: true },
           );
@@ -98,7 +98,7 @@ function useDemoStatuses(
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [environmentId, cwd, visible]);
+  }, [environmentId, threadId, cwd, visible]);
   return statuses;
 }
 
@@ -239,7 +239,7 @@ function DemoCard(props: {
         resource: {
           _tag: "workspace-file",
           threadId: threadRef.threadId,
-          path: `${workspaceRoot}/${demoPagePath(entry.slot)}`,
+          path: `${workspaceRoot}/${demoPagePath(threadRef.threadId, entry.slot)}`,
         },
       },
     }).then((result) => {
@@ -288,7 +288,12 @@ export function DemoPanel(props: {
 }) {
   const gt = useGT();
   const { threadRef, workspaceRoot } = props;
-  const statuses = useDemoStatuses(threadRef.environmentId, workspaceRoot, props.visible);
+  const statuses = useDemoStatuses(
+    threadRef.environmentId,
+    threadRef.threadId,
+    workspaceRoot,
+    props.visible,
+  );
   const httpBaseUrl = useEnvironmentHttpBaseUrl(threadRef.environmentId);
   const createAssetUrl = useAtomQueryRunner(assetEnvironment.createUrl, { refresh: true });
   const openPreview = useAtomCommand(previewEnvironment.open);
@@ -311,7 +316,7 @@ export function DemoPanel(props: {
     }
     const result = await openFileInPreview({
       threadRef,
-      filePath: `${workspaceRoot}/${demoPagePath(entry.slot)}`,
+      filePath: `${workspaceRoot}/${demoPagePath(threadRef.threadId, entry.slot)}`,
       workspaceRoot,
       httpBaseUrl,
       createAssetUrl,
@@ -340,11 +345,7 @@ export function DemoPanel(props: {
             <LayoutGrid />
           </EmptyMedia>
           <EmptyTitle>{gt("No demos yet")}</EmptyTitle>
-          <EmptyDescription>
-            {gt("Agents write demos to {folder} in this project.", {
-              folder: VIBEBOSS_DEMO_DIR,
-            })}
-          </EmptyDescription>
+          <EmptyDescription>{gt("Demos show here as agents hand them in.")}</EmptyDescription>
         </EmptyHeader>
       </Empty>
     );

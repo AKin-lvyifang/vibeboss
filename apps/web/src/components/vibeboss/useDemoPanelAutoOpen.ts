@@ -9,9 +9,9 @@ import { useRightPanelStore } from "~/rightPanelStore";
 import { isFreshDemoPanelOpenCall, latestDemoPanelOpenCall } from "~/vibebossDemos";
 
 const isDemoPanelOpenTool = (toolName: string | null) =>
-  resolveT3McpToolId(toolName) === "demo_panel_open";
+  resolveT3McpToolId(toolName) === "demo_open";
 
-/** Opens the Demo panel when an agent in this thread calls `demo_panel_open`. */
+/** Opens the Demo panel when an agent in this thread opens a Demo slot. */
 export function useDemoPanelAutoOpen(
   threadRef: ScopedThreadRef | null,
   items: ReadonlyArray<ThreadStructureVisibleTurnItem>,

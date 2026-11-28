@@ -1,11 +1,11 @@
 /**
- * VibeBoss Demo panel: agents write up to three design demos to a fixed folder in the
- * workspace, each with a small status file the panel reads for its loading state.
+ * VibeBoss Demo panel: agents hand in up to three design demos through the `demo_open`,
+ * `demo_progress` and `demo_submit` tools, which keep each thread's demos in its own folder:
  *
- *   .vibeboss/demo/<1|2|3>/index.html
- *   .vibeboss/demo/<1|2|3>/status.json  {"agent":"claude","progress":40}
+ *   .vibeboss/demo/<threadId>/<1|2|3>/index.html
+ *   .vibeboss/demo/<threadId>/<1|2|3>/status.json  {"agent":"claude","progress":40}
  */
-export const VIBEBOSS_DEMO_DIR = ".vibeboss/demo";
+const VIBEBOSS_DEMO_DIR = ".vibeboss/demo";
 export const VIBEBOSS_DEMO_SLOTS = [1, 2, 3] as const;
 export type DemoSlot = (typeof VIBEBOSS_DEMO_SLOTS)[number];
 
@@ -20,8 +20,10 @@ export interface DemoStatus {
   readonly version: string;
 }
 
-export const demoStatusPath = (slot: DemoSlot) => `${VIBEBOSS_DEMO_DIR}/${slot}/status.json`;
-export const demoPagePath = (slot: DemoSlot) => `${VIBEBOSS_DEMO_DIR}/${slot}/index.html`;
+export const demoStatusPath = (threadId: string, slot: DemoSlot) =>
+  `${VIBEBOSS_DEMO_DIR}/${threadId}/${slot}/status.json`;
+export const demoPagePath = (threadId: string, slot: DemoSlot) =>
+  `${VIBEBOSS_DEMO_DIR}/${threadId}/${slot}/index.html`;
 
 export function demoAgentKind(agent: string): DemoAgentKind {
   const name = agent.trim().toLowerCase();
@@ -62,7 +64,7 @@ export const isDemoReady = (status: DemoStatus) => !status.waiting && status.pro
 export const demoPollInterval = (statuses: ReadonlyArray<DemoStatus>) =>
   statuses.length > 0 && statuses.every(isDemoReady) ? 5000 : 1500;
 
-/** An agent's `demo_panel_open` call: the app opens the Demo panel when a new one finishes. */
+/** An agent's `demo_open` call: the app opens the Demo panel when a new one finishes. */
 export interface DemoPanelOpenCall {
   readonly id: string;
   readonly toolName: string | null;

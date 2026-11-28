@@ -1445,7 +1445,7 @@ const layerThemeToolkit = toolkitRegistration(ThemeToolkit, ThemeHandlers.layer)
 
 // VibeBoss: search and read the user's knowledge folder.
 const layerKnowledgeToolkit = toolkitRegistration(KnowledgeToolkit, KnowledgeHandlers.layer);
-// VibeBoss: open the Demo panel and get the folder demos go in.
+// VibeBoss: agents open slots in the Demo panel, report progress and hand demos in.
 const layerDemoToolkit = toolkitRegistration(DemoToolkit, DemoHandlers.layer);
 // VibeBoss: the main agent writes the project's memory.
 const layerProjectMemoryToolkit = toolkitRegistration(

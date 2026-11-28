@@ -44,8 +44,8 @@ it("is ready only once finished and not waiting", () => {
   expect(demoPollInterval([])).toBe(1500);
 });
 
-it("opens the panel only for a recent, finished demo_panel_open call", () => {
-  const isTool = (name: string | null) => name === "mcp__t3-code__demo_panel_open";
+it("opens the panel only for a recent, finished demo_open call", () => {
+  const isTool = (name: string | null) => name === "mcp__t3-code__demo_open";
   const now = 1_000_000;
   const call = (id: string, toolName: string, status: string, completedAtMs: number | null) => ({
     id,
@@ -55,7 +55,7 @@ it("opens the panel only for a recent, finished demo_panel_open call", () => {
   });
   const latest = latestDemoPanelOpenCall(
     [
-      call("a", "mcp__t3-code__demo_panel_open", "completed", now - 5_000),
+      call("a", "mcp__t3-code__demo_open", "completed", now - 5_000),
       call("b", "Bash", "completed", now - 1_000),
     ],
     isTool,
@@ -63,11 +63,11 @@ it("opens the panel only for a recent, finished demo_panel_open call", () => {
   expect(latest?.id).toBe("a");
   expect(latest && isFreshDemoPanelOpenCall(latest, now)).toBe(true);
   expect(
-    latestDemoPanelOpenCall([call("a", "mcp__t3-code__demo_panel_open", "running", null)], isTool),
+    latestDemoPanelOpenCall([call("a", "mcp__t3-code__demo_open", "running", null)], isTool),
   ).toBeNull();
   expect(
     isFreshDemoPanelOpenCall(
-      call("a", "mcp__t3-code__demo_panel_open", "completed", now - 10 * 60_000),
+      call("a", "mcp__t3-code__demo_open", "completed", now - 10 * 60_000),
       now,
     ),
   ).toBe(false);
