@@ -17,7 +17,7 @@ import type {
 } from "@t3tools/contracts";
 import { ExternalLinkIcon, SearchIcon } from "lucide-react";
 import { msg, T, useGT, useMessages, Var } from "gt-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, type ReactNode, useState } from "react";
 
 import { useDeadlinePassed } from "../../hooks/useDeadline";
 import { m } from "../../i18n/messages";
@@ -33,6 +33,12 @@ import { isConfiguredAcpRegistryAgent } from "./AddProviderInstanceDialog.logic"
 import { ProviderDriverKind } from "@t3tools/contracts";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { providerClients } from "./providerDriverMeta";
+import {
+  ACP_LOCAL_PRESETS,
+  type AcpLocalPreset,
+  acpLocalPresetForCommand,
+  matchesAcpLocalPreset,
+} from "./acpLocalPresets";
 
 function errorMessage(error: unknown): string {
   return error instanceof Error && error.message.trim()
@@ -138,6 +144,22 @@ interface AcpRegistrySearchStepProps {
   readonly onPrepared: (agent: AcpRegistrySearchAgent) => void;
   readonly onManualConfiguration: () => void;
   readonly onLocalConfiguration?: () => void;
+  readonly onPresetSelected?: (preset: AcpLocalPreset) => void;
+}
+
+function isConfiguredAcpLocalPreset(
+  providerInstances: Readonly<Record<string, ProviderInstanceConfig>>,
+  presetId: string,
+): boolean {
+  return Object.values(providerInstances).some((instance) => {
+    const config = instance.config as Readonly<Record<string, unknown>> | undefined;
+    const commandPath = typeof config?.commandPath === "string" ? config.commandPath : null;
+    return (
+      instance.driver === "acpRegistry" &&
+      config?.source === "local" &&
+      acpLocalPresetForCommand(commandPath)?.id === presetId
+    );
+  });
 }
 
 export function AcpRegistrySearchStep({
@@ -147,6 +169,7 @@ export function AcpRegistrySearchStep({
   onPrepared,
   onManualConfiguration,
   onLocalConfiguration,
+  onPresetSelected,
 }: AcpRegistrySearchStepProps) {
   const gt = useGT();
   const canManageProviders = useEnvironmentScope(environmentId, AuthProvidersManageScope);
@@ -165,6 +188,9 @@ export function AcpRegistrySearchStep({
     search.data?.agents.filter((agent) => !FIRST_CLASS_REGISTRY_AGENT_IDS.has(agent.id)) ?? null;
   const isInitialSearch = search.isPending && results === null;
   const isRefreshing = search.isPending && results !== null;
+  const presets = onPresetSelected
+    ? ACP_LOCAL_PRESETS.filter((preset) => matchesAcpLocalPreset(preset, query))
+    : [];
   const resultCount = results?.length ?? 0;
 
   return (
@@ -249,8 +275,8 @@ export function AcpRegistrySearchStep({
         </div>
       ) : null}
 
-      {results ? (
-        results.length === 0 ? (
+      {results || presets.length > 0 ? (
+        resultCount === 0 && presets.length === 0 ? (
           <div className="flex min-h-28 flex-col items-center justify-center rounded-2xl border border-dashed px-4 text-center">
             <p className="text-sm font-medium">
               <T>No compatible agents found</T>
@@ -262,7 +288,25 @@ export function AcpRegistrySearchStep({
         ) : (
           <ScrollArea scrollFade className="max-h-64">
             <div className="pr-2.5">
-              {results.map((agent) => (
+              {presets.map((preset) => {
+                const alreadyAdded = isConfiguredAcpLocalPreset(providerInstances, preset.id);
+                return (
+                  <AgentRow
+                    key={`preset:${preset.id}`}
+                    icon={<preset.Icon className="size-6 text-muted-foreground" aria-hidden />}
+                    name={preset.name}
+                    description={preset.description()}
+                    aboutUrl={preset.website}
+                    alreadyAdded={alreadyAdded}
+                    canAdd={canManageProviders && preparingId === null}
+                    isPreparing={false}
+                    progressLabel=""
+                    preparingAriaLabel=""
+                    onAdd={() => onPresetSelected?.(preset)}
+                  />
+                );
+              })}
+              {(results ?? []).map((agent) => (
                 <AcpRegistryAgentRow
                   agent={agent}
                   alreadyAdded={isConfiguredAcpRegistryAgent(providerInstances, agent.id)}
@@ -294,25 +338,69 @@ function AcpRegistryAgentRow({
   readonly onAdd: (agent: AcpRegistrySearchAgent) => void;
 }) {
   const gt = useGT();
-  const progressLabel = agent.distribution === "binary" ? gt("Downloading") : gt("Preparing");
-  const aboutUrl = agent.website || agent.repository;
+  return (
+    <AgentRow
+      icon={
+        <ProviderInstanceIcon
+          driverKind={ProviderDriverKind.make("acpRegistry")}
+          displayName={agent.name}
+          acpRegistryAgentId={agent.id}
+          acpRegistryIconUrl={agent.icon ?? undefined}
+          iconClassName="size-6 rounded-md text-muted-foreground"
+        />
+      }
+      name={agent.name}
+      description={agent.description}
+      aboutUrl={agent.website || agent.repository}
+      alreadyAdded={alreadyAdded}
+      canAdd={canAdd}
+      isPreparing={isPreparing}
+      progressLabel={agent.distribution === "binary" ? gt("Downloading") : gt("Preparing")}
+      preparingAriaLabel={
+        agent.distribution === "binary"
+          ? gt("Downloading {name}", { name: agent.name })
+          : gt("Preparing {name}", { name: agent.name })
+      }
+      onAdd={() => onAdd(agent)}
+    />
+  );
+}
+
+function AgentRow({
+  icon,
+  name,
+  description,
+  aboutUrl,
+  alreadyAdded,
+  canAdd,
+  isPreparing,
+  progressLabel,
+  preparingAriaLabel,
+  onAdd,
+}: {
+  readonly icon: ReactNode;
+  readonly name: string;
+  readonly description: string | null | undefined;
+  readonly aboutUrl: string | null | undefined;
+  readonly alreadyAdded: boolean;
+  readonly canAdd: boolean;
+  readonly isPreparing: boolean;
+  readonly progressLabel: string;
+  readonly preparingAriaLabel: string;
+  readonly onAdd: () => void;
+}) {
+  const gt = useGT();
   return (
     <article className="min-w-0 py-2.5">
       <div className="flex min-w-0 items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <ProviderInstanceIcon
-            driverKind={ProviderDriverKind.make("acpRegistry")}
-            displayName={agent.name}
-            acpRegistryAgentId={agent.id}
-            acpRegistryIconUrl={agent.icon ?? undefined}
-            iconClassName="size-6 rounded-md text-muted-foreground"
-          />
+          {icon}
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-baseline gap-2">
-              <h4 className="min-w-0 truncate text-sm font-medium text-foreground">{agent.name}</h4>
+              <h4 className="min-w-0 truncate text-sm font-medium text-foreground">{name}</h4>
             </div>
-            {agent.description ? (
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">{agent.description}</p>
+            {description ? (
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{description}</p>
             ) : null}
           </div>
         </div>
@@ -324,7 +412,7 @@ function AcpRegistryAgentRow({
                   <Button
                     size="icon-xs"
                     variant="ghost-muted"
-                    aria-label={gt("About {name}", { name: agent.name })}
+                    aria-label={gt("About {name}", { name })}
                     render={<a href={aboutUrl} target="_blank" rel="noreferrer" />}
                   >
                     <ExternalLinkIcon />
@@ -333,7 +421,7 @@ function AcpRegistryAgentRow({
               />
               <TooltipPopup>
                 <T>
-                  About <Var>{agent.name}</Var>
+                  About <Var>{name}</Var>
                 </T>
               </TooltipPopup>
             </Tooltip>
@@ -341,15 +429,13 @@ function AcpRegistryAgentRow({
           <Button
             aria-label={
               alreadyAdded
-                ? gt("Already added {name}", { name: agent.name })
+                ? gt("Already added {name}", { name })
                 : isPreparing
-                  ? agent.distribution === "binary"
-                    ? gt("Downloading {name}", { name: agent.name })
-                    : gt("Preparing {name}", { name: agent.name })
-                  : gt("Add {name}", { name: agent.name })
+                  ? preparingAriaLabel
+                  : gt("Add {name}", { name })
             }
             disabled={!canAdd || alreadyAdded}
-            onClick={() => onAdd(agent)}
+            onClick={onAdd}
             size="xs"
             variant={isPreparing ? "secondary" : "outline"}
           >

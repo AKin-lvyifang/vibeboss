@@ -78,6 +78,7 @@ import {
   settleCustomModelSave,
 } from "./customModelSaves.logic";
 import { getProviderRestartNotice } from "../ProviderUpdateLaunchNotification.logic";
+import { acpLocalPresetIconKey } from "./acpLocalPresets";
 import {
   getProviderVersionAdvisoryPresentation,
   PROVIDER_STATUS_STYLES,
@@ -990,7 +991,7 @@ export function ProviderInstanceCard({
       accentColor={accentColor}
       acpRegistryAgentId={
         readConfigString(instance.config, "source") === "local"
-          ? undefined
+          ? acpLocalPresetIconKey(readConfigString(instance.config, "commandPath"))
           : (readConfigString(instance.config, "agentId") ?? undefined)
       }
       acpRegistryIconUrl={

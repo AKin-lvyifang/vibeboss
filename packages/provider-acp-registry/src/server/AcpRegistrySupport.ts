@@ -710,7 +710,10 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
     command: string,
     environment: NodeJS.ProcessEnv,
   ) {
-    return yield* Effect.promise(async () => executableResolver(command, platform, environment));
+    // Local commands may be written as ~/…; they launch without a shell, so expand it here.
+    const home = environment.HOME;
+    const expanded = command.startsWith("~/") && home ? path.join(home, command.slice(2)) : command;
+    return yield* Effect.promise(async () => executableResolver(expanded, platform, environment));
   });
   const platformTarget = resolveAcpRegistryPlatformTarget(platform, architecture);
   const registryUrl = input.registryUrl ?? ACP_REGISTRY_URL;

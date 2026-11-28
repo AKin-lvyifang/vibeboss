@@ -25,6 +25,7 @@ import {
   officialAcpRegistryIconUrlForAgentId,
   resolveOfficialAcpRegistryIconUrl,
 } from "../settings/AcpRegistryIcon";
+import { acpLocalPresetForIconKey } from "../settings/acpLocalPresets";
 
 const PROVIDER_ICON_BY_PROVIDER: Partial<Record<ProviderDriverKind, Icon>> = {
   [ProviderDriverKind.make("codex")]: OpenAI,
@@ -113,6 +114,9 @@ export const ProviderInstanceIcon = memo(function ProviderInstanceIcon(props: {
   const badgeContent = props.badgeContent ?? "initials";
   const iconClassName = cn(props.size === "compact" && "size-3.5", props.iconClassName);
   const isAcpRegistry = props.driverKind === "acpRegistry";
+  const localPreset = isAcpRegistry
+    ? acpLocalPresetForIconKey(props.acpRegistryAgentId)
+    : undefined;
   // A custom OpenAI-compatible endpoint has no brand: show its name, marked with the protocol.
   const isCustomEndpoint = props.driverKind === "openaiCompatible";
   const acpRegistryIconUrl = resolveProviderInstanceAcpRegistryIconUrl({
@@ -130,7 +134,9 @@ export const ProviderInstanceIcon = memo(function ProviderInstanceIcon(props: {
       style={accentStyle}
       data-provider-accent-color={accentColor}
     >
-      {isAcpRegistry ? (
+      {localPreset ? (
+        <localPreset.Icon className={cn("size-5 shrink-0", iconClassName)} aria-hidden />
+      ) : isAcpRegistry ? (
         <AcpRegistryAgentIcon
           className={cn("size-5 rounded-none bg-transparent", iconClassName)}
           fallbackClassName="size-full"
