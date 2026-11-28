@@ -61,3 +61,28 @@ export const isDemoReady = (status: DemoStatus) => !status.waiting && status.pro
 /** Polls fast while a demo is still being written, slowly once every demo is ready. */
 export const demoPollInterval = (statuses: ReadonlyArray<DemoStatus>) =>
   statuses.length > 0 && statuses.every(isDemoReady) ? 5000 : 1500;
+
+/** An agent's `demo_panel_open` call: the app opens the Demo panel when a new one finishes. */
+export interface DemoPanelOpenCall {
+  readonly id: string;
+  readonly toolName: string | null;
+  readonly status: string;
+  readonly completedAtMs: number | null;
+}
+
+/** Calls older than this are history from before the thread was opened, not a request now. */
+const DEMO_PANEL_OPEN_FRESH_MS = 2 * 60 * 1000;
+
+export function latestDemoPanelOpenCall(
+  calls: ReadonlyArray<DemoPanelOpenCall>,
+  isDemoPanelOpenTool: (toolName: string | null) => boolean,
+): DemoPanelOpenCall | null {
+  for (let index = calls.length - 1; index >= 0; index -= 1) {
+    const call = calls[index];
+    if (call && call.status === "completed" && isDemoPanelOpenTool(call.toolName)) return call;
+  }
+  return null;
+}
+
+export const isFreshDemoPanelOpenCall = (call: DemoPanelOpenCall, nowMs: number) =>
+  call.completedAtMs !== null && nowMs - call.completedAtMs <= DEMO_PANEL_OPEN_FRESH_MS;

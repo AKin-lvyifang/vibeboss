@@ -154,6 +154,8 @@ function DemoLoading({ status }: { readonly status: DemoStatus }) {
     <>
       <GlyphBackground
         ref={glyphRef}
+        fps={20}
+        burstMs={2400}
         className={cn("absolute inset-0 text-foreground", status.waiting && "opacity-50")}
       />
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">

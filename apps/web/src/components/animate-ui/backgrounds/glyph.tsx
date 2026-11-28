@@ -153,6 +153,10 @@ type GlyphBackgroundProps = React.ComponentProps<"div"> & {
   shapeColor?: string;
   fontSize?: number;
   interactive?: boolean;
+  /** VibeBoss: cap redraws to this many frames a second. */
+  fps?: number;
+  /** VibeBoss: stay still until a pointer or ripple wakes it, then animate for this long. */
+  burstMs?: number;
 };
 
 function compile(gl: WebGLRenderingContext, type: number, source: string) {
@@ -279,6 +283,8 @@ function GlyphBackgroundContent({
   shapeColor,
   fontSize = 10,
   interactive = true,
+  fps,
+  burstMs,
   className,
   children,
   onPointerMove,
@@ -292,7 +298,15 @@ function GlyphBackgroundContent({
   const inView = useInView(containerRef);
   const pageVisible = usePageVisible();
   const reduce = useShouldReduceMotion();
-  const playing = inView && pageVisible && !reduce;
+  const [awake, setAwake] = React.useState(burstMs === undefined);
+  const sleepTimerRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const wake = () => {
+    if (burstMs === undefined) return;
+    setAwake(true);
+    clearTimeout(sleepTimerRef.current);
+    sleepTimerRef.current = setTimeout(() => setAwake(false), burstMs);
+  };
+  const playing = inView && pageVisible && !reduce && awake;
 
   const wavesRef = React.useRef<Wave[]>([]);
   const trailRef = React.useRef<{ x: number; y: number; t: number }[]>([]);
@@ -440,6 +454,7 @@ function GlyphBackgroundContent({
     });
     return () => {
       stopObserving();
+      clearTimeout(sleepTimerRef.current);
       drawRef.current = () => {};
     };
   }, []);
@@ -449,13 +464,18 @@ function GlyphBackgroundContent({
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- drives the frame loop only while the background is on screen.
   React.useEffect(() => {
     if (!playing) return;
+    let sinceDraw = 0;
     const tick = ({ delta }: { delta: number }) => {
-      timeRef.current += Math.min(delta, 64);
+      const step = Math.min(delta, 64);
+      timeRef.current += step;
+      sinceDraw += step;
+      if (fps !== undefined && sinceDraw < 1000 / fps) return;
+      sinceDraw = 0;
       drawRef.current(timeRef.current, true);
     };
     frame.render(tick, true);
     return () => cancelFrame(tick);
-  }, [playing]);
+  }, [playing, fps]);
 
   const point = (event: React.PointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -471,6 +491,7 @@ function GlyphBackgroundContent({
       onPointerMove={(event) => {
         onPointerMove?.(event);
         if (!interactive || reduce) return;
+        wake();
         const { x, y } = point(event);
         const now = timeRef.current;
         const trail = trailRef.current;
@@ -490,6 +511,7 @@ function GlyphBackgroundContent({
       onPointerDown={(event) => {
         onPointerDown?.(event);
         if (!interactive || reduce) return;
+        wake();
         const { x, y } = point(event);
         spawn(x, y);
       }}

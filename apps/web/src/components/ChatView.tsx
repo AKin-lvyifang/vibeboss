@@ -35,6 +35,7 @@ import {
 import { useTimelineRewind } from "./chat/useTimelineRewind";
 import { useThreadLifecycle } from "./chat/useThreadLifecycle";
 import { useRightPanelActions } from "./chat/useRightPanelActions";
+import { useDemoPanelAutoOpen } from "./vibeboss/useDemoPanelAutoOpen";
 import { type TerminalLaunchContext, useChatTerminalActions } from "./chat/useChatTerminalActions";
 import { useComposerSend } from "./chat/useComposerSend";
 import { useComposerResume } from "./chat/useComposerResume";
@@ -1762,6 +1763,7 @@ export default function ChatView(props: ChatViewProps) {
     serverVisibleTurnItems,
     turnDiffSummaries.at(-1)?.completedAt ?? null,
   );
+  useDemoPanelAutoOpen(activeThreadRef, serverVisibleTurnItems);
 
   const gitStatusCwd = activeThread?.worktreePath ?? gitCwd;
   const gitStatusAtom =

@@ -430,6 +430,7 @@ const T3_MCP_TOOLS: Readonly<Record<string, T3McpToolDefinition>> = {
     "thread-search",
   ),
   knowledge_read: tool(["Read", "Reading", "Read", "a knowledge file"], "thread-search"),
+  demo_panel_open: tool(["Open", "Opening", "Opened", "the Demo panel"], "project-read"),
   project_memory_write: tool(["Update", "Updating", "Updated", "project memory"], "project-memory"),
   project_memory_archive: tool(
     ["Archive", "Archiving", "Archived", "a project memory task"],
