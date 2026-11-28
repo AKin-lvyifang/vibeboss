@@ -49,6 +49,7 @@ export type T3McpToolSummaryAction =
   | "project-create"
   | "project-update"
   | "project-memory"
+  | "personal-memory"
   | "project-delete"
   | "project-clone"
   | "environment-read"
@@ -434,6 +435,10 @@ const T3_MCP_TOOLS: Readonly<Record<string, T3McpToolDefinition>> = {
   demo_progress: tool(["Report", "Reporting", "Reported", "Demo progress"], "project-read"),
   demo_submit: tool(["Submit", "Submitting", "Submitted", "a Demo"], "project-read"),
   project_memory_write: tool(["Update", "Updating", "Updated", "project memory"], "project-memory"),
+  personal_memory_update: tool(
+    ["Update", "Updating", "Updated", "personal memory"],
+    "personal-memory",
+  ),
   project_memory_archive: tool(
     ["Archive", "Archiving", "Archived", "a project memory task"],
     "project-memory",

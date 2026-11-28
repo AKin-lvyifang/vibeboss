@@ -24,7 +24,7 @@ export function ruleSections(
   agents: ReadonlyArray<{ readonly id: string; readonly label: string }>,
 ): ReadonlyArray<RuleSection> {
   return [
-    { target: "shared", label: "公共规则", text: config.sharedRules ?? "" },
+    { target: "shared", label: "个人记忆", text: config.sharedRules ?? "" },
     { target: "lead", label: "主控规则", text: config.leadRules },
     ...agents.map((agent) => ({
       target: agent.id,
@@ -90,7 +90,7 @@ export function checkRules(sections: ReadonlyArray<RuleSection>): ReadonlyArray<
           kind: "duplicate",
           target: section.target,
           line,
-          reason: "公共规则里已经有这一句，这里重复了。",
+          reason: "个人记忆里已经有这一句，这里重复了。",
           replacement: null,
           removals: [],
         });
@@ -112,7 +112,7 @@ export function checkRules(sections: ReadonlyArray<RuleSection>): ReadonlyArray<
           kind: "shared",
           target: "shared",
           line,
-          reason: "每一家都写了这一句，挪进公共规则只写一次。",
+          reason: "每一家都写了这一句，挪进个人记忆只写一次。",
           replacement: null,
           removals: [
             { target: first!.target, line },
@@ -133,11 +133,11 @@ function reviewRulesPrompt(sections: ReadonlyArray<RuleSection>): string {
     )
     .join("\n\n");
   return [
-    "你在检查 VibeBoss 的多智能体协作规则。VibeBoss 里，主控只能用 delegate_task 工具派活给别的智能体，任务会显示成子会话。公共规则写进每一家，主控规则只给主控，专属规则只给那一家。",
+    "你在检查 VibeBoss 的多智能体协作规则。VibeBoss 里，主控只能用 delegate_task 工具派活给别的智能体，任务会显示成子会话。个人记忆写进每一家，主控规则只给主控，专属规则只给那一家。",
     "找出这些问题：",
     "1. cli：让智能体用命令行或后台进程直接调用别的智能体（包括没写命令、只是换了说法的，比如“让 Antigravity 在后台独立出一版”），绕开了 delegate_task。",
-    "2. duplicate：和公共规则意思相同、只是措辞不同的专属规则（直接删掉专属里的这一句）。",
-    "   shared：几家专属规则里意思相同、但公共规则里没有的，应合并成一句挪进公共规则。这种写 kind=shared，line 写合并后放进公共规则的那一句，copies 列出要从各家删掉的原句。",
+    "2. duplicate：和个人记忆意思相同、只是措辞不同的专属规则（直接删掉专属里的这一句）。",
+    "   shared：几家专属规则里意思相同、但个人记忆里没有的，应合并成一句挪进个人记忆。这种写 kind=shared，line 写合并后放进个人记忆的那一句，copies 列出要从各家删掉的原句。",
     "3. conflict：互相矛盾的规则。",
     "4. outdated：明显过时或已不适用的写法。",
     "只报有把握的问题，不要改动正常规则。line 必须一字不差地复制原文中的完整一行。replacement 写改好后的这一行，删除就写 null。",

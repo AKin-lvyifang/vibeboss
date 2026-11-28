@@ -226,6 +226,8 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.vibebossMemoryUndo]: AuthOrchestrationOperateScope,
   [WS_METHODS.vibebossMemoryGetLog]: AuthOrchestrationReadScope,
   [WS_METHODS.vibebossMemoryTidy]: AuthOrchestrationOperateScope,
+  [WS_METHODS.vibebossPersonalMemoryGetState]: AuthSettingsWriteScope,
+  [WS_METHODS.vibebossPersonalMemoryRun]: AuthSettingsWriteScope,
   [WS_METHODS.mcpAppsToolInfo]: AuthOrchestrationReadScope,
   [WS_METHODS.mcpAppsReadResource]: AuthOrchestrationReadScope,
   [WS_METHODS.mcpAppsUpdateModelContext]: AuthOrchestrationOperateScope,

@@ -108,6 +108,15 @@ export function createVibeBossEnvironmentAtoms<R, E>(
       label: "environment-command:vibeboss:memory-tidy",
       tag: WS_METHODS.vibebossMemoryTidy,
     }),
+    personalMemory: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:vibeboss:personal-memory",
+      tag: WS_METHODS.vibebossPersonalMemoryGetState,
+      staleTimeMs: 0,
+    }),
+    runPersonalMemory: createEnvironmentRpcCommand(runtime, {
+      label: "environment-command:vibeboss:personal-memory-run",
+      tag: WS_METHODS.vibebossPersonalMemoryRun,
+    }),
     resolveNativeTranscript: createEnvironmentRpcCommand(runtime, {
       label: "environment-command:vibeboss:resolve-native-transcript",
       tag: WS_METHODS.vibebossResolveNativeTranscript,

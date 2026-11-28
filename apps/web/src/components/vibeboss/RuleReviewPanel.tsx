@@ -26,7 +26,7 @@ export function RuleReviewPanel(props: {
   const open = props.review.suggestions.filter((item) => !props.handled.has(item.id));
   const kindLabel: Record<VibeBossRuleSuggestion["kind"], string> = {
     cli: gt("Calls an agent from the command line"),
-    duplicate: gt("Repeats a shared rule"),
+    duplicate: gt("Repeats personal memory"),
     shared: gt("Several agents repeat it"),
     conflict: gt("Conflicts with another rule"),
     outdated: gt("Out of date"),
@@ -34,13 +34,13 @@ export function RuleReviewPanel(props: {
   };
   const action = (item: VibeBossRuleSuggestion) =>
     item.kind === "shared"
-      ? gt("Move into the shared rules")
+      ? gt("Move into personal memory")
       : item.replacement === null
         ? gt("Remove this line")
         : gt("Change it", { $context: "apply a suggested rewrite of a rule line" });
   const where = (item: VibeBossRuleSuggestion) =>
     item.kind === "shared"
-      ? gt("{agents} → Shared rules", {
+      ? gt("{agents} → Personal memory", {
           agents: item.removals.map((removal) => props.labelOf(removal.target)).join("、"),
         })
       : props.labelOf(item.target);

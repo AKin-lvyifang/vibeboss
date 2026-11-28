@@ -240,6 +240,8 @@ const RPC_AGGREGATES = {
   [WS_METHODS.vibebossMemoryUndo]: "server",
   [WS_METHODS.vibebossMemoryGetLog]: "server",
   [WS_METHODS.vibebossMemoryTidy]: "server",
+  [WS_METHODS.vibebossPersonalMemoryGetState]: "server",
+  [WS_METHODS.vibebossPersonalMemoryRun]: "server",
   [WS_METHODS.mcpAppsToolInfo]: "provider",
   [WS_METHODS.mcpAppsUpdateModelContext]: "provider",
   [WS_METHODS.mcpAppsReadResource]: "provider",

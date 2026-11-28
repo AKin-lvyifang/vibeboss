@@ -75,6 +75,8 @@ import { DemoToolkit } from "./toolkits/demo/tools.ts";
 import * as DemoHandlers from "./toolkits/demo/handlers.ts";
 import { ProjectMemoryToolkit } from "./toolkits/memory/tools.ts";
 import * as ProjectMemoryHandlers from "./toolkits/memory/handlers.ts";
+import { PersonalMemoryToolkit } from "./toolkits/personalMemory/tools.ts";
+import * as PersonalMemoryHandlers from "./toolkits/personalMemory/handlers.ts";
 import * as ThemeHandlers from "./toolkits/theme/handlers.ts";
 import { ProjectToolkit } from "./toolkits/project/tools.ts";
 import * as ProjectHandlers from "./toolkits/project/handlers.ts";
@@ -1452,6 +1454,11 @@ const layerProjectMemoryToolkit = toolkitRegistration(
   ProjectMemoryToolkit,
   ProjectMemoryHandlers.layer,
 );
+// VibeBoss: the main agent keeps the user's personal memory current.
+const layerPersonalMemoryToolkit = toolkitRegistration(
+  PersonalMemoryToolkit,
+  PersonalMemoryHandlers.layer,
+);
 
 export const layerProjectRegistration = toolkitRegistration(ProjectToolkit, ProjectHandlers.layer);
 
@@ -1536,6 +1543,7 @@ export const layerTools = Layer.mergeAll(
   layerKnowledgeToolkit,
   layerDemoToolkit,
   layerProjectMemoryToolkit,
+  layerPersonalMemoryToolkit,
   layerPreviewControlsRegistration,
   layerWorktreeToolkitRegistration,
   layerPullRequestsToolkit,

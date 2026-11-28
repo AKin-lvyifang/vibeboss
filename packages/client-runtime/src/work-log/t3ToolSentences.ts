@@ -24,6 +24,14 @@ const T3_TOOL_SENTENCES: ReadonlyMap<string, T3ToolSentence> = new Map<string, T
     },
   ],
   [
+    "Update\nUpdating\nUpdated\npersonal memory",
+    {
+      detail: msg(
+        "{status, select, inProgress {Updating personal memory} completed {Updated personal memory} failed {Failed to update personal memory} declined {Declined to update personal memory} stopped {Stopped updating personal memory} other {Updating personal memory}}",
+      ),
+    },
+  ],
+  [
     "Archive\nArchiving\nArchived\na project memory task",
     {
       detail: msg(

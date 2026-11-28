@@ -32,7 +32,10 @@ export type VibeBossReviewModel = typeof VibeBossReviewModel.Type;
 
 export const VibeBossConfig = Schema.Struct({
   version: Schema.Literal(2),
-  /** Written first into every agent's rule file; each agent's own part follows. */
+  /**
+   * Personal memory: who the user is and how they like to work. Written first into every agent's
+   * rule file; each agent's own part follows. Agents keep it current; the user can edit it.
+   */
   sharedRules: Schema.optional(Schema.String),
   /** Written only into the lead's rule file. `@name` expands to that member's delegate call. */
   leadRules: Schema.String,
@@ -42,6 +45,10 @@ export const VibeBossConfig = Schema.Struct({
   members: Schema.Array(VibeBossMember),
   /** The model the Rules page's check asks; unset falls back to the text generation model. */
   reviewModel: Schema.optional(VibeBossReviewModel),
+  /** The model that builds and tidies personal memory; unset falls back to the text generation model. */
+  memoryModel: Schema.optional(VibeBossReviewModel),
+  /** Tidy personal memory once a day when there are new conversations; unset means on. */
+  memoryAutoTidy: Schema.optional(Schema.Boolean),
 });
 export type VibeBossConfig = typeof VibeBossConfig.Type;
 
@@ -133,6 +140,49 @@ export const VibeBossNativeTranscriptResult = Schema.Struct({
   path: Schema.NullOr(Schema.String),
 });
 export type VibeBossNativeTranscriptResult = typeof VibeBossNativeTranscriptResult.Type;
+
+/** One change to personal memory: who made it, from where, and which lines came and went. */
+export const VibeBossPersonalMemoryLogEntry = Schema.Struct({
+  id: Schema.String,
+  at: Schema.String,
+  author: Schema.Literals(["agent", "user", "tidy", "generate"]),
+  /** The conversation title for an agent, the model and what was read for tidy and generate. */
+  source: Schema.String,
+  threadId: Schema.optional(Schema.String),
+  /** For tidy and generate: how many conversations were read. */
+  conversations: Schema.optional(Schema.Number),
+  added: Schema.Array(Schema.String),
+  removed: Schema.Array(Schema.String),
+});
+export type VibeBossPersonalMemoryLogEntry = typeof VibeBossPersonalMemoryLogEntry.Type;
+
+export const VibeBossPersonalMemoryRunMode = Schema.Literals(["generate", "tidy"]);
+export type VibeBossPersonalMemoryRunMode = typeof VibeBossPersonalMemoryRunMode.Type;
+
+/** A generate or tidy in progress: conversations read so far, then the final merge. */
+export const VibeBossPersonalMemoryRun = Schema.Struct({
+  mode: VibeBossPersonalMemoryRunMode,
+  phase: Schema.Literals(["reading", "merging"]),
+  done: Schema.Number,
+  total: Schema.Number,
+  conversations: Schema.Number,
+  startedAt: Schema.String,
+});
+export type VibeBossPersonalMemoryRun = typeof VibeBossPersonalMemoryRun.Type;
+
+export const VibeBossPersonalMemoryState = Schema.Struct({
+  log: Schema.Array(VibeBossPersonalMemoryLogEntry),
+  lastTidyAt: Schema.NullOr(Schema.String),
+  running: Schema.NullOr(VibeBossPersonalMemoryRun),
+  /** Why the last generate or tidy wrote nothing, until the next one starts. */
+  lastError: Schema.NullOr(Schema.String),
+});
+export type VibeBossPersonalMemoryState = typeof VibeBossPersonalMemoryState.Type;
+
+export const VibeBossPersonalMemoryRunInput = Schema.Struct({
+  mode: VibeBossPersonalMemoryRunMode,
+});
+export type VibeBossPersonalMemoryRunInput = typeof VibeBossPersonalMemoryRunInput.Type;
 
 export class VibeBossError extends Schema.TaggedError<VibeBossError>()("VibeBossError", {
   detail: Schema.String,

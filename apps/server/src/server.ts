@@ -239,6 +239,7 @@ import * as ThreadSearch from "./orchestration-v2/ThreadSearch.ts";
 import * as ThreadSettlementService from "./orchestration-v2/ThreadSettlementService.ts";
 import * as IdleCompactionService from "./orchestration-v2/IdleCompactionService.ts";
 import * as VibeBossMemoryTidyWorker from "./vibeboss/ProjectMemoryTidyWorker.ts";
+import * as VibeBossPersonalMemoryWorker from "./vibeboss/PersonalMemoryWorker.ts";
 import * as ThreadPullRequestService from "./orchestration-v2/ThreadPullRequestService.ts";
 import * as ThreadIssueService from "./orchestration-v2/ThreadIssueService.ts";
 import * as RunFinalizationService from "./orchestration-v2/RunFinalizationService.ts";
@@ -687,6 +688,8 @@ const layerIdleCompactionWorker = Layer.effectDiscard(
 
 // VibeBoss: tidies project memory that is due, with the small model.
 const layerMemoryTidyWorker = Layer.effectDiscard(VibeBossMemoryTidyWorker.start());
+// VibeBoss: tidies personal memory once a day when there are new conversations.
+const layerPersonalMemoryWorker = Layer.effectDiscard(VibeBossPersonalMemoryWorker.start());
 
 const layerThreadPullRequestWorker = Layer.effectDiscard(
   ThreadPullRequestService.make.pipe(Effect.flatMap((service) => service.start())),
@@ -745,6 +748,7 @@ const layerRuntimeCoreDependenciesBase = Layer.mergeAll(
   layerThreadSettlementWorker,
   layerIdleCompactionWorker,
   layerMemoryTidyWorker,
+  layerPersonalMemoryWorker,
   StorageCleanup.layer.pipe(Layer.provide(ProjectionStoreV2.layer)),
   DatabaseStorage.layer.pipe(
     Layer.provide(ProjectionMaintenance.layer),

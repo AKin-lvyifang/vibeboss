@@ -5,7 +5,7 @@ import type {
   VibeBossRuleSuggestion,
 } from "@t3tools/contracts";
 import { T, useGT, Var } from "gt-react";
-import { AtSignIcon, CrownIcon, LayersIcon } from "lucide-react";
+import { AtSignIcon, CrownIcon, UserRoundIcon } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 
 import { cn } from "../../lib/utils";
@@ -17,6 +17,7 @@ import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { Textarea } from "../ui/textarea";
 import { applyRuleSuggestion } from "../../vibebossRuleEdits";
 import { setRulesPage, useRulesPageStore } from "../../vibebossRuleReviewStore";
+import { PersonalMemoryCard } from "./PersonalMemoryCard";
 import { RuleCheckButton } from "./RuleCheckButton";
 import { RuleReviewPanel } from "./RuleReviewPanel";
 import { VibeBossPage, useVibeBossState } from "./VibeBossShared";
@@ -75,23 +76,40 @@ export function RulesPage() {
   const saveConfig = useAtomCommand(vibeBossEnvironment.saveConfig);
   const syncRules = useAtomCommand(vibeBossEnvironment.syncRules);
   const reviewRules = useAtomCommand(vibeBossEnvironment.reviewRules);
-  const { draft, review, handled, applied, checking, modelStartedAt, lastModelMs } =
-    useRulesPageStore();
+  const {
+    draft,
+    review,
+    handled,
+    applied,
+    checking,
+    modelStartedAt,
+    lastModelMs,
+    tab: selectedTab,
+  } = useRulesPageStore();
   const modelReviewing = modelStartedAt !== null;
-  const setDraft = (next: VibeBossConfig | null) => setRulesPage({ draft: next });
-  const [selectedTab, setTab] = useState<string | null>(null);
+  const setDraft = (next: VibeBossConfig | null) =>
+    setRulesPage(next === null ? { draft: null, memoryEdited: false } : { draft: next });
+  // Agents and tidy rewrite personal memory on the server, so a draft made for another tab must
+  // not carry an old copy of it back.
+  const withSavedMemory = (pending: VibeBossConfig) =>
+    useRulesPageStore.getState().memoryEdited || data == null
+      ? pending
+      : { ...pending, sharedRules: data.config.sharedRules };
+  const setTab = (next: string) => setRulesPage({ tab: next });
   const [busy, setBusy] = useState(false);
   const [backups, setBackups] = useState<number | null>(null);
   const leadRulesRef = useRef<HTMLTextAreaElement>(null);
-  const config = draft ?? data?.config ?? null;
+  const config = (draft === null ? null : withSavedMemory(draft)) ?? data?.config ?? null;
   const files = data?.files ?? [];
   const outOfSync = files.some((file) => !file.inSync);
-  const tab = selectedTab ?? LEAD_TAB;
+  const tab = selectedTab ?? SHARED_TAB;
   const file = files.find((item) => item.targetId === tab) ?? null;
   const leadFile = files.find((item) => item.isLead) ?? null;
 
   const update = (next: Partial<VibeBossConfig>) => {
-    if (config !== null) setDraft({ ...config, ...next });
+    if (config === null) return;
+    setDraft({ ...config, ...next });
+    if (next.sharedRules !== undefined) setRulesPage({ memoryEdited: true });
   };
 
   const insertMention = (name: string) => {
@@ -110,12 +128,15 @@ export function RulesPage() {
     setRulesPage({ checking: true });
     const pending = useRulesPageStore.getState().draft;
     if (pending !== null) {
-      const saved = await saveConfig({ environmentId, input: { config: pending } });
+      const saved = await saveConfig({
+        environmentId,
+        input: { config: withSavedMemory(pending) },
+      });
       if (saved._tag !== "Success") {
         setRulesPage({ checking: false });
         return;
       }
-      setRulesPage({ draft: null });
+      setDraft(null);
       refresh();
     }
     const fixed = await reviewRules({ environmentId, input: {} });
@@ -143,12 +164,38 @@ export function RulesPage() {
 
   const accept = (suggestions: ReadonlyArray<VibeBossRuleSuggestion>) => {
     if (config === null) return;
+    const next = suggestions.reduce(applyRuleSuggestion, config);
     setRulesPage({
-      draft: suggestions.reduce(applyRuleSuggestion, config),
+      draft: next,
+      memoryEdited:
+        useRulesPageStore.getState().memoryEdited || next.sharedRules !== config.sharedRules,
       handled: [...handled, ...suggestions.map((item) => item.id)],
       applied: applied + suggestions.length,
     });
   };
+
+  // A run reads the saved text, so unsaved edits are saved first.
+  const savePending = async () => {
+    if (environmentId === null) return false;
+    const pending = useRulesPageStore.getState().draft;
+    if (pending === null) return true;
+    const saved = await saveConfig({ environmentId, input: { config: withSavedMemory(pending) } });
+    if (saved._tag !== "Success") return false;
+    setDraft(null);
+    refresh();
+    return true;
+  };
+
+  // Saved at once and on their own, so unsaved rule edits stay a draft.
+  const saveMemorySettings = async (next: Partial<VibeBossConfig>) => {
+    if (environmentId === null || !data) return;
+    if (draft !== null) setDraft({ ...draft, ...next });
+    await saveConfig({ environmentId, input: { config: { ...data.config, ...next } } });
+    refresh();
+  };
+
+  // An agent or a run rewrote personal memory on the server; an unsaved edit of it would hide that.
+  const onMemoryChanged = () => refresh();
 
   // Saved at once and on its own, so unsaved rule edits stay a draft.
   const saveReviewModel = async (reviewModel: VibeBossReviewModel) => {
@@ -160,7 +207,7 @@ export function RulesPage() {
 
   const labelOf = (target: string) =>
     target === "shared"
-      ? gt("Shared rules")
+      ? gt("Personal memory")
       : target === "lead"
         ? gt("Lead rules")
         : (files.find((item) => item.targetId === target)?.label ?? target);
@@ -170,7 +217,7 @@ export function RulesPage() {
     setBusy(true);
     setBackups(null);
     if (draft !== null) {
-      const saved = await saveConfig({ environmentId, input: { config: draft } });
+      const saved = await saveConfig({ environmentId, input: { config: withSavedMemory(draft) } });
       if (saved._tag !== "Success") {
         setBusy(false);
         return;
@@ -244,8 +291,8 @@ export function RulesPage() {
         <div className="grid gap-6 md:grid-cols-4">
           <nav className="flex flex-col gap-1">
             <NavButton active={tab === SHARED_TAB} onClick={() => setTab(SHARED_TAB)}>
-              <LayersIcon className="size-4" />
-              <T>Shared rules</T>
+              <UserRoundIcon className="size-4" />
+              <T>Personal memory</T>
             </NavButton>
             <NavButton active={tab === LEAD_TAB} onClick={() => setTab(LEAD_TAB)}>
               <CrownIcon className="size-4" />
@@ -272,19 +319,16 @@ export function RulesPage() {
 
           <div className="md:col-span-3">
             {tab === SHARED_TAB ? (
-              <div className="overflow-hidden rounded-xl border">
-                <div className="border-b bg-muted/40 px-4 py-2 text-muted-foreground text-xs">
-                  <T>Written first into every agent's global rules</T>
-                </div>
-                <div className="p-3">
-                  <Textarea
-                    aria-label={gt("Shared rules")}
-                    className="min-h-96"
-                    value={config.sharedRules ?? ""}
-                    onChange={(event) => update({ sharedRules: event.target.value })}
-                  />
-                </div>
-              </div>
+              environmentId === null ? null : (
+                <PersonalMemoryCard
+                  environmentId={environmentId}
+                  config={config}
+                  onChange={(sharedRules) => update({ sharedRules })}
+                  beforeRun={savePending}
+                  onSettingsChange={saveMemorySettings}
+                  onChanged={onMemoryChanged}
+                />
+              )
             ) : tab === LEAD_TAB ? (
               <div className="overflow-hidden rounded-xl border">
                 <div className="flex items-center gap-2 border-b bg-muted/40 px-4 py-2">
@@ -331,7 +375,7 @@ export function RulesPage() {
                   </span>
                 </div>
                 {(config.sharedRules ?? "").trim() !== "" ? (
-                  <AppendedBlock label={<T>Shared rules, added first</T>}>
+                  <AppendedBlock label={<T>Personal memory, added first</T>}>
                     {config.sharedRules}
                   </AppendedBlock>
                 ) : null}

@@ -4,7 +4,7 @@ import * as Effect from "effect/Effect";
 import { checkRules, parseModelReview, reviewRules, type RuleSection } from "./RuleReview.ts";
 
 const sections: ReadonlyArray<RuleSection> = [
-  { target: "shared", label: "公共规则", text: "- 回复用中文" },
+  { target: "shared", label: "个人记忆", text: "- 回复用中文" },
   { target: "lead", label: "主控规则", text: "- 前端交给 @frontend" },
   {
     target: "claude",

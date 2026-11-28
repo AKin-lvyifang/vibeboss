@@ -18,6 +18,10 @@ interface RulesPageState {
   readonly modelStartedAt: number | null;
   /** How long the small model took last time, to size the progress bar. */
   readonly lastModelMs: number | null;
+  /** The open tab; null shows personal memory. Set from outside to open a tab. */
+  readonly tab: string | null;
+  /** Whether the draft's personal memory was edited here; if not, the saved one wins on save. */
+  readonly memoryEdited: boolean;
 }
 
 export const useRulesPageStore = create<RulesPageState>()(
@@ -30,14 +34,17 @@ export const useRulesPageStore = create<RulesPageState>()(
       checking: false,
       modelStartedAt: null,
       lastModelMs: null,
+      tab: null,
+      memoryEdited: false,
     }),
     {
       name: "vibeboss:rules-page:v1",
       storage: createJSONStorage(() =>
         resolveStorage(typeof window !== "undefined" ? window.localStorage : undefined),
       ),
-      partialize: ({ draft, review, handled, applied, lastModelMs }) => ({
+      partialize: ({ draft, memoryEdited, review, handled, applied, lastModelMs }) => ({
         draft,
+        memoryEdited,
         review,
         handled,
         applied,

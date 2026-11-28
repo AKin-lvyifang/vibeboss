@@ -132,6 +132,8 @@ import * as VibeBossKnowledgeSelection from "./vibeboss/KnowledgeSelection.ts";
 import * as VibeBossKnowledgeText from "./vibeboss/KnowledgeText.ts";
 import * as VibeBossMemory from "./vibeboss/ProjectMemory.ts";
 import * as VibeBossMemoryTidy from "./vibeboss/ProjectMemoryTidy.ts";
+import * as VibeBossPersonalMemory from "./vibeboss/PersonalMemory.ts";
+import * as VibeBossPersonalMemoryWorker from "./vibeboss/PersonalMemoryWorker.ts";
 import { smallModelAsk } from "./vibeboss/ProjectMemoryTidyWorker.ts";
 import * as EnvironmentTheme from "./environmentTheme.ts";
 import * as Keybindings from "./keybindings.ts";
@@ -2757,8 +2759,28 @@ export const layerWsRpc = (
         [WS_METHODS.vibebossSaveConfig]: (input) =>
           withVibeBossServices(
             providerRegistry.getProviders.pipe(
-              Effect.flatMap((providers) => VibeBoss.saveConfig(input.config, providers)),
+              Effect.flatMap((providers) =>
+                VibeBossPersonalMemory.saveUserConfig(input.config, providers),
+              ),
             ),
+          ),
+        [WS_METHODS.vibebossPersonalMemoryGetState]: () =>
+          withVibeBossServices(VibeBossPersonalMemory.getState()),
+        [WS_METHODS.vibebossPersonalMemoryRun]: (input) =>
+          withVibeBossServices(
+            Effect.gen(function* () {
+              if (Option.isNone(vibeBossTextGeneration)) {
+                return yield* new VibeBossError({ detail: "这台机器没有可用的模型" });
+              }
+              const deps = yield* VibeBossPersonalMemoryWorker.runDeps({
+                textGeneration: vibeBossTextGeneration.value,
+                settings: serverSettings,
+                providers: providerRegistry,
+                sql,
+                cwd: config.stateDir,
+              });
+              return yield* VibeBossPersonalMemory.start(input.mode, deps);
+            }),
           ),
         [WS_METHODS.vibebossSyncRules]: () =>
           withVibeBossServices(

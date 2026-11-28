@@ -512,6 +512,23 @@ export function summarizeT3ToolCalls(
           );
       break;
     }
+    case "personal-memory": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Updated personal memory {count} time} other {Updated personal memory {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to update personal memory {count} time} other {Tried to update personal memory {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
     case "project-memory": {
       const count = selected.length;
       label = done

@@ -45,6 +45,12 @@ const DEFAULT_LEAD_RULES = [
 const DISPATCH_RULE =
   "派活一律调用 delegate_task 工具，派出去的任务会在 VibeBoss 里显示成子会话，用户能看到谁在做什么。不要在命令行里直接运行 claude、codex、agy 等智能体，哪怕别的规则写了命令行用法。";
 
+// Only the lead may write personal memory; the tool refuses delegated members.
+const PERSONAL_MEMORY_RULE = [
+  "## Personal memory",
+  "Applies only in VibeBoss, when you are the lead talking with the user directly. The first part of this file is the user's personal memory, shared by every agent. Keep it current with the personal_memory_update tool on your own, without asking first: when the user asks you to remember something about themselves or how they work, corrects you on the same thing again, or shows a lasting habit. Write short lines in the user's language and remove lines that are no longer true. Project facts belong in project memory, not here; never store secrets.",
+].join("\n\n");
+
 const WORKER_RULES = "## 被派活时\n\n收到主控派来的任务时，只做这件事，不再往下派。";
 
 const DEFAULT_MEMBERS: ReadonlyArray<VibeBossMember> = [
@@ -82,7 +88,7 @@ const optionalEnv = (name: string) =>
   Config.String(name).pipe(Config.option, Config.map(Option.getOrUndefined));
 
 /** Agent home folders, following the same env overrides the CLIs use. */
-const agentHomes = Effect.gen(function* () {
+export const agentHomes = Effect.gen(function* () {
   const path = yield* Path.Path;
   const home = homeDir();
   const env = yield* Config.all({
@@ -429,6 +435,7 @@ export function renderRuleFile(
     (config.sharedRules ?? "").trim(),
     (config.perAgent[targetId] ?? "").trim(),
     leadSection,
+    isLead ? PERSONAL_MEMORY_RULE : "",
     WORKER_RULES,
   ].filter((section) => section !== "");
   return `${GENERATED_MARKER}\n\n${sections.join("\n\n")}\n`;
@@ -500,6 +507,11 @@ export const getState = Effect.fn("VibeBoss.getState")(function* (
   const paths = yield* resolvePaths;
   const config = yield* loadConfig(paths);
   return yield* buildState(paths, config, providers);
+});
+
+/** The saved config, imported from the agents' rule files on first run. */
+export const readConfig = Effect.fn("VibeBoss.readConfig")(function* () {
+  return yield* loadConfig(yield* resolvePaths);
 });
 
 export const saveConfig = Effect.fn("VibeBoss.saveConfig")(function* (

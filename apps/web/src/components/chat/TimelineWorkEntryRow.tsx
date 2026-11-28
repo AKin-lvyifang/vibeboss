@@ -1,4 +1,5 @@
 import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
+import { isPersonalMemoryTool, PersonalMemoryEntryLink } from "../vibeboss/PersonalMemoryEntryLink";
 import { isProjectMemoryTool, ProjectMemoryEntryLink } from "../vibeboss/ProjectMemoryEntryLink";
 import { WorkLogDetails, WorkLogRow } from "./WorkLog";
 import {
@@ -646,6 +647,10 @@ function WorkEntryLogRow(props: WorkEntryRowProps) {
                 toolName={workEntry.structuredPayload.toolName ?? ""}
                 input={workEntry.structuredPayload.input}
               />
+            ) : null}
+            {workEntry.structuredPayload?.type === "dynamic_tool" &&
+            isPersonalMemoryTool(workEntry.structuredPayload.toolName) ? (
+              <PersonalMemoryEntryLink />
             ) : null}
           </p>
         </div>

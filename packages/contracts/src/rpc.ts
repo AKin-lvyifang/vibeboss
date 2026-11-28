@@ -22,6 +22,8 @@ import {
   VibeBossNativeTranscriptInput,
   VibeBossNativeTranscriptResult,
   VibeBossRuleReview,
+  VibeBossPersonalMemoryRunInput,
+  VibeBossPersonalMemoryState,
   VibeBossSaveConfigInput,
   VibeBossState,
   VibeBossSyncResult,
@@ -580,6 +582,8 @@ export const WS_METHODS = {
   vibebossMemoryUndo: "vibeboss.memory.undo",
   vibebossMemoryGetLog: "vibeboss.memory.getLog",
   vibebossMemoryTidy: "vibeboss.memory.tidy",
+  vibebossPersonalMemoryGetState: "vibeboss.personalMemory.getState",
+  vibebossPersonalMemoryRun: "vibeboss.personalMemory.run",
 
   providerUploadFeedback: "provider.uploadFeedback",
   providerMcpSignInStart: "provider.mcpSignIn.start",
@@ -1987,6 +1991,17 @@ const WsVibeBossMemoryTidyRpc = Rpc.make(WS_METHODS.vibebossMemoryTidy, {
   success: VibeBossMemoryState,
   error: vibeBossKnowledgeError,
 });
+const WsVibeBossPersonalMemoryGetStateRpc = Rpc.make(WS_METHODS.vibebossPersonalMemoryGetState, {
+  payload: Schema.Struct({}),
+  success: VibeBossPersonalMemoryState,
+  error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+});
+/** Starts a generate or tidy in the background and answers at once with its progress. */
+const WsVibeBossPersonalMemoryRunRpc = Rpc.make(WS_METHODS.vibebossPersonalMemoryRun, {
+  payload: VibeBossPersonalMemoryRunInput,
+  success: VibeBossPersonalMemoryState,
+  error: Schema.Union([VibeBossError, EnvironmentAuthorizationError]),
+});
 const WsVibeBossMemoryGetLogRpc = Rpc.make(WS_METHODS.vibebossMemoryGetLog, {
   payload: VibeBossMemoryProjectInput,
   success: VibeBossMemoryLog,
@@ -2897,6 +2912,8 @@ export const WsRpcGroup = RpcGroup.make(
   WsVibeBossMemoryUndoRpc,
   WsVibeBossMemoryGetLogRpc,
   WsVibeBossMemoryTidyRpc,
+  WsVibeBossPersonalMemoryGetStateRpc,
+  WsVibeBossPersonalMemoryRunRpc,
   WsProviderUploadFeedbackRpc,
   WsProviderMcpSignInStartRpc,
   WsProviderMcpSignInCompleteRpc,
