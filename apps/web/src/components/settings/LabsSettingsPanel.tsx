@@ -47,8 +47,10 @@ export function LabsSettingsPanel() {
           <GuestLinksRow />
         )}
         <LinkedEnvironmentsRow />
-        <WorkflowsRow />
-        <WorkflowSkippedRunsRow />
+        {VIBEBOSS_HIDDEN_SETTING_ROWS.has("workflows-beta") ? null : <WorkflowsRow />}
+        {VIBEBOSS_HIDDEN_SETTING_ROWS.has("workflow-skipped-runs") ? null : (
+          <WorkflowSkippedRunsRow />
+        )}
         <PromptSuggestionsRow />
         {VIBEBOSS_HIDDEN_SETTING_ROWS.has("simlock-hosts") ? null : <SimlockHostsRow />}
         <FastWorktreeCheckoutRow />

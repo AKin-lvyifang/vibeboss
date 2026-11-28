@@ -48,7 +48,6 @@ import { ChartNoAxesColumnIcon } from "../animate-ui/icons/chart-no-axes-column"
 import { CircleAlertIcon } from "../animate-ui/icons/circle-alert";
 import { LibraryIcon } from "../animate-ui/icons/library";
 import { RouteIcon } from "../animate-ui/icons/route";
-import { ScrollIcon } from "../animate-ui/icons/scroll";
 import { SettingsIcon } from "../animate-ui/icons/settings";
 
 export const SidebarChromeHeader = memo(function SidebarChromeHeader({
@@ -247,7 +246,6 @@ type VibeBossNavTarget =
   | "/settings/scheduled-tasks"
   | "/usage"
   | "/agents"
-  | "/rules"
   | "/capabilities"
   | "/knowledge";
 
@@ -259,8 +257,7 @@ export const SidebarVibeBossNav = memo(function SidebarVibeBossNav() {
   const pathname = useLocation({ select: (location) => location.pathname });
   const items: ReadonlyArray<{ to: VibeBossNavTarget; label: string; icon: ReactNode }> = [
     { to: "/settings/scheduled-tasks", label: gt("Scheduled tasks"), icon: <CalendarClockIcon /> },
-    { to: "/agents", label: gt("Roles"), icon: <BotIcon /> },
-    { to: "/rules", label: gt("Rules"), icon: <ScrollIcon /> },
+    { to: "/agents", label: gt("Roles & rules"), icon: <BotIcon /> },
     { to: "/capabilities", label: gt("Skills, MCP & plugins"), icon: <BlocksIcon /> },
     { to: "/knowledge", label: gt("Knowledge"), icon: <LibraryIcon /> },
   ];
@@ -270,7 +267,7 @@ export const SidebarVibeBossNav = memo(function SidebarVibeBossNav() {
         <AnimateIcon key={to} animateOnHover asChild>
           <SidebarMenuItem>
             <SidebarMenuButton
-              isActive={pathname === to}
+              isActive={pathname === to || (to === "/agents" && pathname === "/rules")}
               onClick={() => {
                 if (isMobile) setOpenMobile(false);
                 void navigate({ to });

@@ -14,6 +14,7 @@ import {
   renameMention,
   useEnabledProviders,
   useVibeBossState,
+  RolesRulesSwitch,
 } from "./VibeBossShared";
 
 // Both tables share these widths so every column lines up from the lead down.
@@ -103,7 +104,7 @@ export function AgentsPage() {
 
   return (
     <VibeBossPage
-      title={gt("Roles")}
+      title={gt("Roles & rules")}
       actions={
         <Button
           size="sm"
@@ -114,6 +115,7 @@ export function AgentsPage() {
         </Button>
       }
     >
+      <RolesRulesSwitch current="/agents" />
       {error ? <p className="text-destructive text-sm">{error}</p> : null}
       {config === null ? null : (
         <>

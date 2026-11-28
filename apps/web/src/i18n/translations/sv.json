@@ -12215,8 +12215,7 @@
   "300a948f90c4d75c": "Gå tillbaka",
   "2a50e229df85d553": "Gå framåt",
   "14b2d10384554c4d": "VibeBoss home",
-  "3a8ffc4722287317": "Roles",
-  "88429bc9732d7025": "Rules",
+  "cf4e3537afa89759": "Roles & rules",
   "39c2a72a4010a1bc": "Skills, MCP & plugins",
   "04883349c954d332": "Knowledge",
   "8e9626aa27cb188a": "Ärenden",
@@ -12884,6 +12883,8 @@
     }
   ],
   "df29287957804a90": "{agent} is off",
+  "354200e4ad063523": "Roles",
+  "48ac957ea04170bc": "Rules",
   "0bd950151ddc6407": "Lämna utan att spara? Dina ändringar i filen går förlorade.",
   "c0ba3f6756b09f30": "Osparade ändringar",
   "6914e22d357f0ad6": "Sparad och körs",

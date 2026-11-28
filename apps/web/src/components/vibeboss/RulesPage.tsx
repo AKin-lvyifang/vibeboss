@@ -19,7 +19,7 @@ import { applyRuleSuggestion } from "../../vibebossRuleEdits";
 import { setRulesPage, useRulesPageStore } from "../../vibebossRuleReviewStore";
 import { RuleCheckButton } from "./RuleCheckButton";
 import { RuleReviewPanel } from "./RuleReviewPanel";
-import { VibeBossPage, useVibeBossState } from "./VibeBossShared";
+import { VibeBossPage, useVibeBossState, RolesRulesSwitch } from "./VibeBossShared";
 
 const LEAD_TAB = "lead-rules";
 const SHARED_TAB = "shared-rules";
@@ -188,7 +188,7 @@ export function RulesPage() {
 
   return (
     <VibeBossPage
-      title={gt("Rules")}
+      title={gt("Roles & rules")}
       actions={
         <>
           {backups !== null ? (
@@ -218,6 +218,7 @@ export function RulesPage() {
         </>
       }
     >
+      <RolesRulesSwitch current="/rules" />
       {error ? <p className="text-destructive text-sm">{error}</p> : null}
       {data?.previewOnly ? (
         <p className="rounded-lg border border-dashed px-3 py-2 text-muted-foreground text-xs">

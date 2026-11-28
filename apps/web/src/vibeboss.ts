@@ -16,6 +16,8 @@ export const VIBEBOSS_HIDDEN_SETTING_ROWS: ReadonlySet<string> = new Set([
   "simlock-hosts",
   "agent-feedback",
   "mobile-app",
+  "workflows-beta",
+  "workflow-skipped-runs",
 ]);
 
 /** T3's anonymous usage analytics report to T3's servers; VibeBoss turns them off and hides the notices. */
