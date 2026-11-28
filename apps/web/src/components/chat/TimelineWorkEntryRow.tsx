@@ -641,7 +641,11 @@ function WorkEntryLogRow(props: WorkEntryRowProps) {
             {threadRef &&
             workEntry.structuredPayload?.type === "dynamic_tool" &&
             isProjectMemoryTool(workEntry.structuredPayload.toolName) ? (
-              <ProjectMemoryEntryLink threadRef={threadRef} />
+              <ProjectMemoryEntryLink
+                threadRef={threadRef}
+                toolName={workEntry.structuredPayload.toolName ?? ""}
+                input={workEntry.structuredPayload.input}
+              />
             ) : null}
           </p>
         </div>

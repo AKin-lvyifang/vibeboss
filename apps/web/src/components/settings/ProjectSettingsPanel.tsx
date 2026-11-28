@@ -48,7 +48,6 @@ import {
   SettingsRow,
   SettingsSection,
 } from "./settingsLayout";
-import { ProjectMemoryLogPage, ProjectMemorySettings } from "../vibeboss/ProjectMemorySettings";
 import {
   canPickExternalProjectFavicon,
   ProjectFaviconPickerDialog,
@@ -291,9 +290,6 @@ function ProjectDetail({
     reportFailure: false,
   });
   const projectNameEditedRef = useRef(false);
-  // VibeBoss: project memory belongs to the project folder on its first checkout.
-  const memoryMember = group.memberProjects[0]!;
-  const [memoryLogOpen, setMemoryLogOpen] = useState(false);
 
   const faviconPath = group.faviconPath ?? null;
   const projectIcon = group.projectIcon ?? null;
@@ -540,18 +536,6 @@ function ProjectDetail({
     </SettingsSection>
   );
 
-  if (memoryLogOpen) {
-    return (
-      <SettingsPageContainer>
-        <ProjectMemoryLogPage
-          environmentId={memoryMember.environmentId}
-          projectId={memoryMember.id}
-          onBack={() => setMemoryLogOpen(false)}
-        />
-      </SettingsPageContainer>
-    );
-  }
-
   return (
     <>
       <SettingsPageContainer className="gap-6">
@@ -710,11 +694,6 @@ function ProjectDetail({
           ) : null}
         </SettingsSection>
         <ProjectDefaultsSettings category="project" />
-        <ProjectMemorySettings
-          environmentId={memoryMember.environmentId}
-          projectId={memoryMember.id}
-          onOpenLog={() => setMemoryLogOpen(true)}
-        />
         <ProjectActionsSettings />
         <ProjectRepositoriesSettings members={group.memberProjects} />
         <ProjectWorktreeLayoutSettings members={group.memberProjects} />

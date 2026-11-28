@@ -8,7 +8,7 @@ import { Button } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 /**
- * Opens the project's memory in project settings. Faint while the project has none. The state is
+ * Opens the project's memory tab. Faint while the project has none. The state is
  * read only once the row is hovered or focused, so a long sidebar sends no requests up front.
  */
 export function SidebarProjectMemoryButton(props: {

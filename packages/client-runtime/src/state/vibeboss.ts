@@ -75,14 +75,18 @@ export function createVibeBossEnvironmentAtoms<R, E>(
     memory: createEnvironmentRpcQueryAtomFamily(runtime, {
       label: "environment-data:vibeboss:memory",
       tag: WS_METHODS.vibebossMemoryGetState,
+      // Agents write memory from other threads; each mount shows the files as they are now.
+      staleTimeMs: 0,
     }),
     memoryLog: createEnvironmentRpcQueryAtomFamily(runtime, {
       label: "environment-data:vibeboss:memory-log",
       tag: WS_METHODS.vibebossMemoryGetLog,
+      staleTimeMs: 0,
     }),
     readMemory: createEnvironmentRpcQueryAtomFamily(runtime, {
       label: "environment-data:vibeboss:memory-read",
       tag: WS_METHODS.vibebossMemoryRead,
+      staleTimeMs: 0,
     }),
     createMemory: createEnvironmentRpcCommand(runtime, {
       label: "environment-command:vibeboss:memory-create",

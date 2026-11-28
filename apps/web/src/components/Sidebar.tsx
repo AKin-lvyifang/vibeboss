@@ -169,6 +169,7 @@ import { canShareWithGuestAtom } from "./chat/guestShareAvailability";
 import { openGuestShareDialog } from "./chat/guestShareDialogState";
 import {
   buildThreadRouteParams,
+  isThreadRoutePathname,
   resolveActiveThreadRouteRef,
   resolveThreadRouteTarget,
 } from "../threadRoutes";
@@ -303,7 +304,7 @@ import {
   SidebarProjectFolderHeader,
   sidebarFolderRowId,
 } from "./sidebar/SidebarProjectFolderHeader";
-import { PROJECT_MEMORY_SECTION_ID } from "./vibeboss/ProjectMemorySettings";
+import { useRightPanelStore } from "../rightPanelStore";
 import {
   SidebarDragBoundary,
   SidebarSectionHeader,
@@ -1282,17 +1283,6 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   });
 
   // VibeBoss: the sidebar's brain button opens the project memory section of project settings.
-  const openProjectMemory = useStableCallback((projectGroup: SidebarProjectSnapshot) => {
-    if (isMobile) setOpenMobile(false);
-    void router.navigate({
-      to: "/settings/projects",
-      search: {
-        project: getSidebarProjectSettingsKey(projectGroup, projectGroupingSettings, projects),
-        machine: undefined,
-      },
-      hash: PROJECT_MEMORY_SECTION_ID,
-    });
-  });
   const openProjectSettings = useStableCallback(
     (projectGroup: SidebarProjectSnapshot, projectRef?: ScopedProjectRef) => {
       if (isMobile) {
@@ -1560,6 +1550,34 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
       params: buildThreadRouteParams(threadRef),
     });
   };
+
+  // VibeBoss: memory opens as a tab in the shown thread's panel, else in the project's newest thread.
+  const openProjectMemory = useStableCallback(
+    (
+      projectGroup: SidebarProjectSnapshot,
+      newestThread: { environmentId: EnvironmentId; id: ThreadId } | undefined,
+    ) => {
+      const ref =
+        routeThreadRef ??
+        (newestThread ? scopeThreadRef(newestThread.environmentId, newestThread.id) : null);
+      if (ref === null) {
+        toastManager.add({
+          type: "info",
+          title: gt("Start a thread in {project} to see its memory", {
+            project: projectGroup.displayName,
+          }),
+        });
+        return;
+      }
+      useRightPanelStore.getState().openMemory(ref, {
+        environmentId: projectGroup.environmentId,
+        projectId: projectGroup.id,
+      });
+      // Also leaves a settings page shown over the thread, which would hide the tab.
+      if (!isThreadRoutePathname(router.state.location.pathname, ref)) void navigateToThread(ref);
+      else if (isMobile) setOpenMobile(false);
+    },
+  );
 
   const handleThreadFileDrop = async (threadRef: ScopedThreadRef, files: File[]) => {
     const dropId = queuePendingFileDrop({ threadRef, files });
@@ -3552,7 +3570,9 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                             hiddenThreads={folder.hiddenThreads}
                             onToggle={toggleProjectFolder}
                             onNewThread={startThreadInProjectFolder}
-                            onOpenMemory={openProjectMemory}
+                            onOpenMemory={(group) =>
+                              openProjectMemory(group, folder.threads[0] ?? folder.hiddenThreads[0])
+                            }
                             onContextMenu={handleProjectFolderContextMenu}
                           />,
                         );

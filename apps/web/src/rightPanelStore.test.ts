@@ -595,6 +595,33 @@ describe("rightPanelStore", () => {
     });
   });
 
+  it("opens one memory tab per project, keeps its view, and restores it after reload", async () => {
+    const store = useRightPanelStore.getState();
+    const target = { environmentId: "env-1", projectId: "project-1" };
+    const surfaces = () =>
+      selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, refA).surfaces;
+    store.openMemory(refA, target);
+    store.setMemoryView(refA, "memory:env-1:project-1", "spec");
+    store.openMemory(refA, target);
+    expect(surfaces()).toEqual([
+      {
+        id: "memory:env-1:project-1",
+        kind: "memory",
+        environmentId: "env-1",
+        projectId: "project-1",
+        view: "spec",
+      },
+    ]);
+    store.openMemory(refA, { ...target, view: "file:decisions.md" });
+    store.openMemory(refA, { environmentId: "env-1", projectId: "project-2" });
+    expect(surfaces().map((surface) => surface.id)).toEqual([
+      "memory:env-1:project-1",
+      "memory:env-1:project-2",
+    ]);
+    await reloadRightPanelStore();
+    expect(surfaces()[0]).toMatchObject({ view: "file:decisions.md" });
+  });
+
   it("opens a side chat or subagent once per thread, and never the panel's own thread", () => {
     const store = useRightPanelStore.getState();
     const child = ThreadId.make("child");

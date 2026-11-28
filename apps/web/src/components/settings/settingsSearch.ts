@@ -1405,12 +1405,6 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: [msg("commands scripts setup run dev server checkout worktree t3.json import")],
   },
   {
-    id: "project-memory",
-    title: msg("Project memory"),
-    to: "/settings/projects",
-    searchTerms: [msg("memory current state decisions specs tasks archive vibeboss-memory")],
-  },
-  {
     id: "project-repositories",
     title: msg("Repositories"),
     to: "/settings/projects",

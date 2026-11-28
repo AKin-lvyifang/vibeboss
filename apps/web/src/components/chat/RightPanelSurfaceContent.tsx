@@ -28,6 +28,7 @@ import { PullRequestDetailPanel } from "../pullRequest/PullRequestDetailPanel";
 import { PullRequestDetailGhost } from "../pullRequest/PullRequestGhosts";
 import { PullRequestsUnavailableState } from "../pullRequest/PullRequestsUnavailableState";
 import { ThreadPullRequestsPanel } from "../pullRequest/ThreadPullRequestsPanel";
+import { ProjectMemoryPanel } from "../vibeboss/ProjectMemoryPanel";
 
 const PreviewPanel = lazy(() =>
   import("../preview/PreviewPanel").then((module) => ({ default: module.PreviewPanel })),
@@ -232,6 +233,18 @@ export function RightPanelSurfaceContent(props: {
       );
     case "pull-requests":
       return <ThreadPullRequestsPanel threadRef={threadRef} />;
+    case "memory":
+      return (
+        <ProjectMemoryPanel
+          key={`${surface.id}:${surface.view ?? ""}`}
+          environmentId={surface.environmentId as EnvironmentId}
+          projectId={surface.projectId as ProjectId}
+          view={surface.view}
+          onViewChange={(view) =>
+            useRightPanelStore.getState().setMemoryView(threadRef, surface.id, view)
+          }
+        />
+      );
     case "thread":
       // Not lazy: revealing a suspended tiptap editor tears down its view and crashes the composer.
       return (

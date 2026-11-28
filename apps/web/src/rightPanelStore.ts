@@ -32,6 +32,7 @@ const RIGHT_PANEL_KINDS = [
   "issue",
   "thread",
   "linked-thread",
+  "memory",
 ] as const;
 export type RightPanelKind = (typeof RIGHT_PANEL_KINDS)[number];
 
@@ -103,6 +104,8 @@ export type RightPanelSurface =
       key: string;
       url?: string;
     }
+  /** A project's memory; `view` is the category or `file:<path>` the tab last showed. */
+  | MemorySurface
   /**
    * A thread of the panel's environment shown beside it: a side chat or a subagent. Which one is
    * the thread's own lineage, so the surface only names it.
@@ -110,6 +113,28 @@ export type RightPanelSurface =
   | ThreadSurface
   /** A linked environment's thread, read through `viaEnvironmentId`; it has no thread here. */
   | LinkedThreadSurface;
+
+export type MemorySurface = {
+  id: `memory:${string}`;
+  kind: "memory";
+  environmentId: string;
+  projectId: string;
+  view?: string;
+};
+
+function memorySurface(target: {
+  environmentId: string;
+  projectId: string;
+  view?: string;
+}): MemorySurface {
+  return {
+    id: `memory:${encodeURIComponent(target.environmentId)}:${encodeURIComponent(target.projectId)}`,
+    kind: "memory",
+    environmentId: target.environmentId,
+    projectId: target.projectId,
+    ...(target.view === undefined ? {} : { view: target.view }),
+  };
+}
 
 export type ThreadSurface = { id: `thread:${string}`; kind: "thread"; threadId: ThreadId };
 
@@ -187,7 +212,7 @@ interface RightPanelStoreState {
     ref: ScopedThreadRef,
     kind: Exclude<
       RightPanelKind,
-      "file" | "terminal" | "pull-request" | "issue" | "thread" | "linked-thread"
+      "file" | "terminal" | "pull-request" | "issue" | "thread" | "linked-thread" | "memory"
     >,
   ) => void;
   /** Opens a side chat or subagent of `ref`'s environment as a tab; `ref` itself has no tab. */
@@ -223,6 +248,12 @@ interface RightPanelStoreState {
     },
   ) => void;
   openIssue: (ref: ScopedThreadRef, target: IssueSurfaceTarget) => void;
+  /** Opens a project's memory; a given `view` replaces the one the tab last showed. */
+  openMemory: (
+    ref: ScopedThreadRef,
+    target: { environmentId: string; projectId: string; view?: string },
+  ) => void;
+  setMemoryView: (ref: ScopedThreadRef, surfaceId: string, view: string) => void;
   setPullRequestDetailTab: (
     ref: ScopedThreadRef,
     surfaceId: string,
@@ -261,7 +292,7 @@ interface RightPanelStoreState {
     ref: ScopedThreadRef,
     kind: Exclude<
       RightPanelKind,
-      "file" | "terminal" | "pull-request" | "issue" | "thread" | "linked-thread"
+      "file" | "terminal" | "pull-request" | "issue" | "thread" | "linked-thread" | "memory"
     >,
   ) => void;
   setThreadPanelOpen: (
@@ -287,7 +318,14 @@ const DEFAULT_THREAD_PANEL_VISIBILITY: ThreadPanelVisibility = {
 const singletonSurface = (
   kind: Exclude<
     RightPanelKind,
-    "file" | "preview" | "terminal" | "pull-request" | "issue" | "thread" | "linked-thread"
+    | "file"
+    | "preview"
+    | "terminal"
+    | "pull-request"
+    | "issue"
+    | "thread"
+    | "linked-thread"
+    | "memory"
   >,
 ): RightPanelSurface => {
   switch (kind) {
@@ -677,6 +715,21 @@ export function migratePersistedRightPanelState(persistedState: unknown): {
                         }),
                       ];
                     }
+                    if (surface.kind === "memory") {
+                      if (
+                        typeof surface.environmentId !== "string" ||
+                        typeof surface.projectId !== "string"
+                      ) {
+                        return [];
+                      }
+                      return [
+                        memorySurface({
+                          environmentId: surface.environmentId,
+                          projectId: surface.projectId,
+                          ...(typeof surface.view === "string" ? { view: surface.view } : {}),
+                        }),
+                      ];
+                    }
                     if (surface.kind !== "terminal") return [surface];
                     if (
                       !("resourceId" in surface) ||
@@ -972,6 +1025,37 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
               : next;
           }),
         ),
+      openMemory: (ref, target) =>
+        set((state) =>
+          userAction(state, scopedThreadKey(ref), (current) => {
+            const surface = memorySurface(target);
+            const next = upsertSurface(current, surface);
+            return target.view === undefined
+              ? next
+              : {
+                  ...next,
+                  surfaces: next.surfaces.map((entry) =>
+                    entry.id === surface.id ? surface : entry,
+                  ),
+                };
+          }),
+        ),
+      setMemoryView: (ref, surfaceId, view) =>
+        set((state) => {
+          const threadKey = scopedThreadKey(ref);
+          const existing = state.byThreadKey[threadKey]?.surfaces.find(
+            (surface) => surface.id === surfaceId,
+          );
+          if (existing?.kind !== "memory" || existing.view === view) return state;
+          return automaticUpdate(state, threadKey, (current) => ({
+            ...current,
+            surfaces: current.surfaces.map((surface) =>
+              surface.id === surfaceId && surface.kind === "memory"
+                ? { ...surface, view }
+                : surface,
+            ),
+          }));
+        }),
       setPullRequestDetailTab: (ref, surfaceId, detailTab) =>
         set((state) => {
           const threadKey = scopedThreadKey(ref);

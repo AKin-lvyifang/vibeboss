@@ -42,6 +42,7 @@ import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dn
 import { CSS } from "@dnd-kit/utilities";
 import {
   Bot,
+  BrainIcon,
   CircleDotIcon,
   Smartphone,
   ChevronDown,
@@ -119,6 +120,8 @@ import { surfaceShortcutKey } from "~/lib/surfaceShortcutKey";
 
 export interface RightPanelTabsProps {
   mode: PreviewPanelMode;
+  /** The shown thread's project: a memory tab of another project names it. */
+  projectId?: string | null;
   maximized?: boolean;
   open?: boolean;
   keybindings: ResolvedKeybindingsConfig;
@@ -618,6 +621,8 @@ function surfaceTitle(
       return `#${surface.number}`;
     case "pull-requests":
       return resolve(msg("Linked items"));
+    case "memory":
+      return resolve(msg("Memory", { $context: "project memory tab" }));
     case "issue":
       // A git host numbers its issues; a tracker with keys of its own, such as Linear, names them.
       return /^\d+$/.test(surface.key) ? `#${surface.key}` : surface.key;
@@ -719,6 +724,8 @@ function SurfaceIcon({
       );
     case "pull-requests":
       return <PullRequestGlyph.link className="size-3 shrink-0" />;
+    case "memory":
+      return <BrainIcon className="size-3 shrink-0" />;
     case "issue":
       return <IssueSurfaceIcon surface={surface} environmentId={environmentId} />;
     case "thread":
@@ -960,6 +967,7 @@ function RightPanelTab(
     renaming: boolean;
     canRename: boolean;
     ownsDesktopTitleBar: boolean;
+    panelProjectId: string | null;
   },
 ) {
   const gt = useGT();
@@ -984,12 +992,22 @@ function RightPanelTab(
       ? scopeThreadRef(props.environmentId, surface.threadId)
       : null,
   );
+  const projects = useProjects();
+  const memoryProject =
+    surface.kind === "memory" && surface.projectId !== props.panelProjectId
+      ? projects.find(
+          (project) =>
+            project.environmentId === surface.environmentId && project.id === surface.projectId,
+        )
+      : undefined;
   const title =
-    sideChatShell === null
-      ? props.title
-      : sideChatShell.lineage.sideChat === true
-        ? sideChatShell.title
-        : formatSubagentDisplayTitle(sideChatShell.title);
+    memoryProject !== undefined
+      ? `${props.title} · ${memoryProject.title}`
+      : sideChatShell === null
+        ? props.title
+        : sideChatShell.lineage.sideChat === true
+          ? sideChatShell.title
+          : formatSubagentDisplayTitle(sideChatShell.title);
   const sideChatState = sideChatTabState(sideChatShell);
   const content = (
     <>
@@ -1541,6 +1559,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                     renaming={renamingDevice === surface.id}
                     canRename={props.onRenameDevice !== undefined}
                     ownsDesktopTitleBar={ownsDesktopTitleBar}
+                    panelProjectId={props.projectId ?? null}
                     onActivate={onActivateTab}
                     onClose={onCloseTab}
                     onAuxClick={onTabAuxClick}
