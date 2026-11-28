@@ -2,6 +2,7 @@ import { expect, it } from "vite-plus/test";
 
 import {
   demoAgentKind,
+  demoPagePath,
   demoPollInterval,
   isDemoReady,
   isFreshDemoPanelOpenCall,
@@ -69,4 +70,10 @@ it("opens the panel only for a recent, finished demo_open call", () => {
       now,
     ),
   ).toBe(false);
+});
+
+it("keeps a thread's demo folder name valid on Windows", () => {
+  expect(demoPagePath("thread:project:abc-1:def_2", 1)).toBe(
+    ".vibeboss/demo/thread_project_abc-1_def_2/1/index.html",
+  );
 });

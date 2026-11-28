@@ -20,10 +20,13 @@ export interface DemoStatus {
   readonly version: string;
 }
 
+/** Thread ids hold `:`, which Windows forbids in file names. Must match the server's. */
+const demoFolderName = (threadId: string) => threadId.replace(/[^A-Za-z0-9_-]/g, "_");
+
 export const demoStatusPath = (threadId: string, slot: DemoSlot) =>
-  `${VIBEBOSS_DEMO_DIR}/${threadId}/${slot}/status.json`;
+  `${VIBEBOSS_DEMO_DIR}/${demoFolderName(threadId)}/${slot}/status.json`;
 export const demoPagePath = (threadId: string, slot: DemoSlot) =>
-  `${VIBEBOSS_DEMO_DIR}/${threadId}/${slot}/index.html`;
+  `${VIBEBOSS_DEMO_DIR}/${demoFolderName(threadId)}/${slot}/index.html`;
 
 export function demoAgentKind(agent: string): DemoAgentKind {
   const name = agent.trim().toLowerCase();

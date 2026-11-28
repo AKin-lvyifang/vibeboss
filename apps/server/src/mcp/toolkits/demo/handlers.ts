@@ -17,6 +17,9 @@ const refuse = (message: string) =>
 const DEMO_DIR = ".vibeboss/demo";
 const SLOTS = [1, 2, 3] as const;
 
+/** Thread ids hold `:`, which Windows forbids in file names. Must match `demoFolderName` on the web. */
+const demoFolderName = (threadId: string) => threadId.replace(/[^A-Za-z0-9_-]/g, "_");
+
 /**
  * The panel a call belongs to: the calling thread's own, or for a delegated member the main
  * agent's that sent it. Each thread has its own folder, so one thread's demos never show in another.
@@ -41,7 +44,7 @@ const demoPanel = Effect.gen(function* () {
   const path = yield* Path.Path;
   // The panel reads the same root the conversation works in: its worktree when it has one.
   const root = owner.worktreePath ?? project.value.workspaceRoot;
-  const folder = path.join(root, DEMO_DIR, owner.id);
+  const folder = path.join(root, DEMO_DIR, demoFolderName(owner.id));
   return { fs, path, root, folder };
 });
 
