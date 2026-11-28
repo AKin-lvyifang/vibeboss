@@ -144,7 +144,7 @@ ipcRenderer.on(RECORDING_POINTER_CHANNEL, (_event, point: unknown) => {
     );
 });
 
-type AnnotationTool = "select" | "marquee" | "draw" | "erase";
+type AnnotationTool = "select" | "marquee" | "capture" | "draw" | "erase";
 
 interface SelectedElement {
   id: string;
@@ -892,6 +892,7 @@ function startAnnotation(
 
   const selected = new Map<Element, SelectedElement>();
   const regions: PreviewAnnotationRegionTarget[] = [];
+  const captureRegionIds = new Set<string>();
   const strokes: PreviewAnnotationStrokeTarget[] = [];
   const styleChanges = new Map<string, PreviewAnnotationStyleChange>();
   const toolButtons = new Map<AnnotationTool, HTMLButtonElement>();
@@ -960,7 +961,7 @@ function startAnnotation(
       button.classList.toggle("text-foreground", !active);
     }
     if (tool !== "select") hoverOutline.style.display = "none";
-    if (tool !== "marquee") marqueeBox.style.display = "none";
+    if (tool !== "marquee" && tool !== "capture") marqueeBox.style.display = "none";
     document.documentElement.setAttribute("data-t3code-annotation-tool", tool);
   };
 
@@ -1260,6 +1261,7 @@ function startAnnotation(
   const tools: ReadonlyArray<[AnnotationTool, string, string]> = [
     ["select", "Select", "Select elements (V)"],
     ["marquee", "Region", "Draw a region or marquee-select elements (R)"],
+    ["capture", "Capture", "Capture a region as a screenshot (C)"],
     ["draw", "Draw", "Draw freehand (D)"],
     ["erase", "Erase", "Remove an annotation target (E)"],
   ];
@@ -1513,7 +1515,7 @@ function startAnnotation(
       return;
     }
     clearHoverOutline();
-    if (tool === "marquee" && dragStart) {
+    if ((tool === "marquee" || tool === "capture") && dragStart) {
       positionBox(
         marqueeBox,
         normalizeRect(dragStart.x, dragStart.y, event.clientX, event.clientY),
@@ -1579,14 +1581,16 @@ function startAnnotation(
     if (!dragStart) return;
     event.preventDefault();
     event.stopPropagation();
-    if (tool === "marquee") {
+    if (tool === "marquee" || tool === "capture") {
       const rect = normalizeRect(dragStart.x, dragStart.y, event.clientX, event.clientY);
       marqueeBox.style.display = "none";
       if (isUsableRect(rect)) {
-        const found = selectElementsInRect(rect);
+        // Capture keeps the dragged rectangle as-is so the cropped screenshot matches it.
+        const found = tool === "capture" ? 0 : selectElementsInRect(rect);
         if (found === 0) {
           const region: PreviewAnnotationRegionTarget = { id: nextId("region"), rect };
           regions.push(region);
+          if (tool === "capture") captureRegionIds.add(region.id);
           const regionBox = createBox(
             PRIMARY,
             "color-mix(in srgb, var(--t3-primary) 6%, transparent)",
@@ -1749,6 +1753,7 @@ function startAnnotation(
     if (shadowRoot.activeElement?.matches("input, textarea, select")) return;
     if (event.key === "v") tool = "select";
     else if (event.key === "r") tool = "marquee";
+    else if (event.key === "c") tool = "capture";
     else if (event.key === "d") tool = "draw";
     else if (event.key === "e") tool = "erase";
     else return;
@@ -1812,11 +1817,27 @@ function startAnnotation(
         editor.style.display = "none";
         toolbar.style.display = "none";
         hoverOutline.style.display = "none";
-        const screenshotRect = unionRects([
-          ...elements.map((target) => target.rect),
-          ...submittedRegions.map((region) => region.rect),
-          ...submittedStrokes.map((stroke) => stroke.bounds),
-        ]);
+        // Capture-only annotations are cropped to exactly the dragged box, without its outline.
+        const captureOnly =
+          elements.length === 0 &&
+          submittedStrokes.length === 0 &&
+          submittedRegions.length > 0 &&
+          submittedRegions.every((region) => captureRegionIds.has(region.id));
+        if (captureOnly) {
+          for (const region of submittedRegions) {
+            root
+              .querySelector<HTMLElement>(`[data-region-id="${region.id}"]`)
+              ?.style.setProperty("display", "none");
+          }
+        }
+        const screenshotRect = unionRects(
+          [
+            ...elements.map((target) => target.rect),
+            ...submittedRegions.map((region) => region.rect),
+            ...submittedStrokes.map((stroke) => stroke.bounds),
+          ],
+          captureOnly ? 0 : undefined,
+        );
         ipcRenderer.send(
           ELEMENT_PICKED_CHANNEL,
           annotation,

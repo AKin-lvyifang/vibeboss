@@ -223,3 +223,50 @@ it("drops a straddling surrogate pair when falling back to outerHTML preview", a
   expect(card.outerHTML.charCodeAt(499)).toBe(0xd83d);
   expect((await pickAndAttach(card))?.htmlPreview).toBe(card.outerHTML.slice(0, 499));
 });
+
+it("captures the dragged rectangle without selecting the elements inside it", async () => {
+  ipcSend.calls.length = 0;
+  const button = document.body.appendChild(document.createElement("button"));
+  button.getBoundingClientRect = () => new DOMRect(40, 40, 40, 20);
+  document.elementsFromPoint = () => [button];
+  using listeners = vi.spyOn(HTMLButtonElement.prototype, "addEventListener");
+  const shadowRoot = startAnnotation();
+  const toolbarButton = (label: string) => {
+    const found = Array.from(shadowRoot.querySelectorAll("button")).find(
+      (candidate) => candidate.textContent === label,
+    );
+    if (!found) throw new Error(`${label} button not found`);
+    return found;
+  };
+  toolbarButton("Capture").click();
+  expect(document.documentElement.getAttribute("data-t3code-annotation-tool")).toBe("capture");
+
+  const drag = (type: string, x: number, y: number) =>
+    button.dispatchEvent(
+      new PointerEvent(type, { button: 0, clientX: x, clientY: y, bubbles: true }),
+    );
+  drag("pointerdown", 20, 20);
+  drag("pointermove", 120, 100);
+  drag("pointerup", 120, 100);
+
+  const attach = toolbarButton("Attach");
+  const listenerIndex = listeners.mock.contexts.findIndex(
+    (target, index) => target === attach && listeners.mock.calls[index]?.[0] === "click",
+  );
+  const listener = listeners.mock.calls[listenerIndex]?.[1];
+  if (typeof listener !== "function") throw new Error("Attach listener not found");
+  listener.call(attach, { isTrusted: true } as MouseEvent);
+
+  await vi.waitFor(() =>
+    expect(ipcSend.calls.some(([channel]) => channel === ELEMENT_PICKED_CHANNEL)).toBe(true),
+  );
+  const [, annotation, screenshotRect] =
+    ipcSend.calls.find(([channel]) => channel === ELEMENT_PICKED_CHANNEL) ?? [];
+  const payload = annotation as PreviewAnnotationPayload;
+  expect(payload.elements).toHaveLength(0);
+  expect(payload.regions.map((region) => region.rect)).toEqual([
+    { x: 20, y: 20, width: 100, height: 80 },
+  ]);
+  expect(screenshotRect).toEqual({ x: 20, y: 20, width: 100, height: 80 });
+  button.remove();
+});
