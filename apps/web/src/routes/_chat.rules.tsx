@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { RulesPage } from "../components/vibeboss/RulesPage";
-
+// VibeBoss: rules now sit below the roles on one page.
 export const Route = createFileRoute("/_chat/rules")({
-  component: RulesPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/agents", replace: true });
+  },
 });

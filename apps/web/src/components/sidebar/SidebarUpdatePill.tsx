@@ -30,6 +30,7 @@ import {
 } from "../desktopUpdate.logic";
 import { showDesktopUpdateDownloadedToast } from "../desktopUpdate.toast";
 import { useCheckProviderUpdates } from "../ProviderUpdatesAction";
+import { VIBEBOSS_SIDEBAR_APP_UPDATES_ONLY } from "../../vibeboss";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Popover, PopoverCreateHandle, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { SidebarMenuItem } from "../ui/sidebar";
@@ -241,7 +242,8 @@ function SidebarUpdateControl() {
     state && action !== "none" ? getDesktopUpdateDownloadedVersion(state) : null;
   const everything = useUpdateEverything(localUpdateVersion);
   const checkProviderUpdates = useCheckProviderUpdates();
-  const runsEverything = everything.hasUpdates && !isDownloading;
+  const runsEverything =
+    !VIBEBOSS_SIDEBAR_APP_UPDATES_ONLY && everything.hasUpdates && !isDownloading;
   const run = useUpdateEverythingRun();
   const isRunningEverything = run !== null;
   const showCheckIcon = shouldShowDesktopUpdateCheckIcon({
@@ -366,6 +368,10 @@ function SidebarUpdateControl() {
           }),
         );
       });
+    if (VIBEBOSS_SIDEBAR_APP_UPDATES_ONLY) {
+      void appCheck.finally(() => setIsActionPending(false));
+      return;
+    }
     setProviderCheck("button");
     const providersChecked = checkProviderUpdates().finally(() => setProviderCheck(null));
     void Promise.allSettled([appCheck, providersChecked]).then(() => setIsActionPending(false));

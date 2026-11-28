@@ -20,6 +20,7 @@ import { setRulesPage, useRulesPageStore } from "../../vibebossRuleReviewStore";
 import { PersonalMemoryCard } from "./PersonalMemoryCard";
 import { RuleCheckButton } from "./RuleCheckButton";
 import { RuleReviewPanel } from "./RuleReviewPanel";
+import { RolesSection, invalidMemberName } from "./RolesSection";
 import { VibeBossPage, useVibeBossState } from "./VibeBossShared";
 
 const LEAD_TAB = "lead-rules";
@@ -59,6 +60,10 @@ function FilePath({ path }: { path: string }) {
   );
 }
 
+function SectionHeading({ children }: { children: ReactNode }) {
+  return <h2 className="font-medium text-sm">{children}</h2>;
+}
+
 function AppendedBlock({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <div className="border-t px-4 py-3">
@@ -70,7 +75,8 @@ function AppendedBlock({ label, children }: { label: ReactNode; children: ReactN
   );
 }
 
-export function RulesPage() {
+/** Roles on top, rules below: both edit one config and save together. */
+export function RolesRulesPage() {
   const gt = useGT();
   const { environmentId, data, error, refresh } = useVibeBossState();
   const saveConfig = useAtomCommand(vibeBossEnvironment.saveConfig);
@@ -105,6 +111,8 @@ export function RulesPage() {
   const tab = selectedTab ?? SHARED_TAB;
   const file = files.find((item) => item.targetId === tab) ?? null;
   const leadFile = files.find((item) => item.isLead) ?? null;
+  const hasInvalidName =
+    config !== null && config.members.some((member) => invalidMemberName(config, member.name));
 
   const update = (next: Partial<VibeBossConfig>) => {
     if (config === null) return;
@@ -235,7 +243,7 @@ export function RulesPage() {
 
   return (
     <VibeBossPage
-      title={gt("Rules")}
+      title={gt("Roles & rules")}
       actions={
         <>
           {backups !== null ? (
@@ -259,8 +267,12 @@ export function RulesPage() {
               onReviewModelChange={saveReviewModel}
             />
           )}
-          <Button size="sm" disabled={busy || (draft === null && !outOfSync)} onClick={saveAndSync}>
-            <T>Sync rule files</T>
+          <Button
+            size="sm"
+            disabled={busy || (draft === null && !outOfSync) || hasInvalidName}
+            onClick={saveAndSync}
+          >
+            {draft === null ? <T>Sync rule files</T> : <T>Save</T>}
           </Button>
         </>
       }
@@ -274,6 +286,19 @@ export function RulesPage() {
           </T>
         </p>
       ) : null}
+      {config === null ? null : (
+        <section className="flex flex-col gap-3">
+          <SectionHeading>
+            <T>Roles</T>
+          </SectionHeading>
+          <RolesSection config={config} update={update} />
+        </section>
+      )}
+      {config === null ? null : (
+        <SectionHeading>
+          <T>Rules</T>
+        </SectionHeading>
+      )}
       {review !== null ? (
         <RuleReviewPanel
           review={review}

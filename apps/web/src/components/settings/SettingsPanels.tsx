@@ -127,7 +127,7 @@ import { StorageCleanupSections } from "./StorageSettings";
 import { UpdateTrackSwitchDialog } from "./UpdateTrackSwitchDialog";
 import { environmentIdsKey } from "~/state/environmentAtomList";
 import { environmentSessionStatesAtom } from "~/state/session";
-import { VIBEBOSS_T3_TELEMETRY } from "~/vibeboss";
+import { VIBEBOSS_HIDDEN_SETTING_ROWS, VIBEBOSS_T3_TELEMETRY } from "~/vibeboss";
 import { useCheckProviderUpdates } from "../ProviderUpdatesAction";
 import { canUpdateServer } from "../ServerUpdateAction";
 import { downloadLocalUpdate } from "../sidebar/SidebarUpdatePill";
@@ -2572,7 +2572,7 @@ export function AboutSettingsPanel() {
             />
           </>
         )}
-        <MobileAppSettingsRow />
+        {VIBEBOSS_HIDDEN_SETTING_ROWS.has("mobile-app") ? null : <MobileAppSettingsRow />}
         {primaryEnvironmentId === null ? null : (
           <SettingsRow
             {...setting("welcome-page")}
