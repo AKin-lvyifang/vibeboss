@@ -4,6 +4,7 @@ import { page, userEvent } from "vite-plus/test/browser";
 
 import "~/index.css";
 import { act, render } from "../../../test/render";
+import { VIBEBOSS_SIDEBAR_APP_UPDATES_ONLY } from "~/vibeboss";
 import { SidebarUpdatePill } from "./SidebarUpdatePill";
 import type { UpdateEverythingRow } from "./updateEverything.logic";
 
@@ -125,7 +126,8 @@ describe("SidebarUpdatePill release notes", () => {
   });
 });
 
-describe("SidebarUpdatePill update everything", () => {
+// VibeBoss: the sidebar only updates the app, so "update everything" never shows.
+describe.skipIf(VIBEBOSS_SIDEBAR_APP_UPDATES_ONLY)("SidebarUpdatePill update everything", () => {
   it("does not refocus the update button after a pointer cancel", async () => {
     setup(null, { hasUpdates: true });
     await using screen = await render(<SidebarUpdatePill />);

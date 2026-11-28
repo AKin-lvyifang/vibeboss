@@ -37,6 +37,7 @@ import { readIssueListPreferences } from "../issue/issueListPreferences";
 import { isSidebarUtilityPage, useNavigateToMainApp } from "./mainAppLocation";
 import { SidebarThreadUndoNotice } from "./SidebarThreadUndoNotice";
 import { SidebarProviderUpdatePill } from "./SidebarProviderUpdatePill";
+import { VIBEBOSS_SIDEBAR_APP_UPDATES_ONLY } from "../../vibeboss";
 import { SidebarUpdateArchitectureWarning, SidebarUpdatePill } from "./SidebarUpdatePill";
 import { observeResize } from "~/lib/observeResize";
 import { AnimateIcon } from "@animate-ui/react/icons";
@@ -372,7 +373,7 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
 export const SidebarChromeFooter = memo(function SidebarChromeFooter() {
   return (
     <SidebarFooter>
-      <SidebarProviderUpdatePill />
+      {VIBEBOSS_SIDEBAR_APP_UPDATES_ONLY ? null : <SidebarProviderUpdatePill />}
       <SidebarUpdateArchitectureWarning />
       <SidebarUtilityMenu />
     </SidebarFooter>

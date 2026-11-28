@@ -20,3 +20,9 @@ export const VIBEBOSS_HIDDEN_SETTING_ROWS: ReadonlySet<string> = new Set([
 
 /** T3's anonymous usage analytics report to T3's servers; VibeBoss turns them off and hides the notices. */
 export const VIBEBOSS_T3_TELEMETRY = false;
+
+/**
+ * The sidebar update button only covers VibeBoss itself. Agent CLIs update from their own rows in
+ * Settings > Providers, so the sidebar neither checks nor prompts for them.
+ */
+export const VIBEBOSS_SIDEBAR_APP_UPDATES_ONLY = true;
